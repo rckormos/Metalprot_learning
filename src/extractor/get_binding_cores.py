@@ -7,6 +7,7 @@ This file contains functions for extracting 3-coordinate binding core examples.
 #imports
 from prody import *
 import numpy as np
+import os
 
 def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int, end_resnum: int):
     """Finds neighbors of an input coordinating residue.
@@ -23,15 +24,24 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
 
     extend = np.array(range(-no_neighbors, no_neighbors+1))
     _core_fragment = np.full((1,len(extend)), coordinating_resnum) + extend
-    core_fragment = list(_core_fragment[ (_core_fragment < start_resnum) & (_core_fragment > end_resnum) ]) #remove nonexisting neighbor residues
+    core_fragment = list(_core_fragment[ (_core_fragment > start_resnum) & (_core_fragment < end_resnum) ]) #remove nonexisting neighbor residues
 
     return core_fragment
 
-def extract_cores(pdb_file: str, metal_sel=None, selection_radius=5, no_neighbors=1):
+def writepdb(structure, binding_core_resnums: list, out_dir: str):
+    binding_core_resnums.sort()
+    binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums]))
+    pdb_id = structure.getTitle()
+    filename = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '.pdb'
+    writePDB(os.path.join(out_dir, filename), binding_core)
+
+def extract_cores(pdb_file: str, pos_dir: str, neg_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
+        pos_dir (str): Defines the path to the directory to contain positive examples. 
+        neg_dir (str): Defines the path to the directory to contain negative examples. 
         metal_sel (str, optional): Selection string for desired metal. For example, if I want to select all Zinc metals, I would use the following string: 'name ZN'. Defaults to None.
         selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
@@ -48,16 +58,19 @@ def extract_cores(pdb_file: str, metal_sel=None, selection_radius=5, no_neighbor
     cores = []
 
     if metal_sel:
-        metal_indices = structure.select(metal_sel).getResindices()
-        for index in metal_indices:
-            coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of index {index}').getResnums()))
+        metal_resnums = structure.select('hetero').select(metal_sel).getResnums()
+        for num in metal_resnums:
+            coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
             
             if len(coordinating_resnums) == 3:
+                binding_core_resnums = []
                 for number in coordinating_resnums:
                     core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
                     binding_core_resnums += core_fragment
 
+                binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
+                writepdb(structure, binding_core_resnums, pos_dir)
 
             else:
                 continue
@@ -77,7 +90,9 @@ def extract_cores(pdb_file: str, metal_sel=None, selection_radius=5, no_neighbor
                     core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
                     binding_core_resnums += core_fragment
 
+                binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
+                writepdb(structure, binding_core_resnums, neg_dir)
 
             else:
                 continue
