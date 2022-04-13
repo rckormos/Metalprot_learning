@@ -1,7 +1,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This file contains functions for extracting 3-coordinate binding core examples.
+This file contains functions for extracting 3-coordinate binding core examples and writing their corresponding distance matrix/ sequence encodings.
 """
 
 #imports
@@ -58,6 +58,7 @@ def compute_labels(structure, binding_core_resnums: list, metal=None):
         pass
 
 def write_distance_matrices():
+
     pass
 
 def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
