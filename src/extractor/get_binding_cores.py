@@ -57,9 +57,27 @@ def compute_labels(structure, binding_core_resnums: list, metal=None):
     else: #TODO: label generation for negative examples
         pass
 
-def write_distance_matrices():
+def write_distance_matrices(structure, output_dir: str, binding_core_resnums: list, metal=None):
+    """Generates binding core backbone distances and label files.
 
-    pass
+    Args:
+        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
+        output_dir (str): Path to the directory to dump output files.
+        binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
+        metal (int, optional): Defines the residue number of the bound metal. Defaults to None.
+    """
+    
+    binding_core_backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name CA C CB O')
+    backbone_distances = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+    label = compute_labels(structure, binding_core_resnums: list, metal)
+
+    pdb_id = structure.getTitle()
+    backbone_distances_file = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_distances.txt'
+    label_file = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_labels.txt'
+
+    np.savetxt(os.path.join(output_dir, backbone_distances_file), backbone_distances)
+    np.savetxt(os.path.join(output_dir, label_file), label)
+    
 
 def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
