@@ -35,13 +35,23 @@ def writepdb(structure, binding_core_resnums: list, out_dir: str):
     filename = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '.pdb'
     writePDB(os.path.join(out_dir, filename), binding_core)
 
-def extract_cores(pdb_file: str, pos_dir: str, neg_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
+def compute_labels(core, example: str):
+    """Given an input putative or known metal binding core, will compute the distance of all backbone atoms to metal site.
+
+    Args:
+        core (prody.atomic.atomgroup.AtomGroup): AtomGroup of the metal binding core.
+        example (str): Defines whether the example is positive or negative. Must be a string in the set {'positive', 'negative'}.
+    """
+
+
+    pass
+
+def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
-        pos_dir (str): Defines the path to the directory to contain positive examples. 
-        neg_dir (str): Defines the path to the directory to contain negative examples. 
+        output_dir (str): Defines the path to the directory to dump output files. 
         metal_sel (str, optional): Selection string for desired metal. For example, if I want to select all Zinc metals, I would use the following string: 'name ZN'. Defaults to None.
         selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
@@ -70,7 +80,7 @@ def extract_cores(pdb_file: str, pos_dir: str, neg_dir: str, metal_sel=None, sel
 
                 binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
-                writepdb(structure, binding_core_resnums, pos_dir)
+                writepdb(structure, binding_core_resnums, output_dir)
 
             else:
                 continue
@@ -92,7 +102,7 @@ def extract_cores(pdb_file: str, pos_dir: str, neg_dir: str, metal_sel=None, sel
 
                 binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
-                writepdb(structure, binding_core_resnums, neg_dir)
+                writepdb(structure, binding_core_resnums, output_dir)
 
             else:
                 continue
