@@ -1,5 +1,12 @@
 #!/bin/usr/env python3
 
+"""
+Author: Jonathan Zhang <jon.zhang@ucsf.edu>
+
+Note that this script is meant to be called from within a SGE bash submission script. Note that you need to define
+the number of jobs in this script and in the aforementioned submission script.
+"""
+
 #imports 
 import os
 from src.extractor.get_binding_cores import extract_cores
@@ -30,13 +37,17 @@ if __name__ == '__main__':
     path2positive_cores = '' #path to where you want positive/negative core files dumped to
     path2negative_cores = ''
 
-    no_jobs = 1
-    job_id = 0
+    no_jobs = 100 #number of jobs you are submitting
+
+    try: 
+        job_id = os.environ['SGE_TASK_ID'] - 1
+    except:
+        job_id = 0
 
     positive_tasks, negative_tasks = distribute_tasks(path2positives, path2negatives, no_jobs, job_id)
 
     for positive_file in positive_tasks:
-        extract_cores(positive_file, path2positive_cores, True)
+        _ = extract_cores(positive_file, path2positive_cores, True)
 
     for negative_file in negative_tasks:
-        extract_cores(negative_file, path2negative_cores)
+        _ = extract_cores(negative_file, path2negative_cores)
