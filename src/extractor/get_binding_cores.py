@@ -83,6 +83,9 @@ def write_distance_matrices(structure, output_dir: str, binding_core_resnums: li
     with open(os.path.join(output_dir, generate_title('distance_matrices.pkl')), 'wb') as f:
         pickle.dump(matrices, f)
 
+def remove_degenerate_cores():
+    pass
+
 def extract_cores(pdb_file: str, output_dir: str, metal=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
@@ -106,48 +109,57 @@ def extract_cores(pdb_file: str, output_dir: str, metal=None, selection_radius=5
 
     cores = []
 
-    if metal:
-        metal_resnums = structure.select('hetero').select(metal_sel).getResnums()
-        for num in metal_resnums:
-            coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
-            
-            if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
-                binding_core_resnums = []
-                for number in coordinating_resnums:
-                    core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
-                    binding_core_resnums += core_fragment
+    for chain_id in set(structure.getChids()): #iterate through all chains
+        chain = structure.select(f'chain {chain_id}')
 
-                binding_core_resnums.sort()
-                binding_core_resnums = list(set(binding_core_resnums))
-                cores.append(binding_core_resnums) #add binding core to output
-                write_distance_matrices(structure, output_dir, binding_core_resnums, num)
-                writepdb(structure, binding_core_resnums, output_dir, num)
-
-            else:
-                continue
-
-    else:
-        sele = structure.select('resname GLU ASP CYS HIS') #select all potential metal binding residues
-        
-        res_nums = set(sele.getResnums())
-        for number in res_nums:
-            local_sele = structure.select(f'resname GLU ASP CYS HIS within {selection_radius} of resnum {number}')  
-            local_resnums = list(set(local_sele.getResnums()))
-
-            if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2: #check if there are three metal binding residues in close proximity
-                #TODO: in the case where there are more than three putative coordinating residues, compute CA-CB bond vectors and check if three are pointing in the same direction
-                binding_core_resnums =[]
-                for number in local_resnums: #identify neighboring residues compile list of binding core residue numbers
-                    core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
-                    binding_core_resnums += core_fragment
+        if metal:
+            metal_resnums = chain.select('hetero').select(metal_sel).getResnums()
+            for num in metal_resnums:
+                coordinating_resnums = list(set(chain.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
                 
-                binding_core_resnums.sort()
-                binding_core_resnums = list(set(binding_core_resnums))
-                cores.append(binding_core_resnums) #add binding core to output
-                write_distance_matrices(structure, output_dir, binding_core_resnums)
-                writepdb(structure, binding_core_resnums, output_dir)
+                if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
+                    binding_core_resnums = []
+                    for number in coordinating_resnums:
+                        core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
+                        binding_core_resnums += core_fragment
 
-            else:
-                continue
+                    binding_core = chain.select('resnum' + ' '.join([str(num) for num in binding_core_resnums]))
+                    cores.append(binding_core)
+
+                    # binding_core_resnums.sort()
+                    # binding_core_resnums = list(set(binding_core_resnums))
+                    # cores.append(binding_core_resnums) #add binding core to output
+                    # write_distance_matrices(chain, output_dir, binding_core_resnums, num)
+                    # writepdb(chain, binding_core_resnums, output_dir, num)
+
+                else:
+                    continue
+
+        else:
+            sele = chain.select('resname GLU ASP CYS HIS') #select all potential metal binding residues
+            
+            res_nums = set(sele.getResnums())
+            for number in res_nums:
+                local_sele = chain.select(f'resname GLU ASP CYS HIS within {selection_radius} of resnum {number}')  
+                local_resnums = list(set(local_sele.getResnums()))
+
+                if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2: #check if there are three metal binding residues in close proximity
+                    #TODO: in the case where there are more than three putative coordinating residues, compute CA-CB bond vectors and check if three are pointing in the same direction
+                    binding_core_resnums =[]
+                    for number in local_resnums: #identify neighboring residues compile list of binding core residue numbers
+                        core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
+                        binding_core_resnums += core_fragment
+
+                    binding_core = chain.select('resnum' + ' '.join([str(num) for num in binding_core_resnums]))
+                    cores.append(binding_core)
+                    
+                    # binding_core_resnums.sort()
+                    # binding_core_resnums = list(set(binding_core_resnums))
+                    # cores.append(binding_core_resnums) #add binding core to output
+                    # write_distance_matrices(chain, output_dir, binding_core_resnums)
+                    # writepdb(chain, binding_core_resnums, output_dir)
+
+                else:
+                    continue
 
     return cores
