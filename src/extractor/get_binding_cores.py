@@ -1,7 +1,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This file contains functions for extracting 3-coordinate binding core examples and writing their corresponding distance matrix/ sequence encodings.
+This file contains functions for extracting binding core examples containing 2 to 4 ligands and writing their corresponding distance matrix/ sequence encodings.
 """
 
 #imports
@@ -66,19 +66,17 @@ def write_distance_matrices(structure, output_dir: str, binding_core_resnums: li
         binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
         metal (int, optional): Defines the residue number of the bound metal. Defaults to None.
     """
-    
-    binding_core_backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name CA C CB O')
-    backbone_distances = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+
+    generate_title = lambda x: structure.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + x
+    for atom in ['CA', 'CB', 'C', 'N']:
+        backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name ' + atom)
+        backbone_distances = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+        np.savetxt(os.path.join(output_dir, generate_title(f'{atom}_distances.txt')), backbone_distances)
+
     label = compute_labels(structure, binding_core_resnums: list, metal)
-
-    pdb_id = structure.getTitle()
-    backbone_distances_file = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_distances.txt'
-    label_file = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_labels.txt'
-
-    np.savetxt(os.path.join(output_dir, backbone_distances_file), backbone_distances)
-    np.savetxt(os.path.join(output_dir, label_file), label)
+    np.savetxt(os.path.join(output_dir, generate_title('label.txt')), label)
+    np.savetxt(os.path.join(output_dir, generate_title('resnums.txt')), np.array(binding_core_resnums))
     
-
 def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
@@ -111,9 +109,10 @@ def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radi
                     core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
                     binding_core_resnums += core_fragment
 
-                binding_core_resnums = list(set(binding_core_resnums.sort()))
+                binding_core_resnums.sort()
+                binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
-                #TODO: write distance matrices and output files
+                write_distance_matrices(structure, output_dir, binding_core_resnums, num)
                 writepdb(structure, binding_core_resnums, output_dir)
 
             else:
@@ -127,16 +126,17 @@ def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radi
             local_sele = structure.select(f'resname GLU ASP CYS HIS within {selection_radius} of resnum {number}')  
             local_resnums = list(set(local_sele.getResnums()))
 
-            if len(local_resnums) == 3: #check if there are three metal binding residues in close proximity
+            if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2: #check if there are three metal binding residues in close proximity
                 #TODO: in the case where there are more than three putative coordinating residues, compute CA-CB bond vectors and check if three are pointing in the same direction
                 binding_core_resnums =[]
                 for number in local_resnums: #identify neighboring residues compile list of binding core residue numbers
                     core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
                     binding_core_resnums += core_fragment
-
+                
+                binding_core_resnums.sort()
                 binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
-                #TODO: write distance matrices and output files
+                write_distance_matrices(structure, output_dir, binding_core_resnums)
                 writepdb(structure, binding_core_resnums, output_dir)
 
             else:
