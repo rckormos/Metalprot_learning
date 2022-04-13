@@ -1,4 +1,4 @@
-#!/bin/usr/env python3
+#!/usr/bin/env python3
 
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
@@ -9,7 +9,9 @@ the number of jobs in this script and in the aforementioned submission script.
 
 #imports 
 import os
-from src.extractor.get_binding_cores import extract_cores
+import sys 
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'src'))
+from extractor import get_binding_cores
 
 def distribute_tasks(path2positives: str, path2negatives: str, no_jobs: int, job_id: int):
     """Distributes pdb files for core generation.
@@ -47,7 +49,7 @@ if __name__ == '__main__':
     positive_tasks, negative_tasks = distribute_tasks(path2positives, path2negatives, no_jobs, job_id)
 
     for positive_file in positive_tasks:
-        _ = extract_cores(positive_file, path2positive_cores, True)
+        _ = get_binding_cores.extract_cores(positive_file, path2positive_cores, True)
 
     for negative_file in negative_tasks:
-        _ = extract_cores(negative_file, path2negative_cores)
+        _ = get_binding_cores.extract_cores(negative_file, path2negative_cores)
