@@ -77,19 +77,21 @@ def write_distance_matrices(structure, output_dir: str, binding_core_resnums: li
     np.savetxt(os.path.join(output_dir, generate_title('label.txt')), label)
     np.savetxt(os.path.join(output_dir, generate_title('resnums.txt')), np.array(binding_core_resnums))
     
-def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
+def extract_cores(pdb_file: str, output_dir: str, metal=False, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
         output_dir (str): Defines the path to the directory to dump output files. 
-        metal_sel (str, optional): Selection string for desired metal. For example, if I want to select all Zinc metals, I would use the following string: 'name ZN'. Defaults to None.
+        metal (bool, optional): Whether or not a metal is present in input structure. Defaults to False.
         selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
 
     Returns:
         cores (list): List of lists of putative or known metal binding cores.
     """
+
+    metal_sel = 'ion or name NI MN ZN CO CU MG FE CA' 
 
     structure = parsePDB(pdb_file) #load structure
     all_resnums = structure.select('protein').getResnums()
@@ -98,7 +100,7 @@ def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radi
 
     cores = []
 
-    if metal_sel:
+    if metal:
         metal_resnums = structure.select('hetero').select(metal_sel).getResnums()
         for num in metal_resnums:
             coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
