@@ -29,8 +29,10 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
 
     return core_fragment
 
-def writepdb(structure, binding_core_resnums: list, out_dir: str):
+def writepdb(structure, binding_core_resnums: list, out_dir: str, metal_resnum: None):
     binding_core_resnums.sort()
+    if metal_resnum:
+        binding_core_resnums.append(metal_resnum)
     binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums]))
     pdb_id = structure.getTitle()
     filename = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '.pdb'
@@ -81,13 +83,13 @@ def write_distance_matrices(structure, output_dir: str, binding_core_resnums: li
     with open(os.path.join(output_dir, generate_title('distance_matrices.pkl')), 'wb') as f:
         pickle.dump(matrices, f)
 
-def extract_cores(pdb_file: str, output_dir: str, metal=False, selection_radius=5, no_neighbors=1):
+def extract_cores(pdb_file: str, output_dir: str, metal=None, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
         output_dir (str): Defines the path to the directory to dump output files. 
-        metal (bool, optional): Whether or not a metal is present in input structure. Defaults to False.
+        metal (str, optional): The element symbol, in all caps, of the bound metal. Defaults to None.
         selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
 
@@ -95,7 +97,7 @@ def extract_cores(pdb_file: str, output_dir: str, metal=False, selection_radius=
         cores (list): List of lists of putative or known metal binding cores.
     """
 
-    metal_sel = 'ion or name NI MN ZN CO CU MG FE CA' 
+    metal_sel = f'name {metal}'
 
     structure = parsePDB(pdb_file) #load structure
     all_resnums = structure.select('protein').getResnums()
@@ -119,7 +121,7 @@ def extract_cores(pdb_file: str, output_dir: str, metal=False, selection_radius=
                 binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
                 write_distance_matrices(structure, output_dir, binding_core_resnums, num)
-                writepdb(structure, binding_core_resnums, output_dir)
+                writepdb(structure, binding_core_resnums, output_dir, num)
 
             else:
                 continue
