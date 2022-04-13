@@ -8,6 +8,7 @@ This file contains functions for extracting binding core examples containing 2 t
 from prody import *
 import numpy as np
 import os
+import pickle
 
 def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int, end_resnum: int):
     """Finds neighbors of an input coordinating residue.
@@ -48,7 +49,7 @@ def compute_labels(structure, binding_core_resnums: list, metal=None):
     """
 
     if metal:
-        metal_sel = structure.select('hetero').select('resnum {metal}')
+        metal_sel = structure.select('hetero').select(f'resnum {metal}')
         binding_core_backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name CA C CB O')
         distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
@@ -67,16 +68,19 @@ def write_distance_matrices(structure, output_dir: str, binding_core_resnums: li
         metal (int, optional): Defines the residue number of the bound metal. Defaults to None.
     """
 
+    matrices = {}
+
     generate_title = lambda x: structure.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + x
     for atom in ['CA', 'CB', 'C', 'N']:
         backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name ' + atom)
-        backbone_distances = buildDistMatrix(binding_core_backbone, binding_core_backbone)
-        np.savetxt(os.path.join(output_dir, generate_title(f'{atom}_distances.txt')), backbone_distances)
+        backbone_distances = buildDistMatrix(backbone, backbone)
+        matrices[atom] = backbone_distances
 
-    label = compute_labels(structure, binding_core_resnums: list, metal)
-    np.savetxt(os.path.join(output_dir, generate_title('label.txt')), label)
-    np.savetxt(os.path.join(output_dir, generate_title('resnums.txt')), np.array(binding_core_resnums))
-    
+    matrices['label'] = compute_labels(structure, binding_core_resnums, metal)
+    matrices['resnums'] = np.array(binding_core_resnums)
+    with open(os.path.join(output_dir, generate_title('distance_matrices.pkl')), 'wb') as f:
+        pickle.dump(matrices, f)
+
 def extract_cores(pdb_file: str, output_dir: str, metal=False, selection_radius=5, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
