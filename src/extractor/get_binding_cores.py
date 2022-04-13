@@ -35,15 +35,29 @@ def writepdb(structure, binding_core_resnums: list, out_dir: str):
     filename = pdb_id + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '.pdb'
     writePDB(os.path.join(out_dir, filename), binding_core)
 
-def compute_labels(core, example: str):
+def compute_labels(structure, binding_core_resnums: list, metal=None):
     """Given an input putative or known metal binding core, will compute the distance of all backbone atoms to metal site.
 
     Args:
-        core (prody.atomic.atomgroup.AtomGroup): AtomGroup of the metal binding core.
-        example (str): Defines whether the example is positive or negative. Must be a string in the set {'positive', 'negative'}.
+        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
+        binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
+        metal (int, optional): Defines the residue number of the bound metal. Defaults to None.
+
+    Returns:
+        distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. As an example, elements 0:4 contain distances between the metal and CA, C, O, and CB atoms of the binding core residue of lowest resnum.
     """
 
+    if metal:
+        metal_sel = structure.select('hetero').select('resnum {metal}')
+        binding_core_backbone = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums])).select('name CA C CB O')
+        distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
+        return distances 
+
+    else: #TODO: label generation for negative examples
+        pass
+
+def write_distance_matrices():
     pass
 
 def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radius=5, no_neighbors=1):
@@ -72,14 +86,15 @@ def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radi
         for num in metal_resnums:
             coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
             
-            if len(coordinating_resnums) == 3:
+            if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
                 binding_core_resnums = []
                 for number in coordinating_resnums:
                     core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
                     binding_core_resnums += core_fragment
 
-                binding_core_resnums = list(set(binding_core_resnums))
+                binding_core_resnums = list(set(binding_core_resnums.sort()))
                 cores.append(binding_core_resnums) #add binding core to output
+                #TODO: write distance matrices and output files
                 writepdb(structure, binding_core_resnums, output_dir)
 
             else:
@@ -102,6 +117,7 @@ def extract_cores(pdb_file: str, output_dir: str, metal_sel=None, selection_radi
 
                 binding_core_resnums = list(set(binding_core_resnums))
                 cores.append(binding_core_resnums) #add binding core to output
+                #TODO: write distance matrices and output files
                 writepdb(structure, binding_core_resnums, output_dir)
 
             else:
