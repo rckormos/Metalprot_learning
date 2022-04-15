@@ -26,7 +26,6 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
     extend = np.array(range(-no_neighbors, no_neighbors+1))
     _core_fragment = np.full((1,len(extend)), coordinating_resnum) + extend
     core_fragment = list(_core_fragment[ (_core_fragment > start_resnum) & (_core_fragment < end_resnum) ]) #remove nonexisting neighbor residues
-
     return core_fragment
 
 def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
@@ -44,14 +43,21 @@ def generate_filename(parent_structure_id: str, binding_core_resis: list, filety
     return filename
 
 def writepdb(core, out_dir: str, metal: str):
-    binding_core_resnums = list(set(core.select('protein').getResnums()))    
+    """Generates a pdb file for an input core
+
+    Args:
+        core (prody.atomic.atomgroup.AtomGroup): AtomGroup of binding core.
+        out_dir (str): Path to output directory.
+        metal (str): The element symbol of the bound metal in all caps.
+    """
+    binding_core_resnums = list(set(core.select('protein').getResnums())) #get all core residue numbers
     binding_core_resnums.sort()
     pdb_id = core.getTitle()
 
-    metal_resnum = core.select('hetero').select(f'name {metal}').getResnums()        
+    metal_resnum = core.select('hetero').select(f'name {metal}').getResnums() #get the residue number of the metal for output file title         
     filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal, metal_resnum))
      
-    writePDB(os.path.join(out_dir, filename), core)
+    writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
 def extract_cores(pdb_file: str, metal=None, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
@@ -96,24 +102,32 @@ def extract_cores(pdb_file: str, metal=None, no_neighbors=1):
                 continue
     return cores
 
-def remove_degenerate_cores(cores):
+def remove_degenerate_cores(cores: list):
+    """Function to remove cores that are the same. For example, if the input structure is a homotetramer, this function will only return one of the binding cores.
 
+    Args:
+        cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+
+    Returns:
+        unique_cores (list): List of all unique metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+    """
+    
     if len(cores) > 1:
         unique_cores = []
         while cores:
-            current_core = cores.pop()
+            current_core = cores.pop() #extract last element in cores
             pairwise_rmsds = np.array([])
-            for core in cores:
+            for core in cores: #iterate through all cores and compute RMSD with respect to the popped core
                 rmsd = calcRMSD(current_core, core)
                 pairwise_rmsds = np.append(pairwise_rmsds, rmsd)
 
-            degenerate_core_indices = np.where(pairwise_rmsds < .3)[0]
+            degenerate_core_indices = np.where(pairwise_rmsds < .3)[0] #find all cores that are essentially the same structure
 
-            if len(degenerate_core_indices) > 0:
+            if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                 for ind in degenerate_core_indices:
                     del core[ind]
 
-            unique_cores.append(current_core)
+            unique_cores.append(current_core) #add reference core 
 
     else:
         unique_cores = cores 
