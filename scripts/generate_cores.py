@@ -49,7 +49,17 @@ if __name__ == '__main__':
     positive_tasks, negative_tasks = distribute_tasks(path2positives, path2negatives, no_jobs, job_id)
 
     for positive_file in positive_tasks:
-        _ = get_binding_cores.extract_cores(positive_file, path2positive_cores, True)
+        positive_cores = get_binding_cores.extract_cores(positive_file, path2positive_cores,)
+        unique_cores = get_binding_cores.remove_degenerate_cores(positive_cores)
+
+        for core in unique_cores:
+            get_binding_cores.writepdb(core, path2positive_cores)
+            get_binding_cores.write_distance_matrices(core, path2positive_cores)
 
     for negative_file in negative_tasks:
-        _ = get_binding_cores.extract_cores(negative_file, path2negative_cores)
+        negative_cores = get_binding_cores.extract_cores(negative_file, path2negative_cores,)
+        unique_cores = get_binding_cores.remove_degenerate_cores(negative_cores)
+
+        for core in unique_cores:
+            get_binding_cores.writepdb(core, path2negative_cores)
+            get_binding_cores.write_distance_matrices(core, path2negative_cores)
