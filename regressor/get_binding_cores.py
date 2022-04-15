@@ -29,7 +29,31 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
 
     return core_fragment
 
-def extract_cores(pdb_file: str, metal=None, selection_radius=5, no_neighbors=1):
+def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
+    """Helper function for generating file names.
+
+    Args:
+        parent_structure_id (str): The pdb identifier of the parent structure.
+        binding_core_resis (list): List of residue numbers that comprise the binding core.
+        filetype (str): The type of file.
+        extension (str): The file extension.
+        metal (tuple): A tuple containing the element symbol of the metal in all caps and the residue number of said metal. 
+    """
+
+    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + metal[0] + str(metal[1]) + '_' + filetype + extension
+    return filename
+
+def writepdb(core, out_dir: str, metal: str):
+    binding_core_resnums = list(set(core.select('protein').getResnums()))    
+    binding_core_resnums.sort()
+    pdb_id = core.getTitle()
+
+    metal_resnum = core.select('hetero').select(f'name {metal}').getResnums()        
+    filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal, metal_resnum))
+     
+    writePDB(os.path.join(out_dir, filename), core)
+
+def extract_cores(pdb_file: str, metal=None, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
@@ -72,20 +96,6 @@ def extract_cores(pdb_file: str, metal=None, selection_radius=5, no_neighbors=1)
                 continue
     return cores
 
-def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
-    """Helper function for generating file names.
-
-    Args:
-        parent_structure_id (str): The pdb identifier of the parent structure.
-        binding_core_resis (list): List of residue numbers that comprise the binding core.
-        filetype (str): The type of file.
-        extension (str): The file extension.
-        metal (tuple): A tuple containing the element symbol of the metal in all caps and the residue number of said metal. 
-    """
-
-    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + metal[0] + str(metal[1]) + '_' + filetype + extension
-    return filename
-
 def remove_degenerate_cores(cores):
 
     if len(cores) > 1:
@@ -110,17 +120,7 @@ def remove_degenerate_cores(cores):
 
     return unique_cores
 
-def writepdb(core, out_dir: str, metal: str):
-    binding_core_resnums = list(set(core.select('protein').getResnums()))    
-    binding_core_resnums.sort()
-    pdb_id = core.getTitle()
-
-    metal_resnum = core.select('hetero').select(f'name {metal}').getResnums()        
-    filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal, metal_resnum))
-     
-    writePDB(os.path.join(out_dir, filename), core)
-
-def compute_labels(core, binding_core_resnums: list, metal_resnum: int):
+def compute_labels(core, metal_resnum: int):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
 
     Args:
