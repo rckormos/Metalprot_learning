@@ -1,7 +1,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This file contains functions for extracting binding core examples containing 2 to 4 ligands and writing their corresponding distance matrix/ sequence encodings.
+This file contains functions for extracting binding core examples and writing their corresponding distance matrix/ sequence encodings.
 """
 
 #imports
@@ -111,7 +111,7 @@ def remove_degenerate_cores(cores: list):
     Returns:
         unique_cores (list): List of all unique metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
     """
-    
+
     if len(cores) > 1:
         unique_cores = []
         while cores:
