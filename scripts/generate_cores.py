@@ -35,11 +35,10 @@ def distribute_tasks(path2positives: str, path2negatives: str, no_jobs: int, job
 if __name__ == '__main__':
     path2positives = '' #path to positive or negative input structures
     path2negatives = ''
-
     path2positive_cores = '' #path to where you want positive/negative core files dumped to
     path2negative_cores = ''
-
     no_jobs = 100 #number of jobs you are submitting
+    metal = 'ZN'
 
     try: 
         job_id = os.environ['SGE_TASK_ID'] - 1
@@ -49,11 +48,11 @@ if __name__ == '__main__':
     positive_tasks, negative_tasks = distribute_tasks(path2positives, path2negatives, no_jobs, job_id)
 
     for positive_file in positive_tasks:
-        positive_cores = get_binding_cores.extract_cores(positive_file, path2positive_cores,)
+        positive_cores = get_binding_cores.extract_cores(positive_file, path2positive_cores, metal=metal)
         unique_cores = get_binding_cores.remove_degenerate_cores(positive_cores)
 
         for core in unique_cores:
-            get_binding_cores.writepdb(core, path2positive_cores)
+            get_binding_cores.writepdb(core, path2positive_cores, metal=metal)
             get_binding_cores.write_distance_matrices(core, path2positive_cores)
 
     for negative_file in negative_tasks:
