@@ -116,10 +116,15 @@ def remove_degenerate_cores(cores: list):
         unique_cores = []
         while cores:
             current_core = cores.pop() #extract last element in cores
+            current_total_atoms = len(current_core.getResnums())
             pairwise_rmsds = np.array([])
-            for core in cores: #iterate through all cores and compute RMSD with respect to the popped core
-                rmsd = calcRMSD(current_core, core)
-                pairwise_rmsds = np.append(pairwise_rmsds, rmsd)
+            for core in cores: #iterate through all cores 
+                if current_total_atoms == len(core.getResnums()): #if the current cores and core have the same number of atoms, compute RMSD
+                    rmsd = calcRMSD(current_core, core)
+                    pairwise_rmsds = np.append(pairwise_rmsds, rmsd)
+
+                else:
+                    continue
 
             degenerate_core_indices = np.where(pairwise_rmsds < .3)[0] #find all cores that are essentially the same structure
 
