@@ -10,7 +10,7 @@ import numpy as np
 import os
 import pickle
 
-def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int, end_resnum: int):
+def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
     """Finds neighbors of an input coordinating residue.
 
     Args:
@@ -23,9 +23,14 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
         core_fragment (list): List containing resnumbers of coordinating residue and neighbors. 
     """
 
+    chain = structure.select(f'resind {coordinating_resind}').getChids()
+    all_resinds = chain.getResindices()
+    terminal = max(all_resinds)
+    start = min(all_resinds)
+
     extend = np.array(range(-no_neighbors, no_neighbors+1))
-    _core_fragment = np.full((1,len(extend)), coordinating_resnum) + extend
-    core_fragment = list(_core_fragment[ (_core_fragment > start_resnum) & (_core_fragment < end_resnum) ]) #remove nonexisting neighbor residues
+    _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
+    core_fragment = list(_core_fragment[ (_core_fragment > start) & (_core_fragment < terminal) ]) #remove nonexisting neighbor residues
     return core_fragment
 
 def get_terminal_residues(structure):
@@ -91,7 +96,6 @@ def extract_cores(pdb_file: str, no_neighbors=1):
     metal_sel = f'name NI MN ZN CO CU MG FE'
 
     structure = parsePDB(pdb_file) #load structure
-    terminal_resnums = get_terminal_residues(structure)
     all_resnums = structure.select('protein').getResnums()
     start_resnum = min(all_resnums) #compute residue number of first and last AA
     end_resnum = max(all_resnums)
@@ -99,26 +103,25 @@ def extract_cores(pdb_file: str, no_neighbors=1):
     cores = []
     names = []
 
-    metal_resnums = structure.select('hetero').select(metal_sel).getResnums()
+    metal_resindices = structure.select('hetero').select(metal_sel).getResindices()
     metal_names = structure.select('hetero').select(metal_sel).getNames()
 
-    for num, name in zip(metal_resnums, metal_names):
+    for ind, name in zip(metal_resindices, metal_names):
 
         try: #try/except to account for solvating metal ions included for structure determination
-            terminal_selstr = ' '.join(terminal_resnums)
-            coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums() + f'resnum {terminal_selstr}'))
+            coordinating_resindices = list(set(structure.select(f'protein and not carbon and not hydrogen and within 2.83 of resindex {ind}')))
 
         except:
             continue
         
-        if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
-            binding_core_resnums = []
-            for number in coordinating_resnums:
-                core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
-                binding_core_resnums += core_fragment
+        if len(coordinating_resindices) <= 4 and len(coordinating_resindices) >= 2:
+            binding_core_resindices = []
+            for ind in coordinating_resindices:
+                core_fragment = get_neighbors(ind, no_neighbors, start_resnum, end_resnum)
+                binding_core_resindices += core_fragment
 
-            binding_core_resnums.append(num)
-            binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums]))
+            binding_core_resindices.append(ind)
+            binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resindices]))
             cores.append(binding_core)
             names.append(name)
 
