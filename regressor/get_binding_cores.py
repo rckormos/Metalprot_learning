@@ -30,7 +30,7 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     extend = np.array(range(-no_neighbors, no_neighbors+1))
     _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
-    core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment > start) & (_core_fragment < terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
+    core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment >= start) & (_core_fragment <= terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
 
     return core_fragment
 
