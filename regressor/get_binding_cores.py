@@ -28,6 +28,23 @@ def get_neighbors(coordinating_resnum: int, no_neighbors: int, start_resnum: int
     core_fragment = list(_core_fragment[ (_core_fragment > start_resnum) & (_core_fragment < end_resnum) ]) #remove nonexisting neighbor residues
     return core_fragment
 
+def get_terminal_residues(structure):
+    """Obtains all terminal residues for all chains in a given structure.
+
+    Args:
+        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of structure.
+
+    Returns:
+        ters: Residue numbers of terminal residues.
+    """
+    
+    ters = []
+    for chain_id in structure.getChids():
+        ter = max(structure.select(f'chain {chain_id}').getResnums())
+        ters.append(ter)
+
+    return ters
+
 def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
     """Helper function for generating file names.
 
@@ -74,34 +91,40 @@ def extract_cores(pdb_file: str, no_neighbors=1):
     metal_sel = f'name NI MN ZN CO CU MG FE'
 
     structure = parsePDB(pdb_file) #load structure
+    terminal_resnums = get_terminal_residues(structure)
     all_resnums = structure.select('protein').getResnums()
     start_resnum = min(all_resnums) #compute residue number of first and last AA
     end_resnum = max(all_resnums)
 
     cores = []
+    names = []
 
-    for chain_id in set(structure.getChids()): #iterate through all chains
-        chain = structure.select(f'chain {chain_id}')
+    metal_resnums = structure.select('hetero').select(metal_sel).getResnums()
+    metal_names = structure.select('hetero').select(metal_sel).getNames()
 
-        metal_resnums = chain.select('hetero').select(metal_sel).getResnums()
-        metal_names = chain.select('hetero').select(metal_sel).getNames()
+    for num, name in zip(metal_resnums, metal_names):
 
-        for num in metal_resnums:
-            coordinating_resnums = list(set(chain.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
-            
-            if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
-                binding_core_resnums = []
-                for number in coordinating_resnums:
-                    core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
-                    binding_core_resnums += core_fragment
+        try: #try/except to account for solvating metal ions included for structure determination
+            terminal_selstr = ' '.join(terminal_resnums)
+            coordinating_resnums = list(set(structure.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums() + f'resnum {terminal_selstr}'))
 
-                binding_core_resnums.append(num)
-                binding_core = chain.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums]))
-                cores.append(binding_core)
+        except:
+            continue
+        
+        if len(coordinating_resnums) <= 4 and len(coordinating_resnums) >= 2:
+            binding_core_resnums = []
+            for number in coordinating_resnums:
+                core_fragment = get_neighbors(number, no_neighbors, start_resnum, end_resnum)
+                binding_core_resnums += core_fragment
 
-            else:
-                continue
-    return cores, metal_names
+            binding_core_resnums.append(num)
+            binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resnums]))
+            cores.append(binding_core)
+            names.append(name)
+
+        else:
+            continue
+    return cores, names
 
 def remove_degenerate_cores(cores: list, metal_names: list):
     """Function to remove cores that are the same. For example, if the input structure is a homotetramer, this function will only return one of the binding cores.
