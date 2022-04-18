@@ -59,20 +59,19 @@ def writepdb(core, out_dir: str, metal: str):
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
-def extract_cores(pdb_file: str, metal: str, no_neighbors=1):
+def extract_cores(pdb_file: str, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
-        metal (str): The element symbol, in all caps, of the bound metal. 
-        selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
 
     Returns:
-        cores (list): List of lists of putative or known metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+        cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+        metal_names (list): List of metal names indexed by binding core.
     """
 
-    metal_sel = f'name {metal}'
+    metal_sel = f'name NI MN ZN CO CU MG FE'
 
     structure = parsePDB(pdb_file) #load structure
     all_resnums = structure.select('protein').getResnums()
@@ -85,6 +84,8 @@ def extract_cores(pdb_file: str, metal: str, no_neighbors=1):
         chain = structure.select(f'chain {chain_id}')
 
         metal_resnums = chain.select('hetero').select(metal_sel).getResnums()
+        metal_names = chain.select('hetero').select(metal_sel).getNames()
+
         for num in metal_resnums:
             coordinating_resnums = list(set(chain.select(f'resname HIS GLU ASP CYS and within 2.83 of resnum {num}').getResnums())) #Play around with increasing this radius
             
@@ -100,9 +101,9 @@ def extract_cores(pdb_file: str, metal: str, no_neighbors=1):
 
             else:
                 continue
-    return cores
+    return cores, metal_names
 
-def remove_degenerate_cores(cores: list):
+def remove_degenerate_cores(cores: list, metal_names: list):
     """Function to remove cores that are the same. For example, if the input structure is a homotetramer, this function will only return one of the binding cores.
 
     Args:
@@ -110,14 +111,18 @@ def remove_degenerate_cores(cores: list):
 
     Returns:
         unique_cores (list): List of all unique metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+        unique_names (list): List of all metal names indexed by unique binding core.
     """
 
     if len(cores) > 1:
         unique_cores = []
+        unique_names = []
         while cores:
             current_core = cores.pop() #extract last element in cores
+            current_name = metal_names.pop()
             current_total_atoms = len(current_core.getResnums())
             pairwise_rmsds = np.array([])
+
             for core in cores: #iterate through all cores 
                 if current_total_atoms == len(core.getResnums()): #if the current cores and core have the same number of atoms, compute RMSD
                     rmsd = calcRMSD(current_core, core)
@@ -130,16 +135,19 @@ def remove_degenerate_cores(cores: list):
 
             if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                 for ind in degenerate_core_indices:
-                    del core[ind]
+                    del cores[ind]
+                    del metal_names[ind]
 
             unique_cores.append(current_core) #add reference core 
+            unique_names.append(current_name)
 
     else:
         unique_cores = cores 
+        unique_names = metal_names
 
-    return unique_cores
+    return unique_cores, unique_names
 
-def compute_labels(core, metal_resnum: int):
+def compute_labels(core, metal_name: str):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
 
     Args:
@@ -151,13 +159,13 @@ def compute_labels(core, metal_resnum: int):
         distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. As an example, elements 0:4 contain distances between the metal and CA, C, O, and CB atoms of the binding core residue of lowest resnum.
     """
 
-    metal_sel = core.select('hetero').select(f'resnum {metal_resnum}')
+    metal_sel = core.select('hetero').select(f'name {metal_name}')
     binding_core_backbone = core.select('protein').select('name CA C CB O')
     distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
     return distances 
 
-def write_distance_matrices(core, output_dir: str, metal: str):
+def write_distance_matrices(core, output_dir: str, metal_name: str):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -176,11 +184,11 @@ def write_distance_matrices(core, output_dir: str, metal: str):
         backbone_distances = buildDistMatrix(backbone, backbone)
         matrices[atom] = backbone_distances
 
-    matrices['label'] = compute_labels(core, binding_core_resnums, metal)
+    matrices['label'] = compute_labels(core, binding_core_resnums, metal_name)
     matrices['resnums'] = np.array(binding_core_resnums)
 
-    metal_resnum = core.select('hetero').select(metal).getResnums()
-    filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', metal=(metal, metal_resnum))
+    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()
+    filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', (metal_name, metal_resnum))
 
     with open(os.path.join(output_dir, filename), 'wb') as f:
         pickle.dump(matrices, f)
