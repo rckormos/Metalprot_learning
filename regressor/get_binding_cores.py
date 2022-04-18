@@ -42,7 +42,7 @@ def generate_filename(parent_structure_id: str, binding_core_resis: list, filety
     filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + metal[0] + str(metal[1]) + '_' + filetype + extension
     return filename
 
-def writepdb(core, out_dir: str, metal: str):
+def writepdb(core, out_dir: str, metal_name: str):
     """Generates a pdb file for an input core
 
     Args:
@@ -54,8 +54,8 @@ def writepdb(core, out_dir: str, metal: str):
     binding_core_resnums.sort()
     pdb_id = core.getTitle()
 
-    metal_resnum = core.select('hetero').select(f'name {metal}').getResnums() #get the residue number of the metal for output file title         
-    filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal, metal_resnum))
+    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums() #get the residue number of the metal for output file title         
+    filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal_name, metal_resnum))
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
