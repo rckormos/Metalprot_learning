@@ -59,12 +59,12 @@ def writepdb(core, out_dir: str, metal: str):
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
-def extract_cores(pdb_file: str, metal=None, no_neighbors=1):
+def extract_cores(pdb_file: str, metal: str, no_neighbors=1):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
-        metal (str, optional): The element symbol, in all caps, of the bound metal. Defaults to None.
+        metal (str): The element symbol, in all caps, of the bound metal. 
         selection_radius (float, optional): Defines the radius, in angstroms, in which the function looks for other coordinating residues. Defaults to 5.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
 
@@ -157,14 +157,14 @@ def compute_labels(core, metal_resnum: int):
 
     return distances 
 
-def write_distance_matrices(core, output_dir: str, metal=None):
+def write_distance_matrices(core, output_dir: str, metal: str):
     """Generates binding core backbone distances and label files.
 
     Args:
         structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
         output_dir (str): Path to the directory to dump output files.
         binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
-        metal (str, optional): Element symbol of bound metal in all caps. Defaults to None.
+        metal (str): Element symbol of bound metal in all caps.
     """
 
     matrices = {}
