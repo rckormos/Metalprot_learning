@@ -176,7 +176,7 @@ def write_distance_matrices(core, output_dir: str, metal: str):
         backbone_distances = buildDistMatrix(backbone, backbone)
         matrices[atom] = backbone_distances
 
-    matrices['label'] = compute_labels(structure, binding_core_resnums, metal)
+    matrices['label'] = compute_labels(core, binding_core_resnums, metal)
     matrices['resnums'] = np.array(binding_core_resnums)
 
     metal_resnum = core.select('hetero').select(metal).getResnums()
