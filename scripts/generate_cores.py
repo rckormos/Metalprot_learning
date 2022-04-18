@@ -10,55 +10,44 @@ the number of jobs in this script and in the aforementioned submission script.
 #imports 
 import os
 import sys 
-sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'src'))
-from extractor import get_binding_cores
+sys.path.append(os.path.join(os.path.dirname(sys.path[0]),'regressor'))
+from regressor import get_binding_cores
 
-def distribute_tasks(path2positives: str, path2negatives: str, no_jobs: int, job_id: int):
+def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     """Distributes pdb files for core generation.
 
     Args:
-        path2positives (str): Path to directory containing positive examples.
-        path2negatives (str): Path to directory containing negative examples.
+        path2examples (str): Path to directory containing examples.
         no_jobs (int): Total number of jobs.
         job_id (int): The job id.
 
     Returns:
-        _type_: _description_
+        tasks (list): list of pdb files assigned to particular job id.
     """
-    positive_pdbs = [file for file in os.listdir(path2positives) if '.pdb' in file]
-    negative_pdbs = [file for file in os.listidr(path2negatives) if '.pbd' in file]
+    pdbs = [file for file in os.listdir(path2examples) if '.pdb' in file]
+    tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
 
-    positive_tasks = [positive_pdbs[i] for i in range(0, len(positive_pdbs)) if i % no_jobs == job_id]
-    negative_tasks = [negative_pdbs[i] for i in range(0, len(negative_pdbs)) if i % no_jobs == job_id]
-    return positive_tasks, negative_tasks
+    return tasks
 
 if __name__ == '__main__':
-    path2positives = '' #path to positive or negative input structures
-    path2negatives = ''
-    path2positive_cores = '' #path to where you want positive/negative core files dumped to
-    path2negative_cores = ''
-    no_jobs = 100 #number of jobs you are submitting
-    metal = 'ZN'
+    path2examples = '' #path to positive or negative input structures
+    path2output = '' #path to where you want positive
+    # no_jobs = 100 #number of jobs you are submitting
 
-    try: 
-        job_id = os.environ['SGE_TASK_ID'] - 1
-    except:
-        job_id = 0
+    # try: 
+    #     job_id = os.environ['SGE_TASK_ID'] - 1
+    # except:
+    #     job_id = 0
 
-    positive_tasks, negative_tasks = distribute_tasks(path2positives, path2negatives, no_jobs, job_id)
+    no_jobs = 1
+    job_id = 0
 
-    for positive_file in positive_tasks:
-        positive_cores = get_binding_cores.extract_cores(positive_file, path2positive_cores, metal=metal)
-        unique_cores = get_binding_cores.remove_degenerate_cores(positive_cores)
+    tasks = distribute_tasks(path2examples, no_jobs, job_id)
 
-        for core in unique_cores:
-            get_binding_cores.writepdb(core, path2positive_cores, metal=metal)
-            get_binding_cores.write_distance_matrices(core, path2positive_cores)
+    for file in tasks:
+        cores, names = get_binding_cores.extract_cores(file)
+        unique_cores, unique_names = get_binding_cores.remove_degenerate_cores(cores, names)
 
-    for negative_file in negative_tasks:
-        negative_cores = get_binding_cores.extract_cores(negative_file, path2negative_cores,)
-        unique_cores = get_binding_cores.remove_degenerate_cores(negative_cores)
-
-        for core in unique_cores:
-            get_binding_cores.writepdb(core, path2negative_cores)
-            get_binding_cores.write_distance_matrices(core, path2negative_cores)
+        for core, name in zip(unique_cores, unique_names):
+            get_binding_cores.writepdb(core, path2output, name)
+            get_binding_cores.write_distance_matrices(core, path2output, name)
