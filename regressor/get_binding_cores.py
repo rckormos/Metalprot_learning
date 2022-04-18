@@ -23,32 +23,16 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
         core_fragment (list): List containing resnumbers of coordinating residue and neighbors. 
     """
 
-    chain = structure.select(f'resind {coordinating_resind}').getChids()
-    all_resinds = chain.getResindices()
+    chain_id = list(set(structure.select(f'resindex {coordinating_resind}').getChids()))[0]
+    all_resinds = structure.select(f'chain {chain_id}').select('protein').getResindices()
     terminal = max(all_resinds)
     start = min(all_resinds)
 
     extend = np.array(range(-no_neighbors, no_neighbors+1))
     _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
-    core_fragment = list(_core_fragment[ (_core_fragment > start) & (_core_fragment < terminal) ]) #remove nonexisting neighbor residues
+    core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment > start) & (_core_fragment < terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
+
     return core_fragment
-
-def get_terminal_residues(structure):
-    """Obtains all terminal residues for all chains in a given structure.
-
-    Args:
-        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of structure.
-
-    Returns:
-        ters: Residue numbers of terminal residues.
-    """
-    
-    ters = []
-    for chain_id in structure.getChids():
-        ter = max(structure.select(f'chain {chain_id}').getResnums())
-        ters.append(ter)
-
-    return ters
 
 def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
     """Helper function for generating file names.
@@ -61,7 +45,7 @@ def generate_filename(parent_structure_id: str, binding_core_resis: list, filety
         metal (tuple): A tuple containing the element symbol of the metal in all caps and the residue number of said metal. 
     """
 
-    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + metal[0] + str(metal[1]) + '_' + filetype + extension
+    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + '_' + metal[0] + str(metal[1]) + '_' + filetype + extension
     return filename
 
 def writepdb(core, out_dir: str, metal_name: str):
@@ -76,8 +60,8 @@ def writepdb(core, out_dir: str, metal_name: str):
     binding_core_resnums.sort()
     pdb_id = core.getTitle()
 
-    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums() #get the residue number of the metal for output file title         
-    filename = generate_filename(pdb_id, binding_core_resnums, '', '.pdb', metal=(metal_name, metal_resnum))
+    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0] #get the residue number of the metal for output file title         
+    filename = generate_filename(pdb_id, binding_core_resnums, 'core', '.pdb', (metal_name, metal_resnum))
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
@@ -94,11 +78,7 @@ def extract_cores(pdb_file: str, no_neighbors=1):
     """
 
     metal_sel = f'name NI MN ZN CO CU MG FE'
-
     structure = parsePDB(pdb_file) #load structure
-    all_resnums = structure.select('protein').getResnums()
-    start_resnum = min(all_resnums) #compute residue number of first and last AA
-    end_resnum = max(all_resnums)
 
     cores = []
     names = []
@@ -106,10 +86,10 @@ def extract_cores(pdb_file: str, no_neighbors=1):
     metal_resindices = structure.select('hetero').select(metal_sel).getResindices()
     metal_names = structure.select('hetero').select(metal_sel).getNames()
 
-    for ind, name in zip(metal_resindices, metal_names):
+    for metal_ind, name in zip(metal_resindices, metal_names):
 
         try: #try/except to account for solvating metal ions included for structure determination
-            coordinating_resindices = list(set(structure.select(f'protein and not carbon and not hydrogen and within 2.83 of resindex {ind}')))
+            coordinating_resindices = list(set(structure.select(f'protein and not carbon and not hydrogen and within 2.83 of resindex {metal_ind}').getResindices()))
 
         except:
             continue
@@ -117,11 +97,11 @@ def extract_cores(pdb_file: str, no_neighbors=1):
         if len(coordinating_resindices) <= 4 and len(coordinating_resindices) >= 2:
             binding_core_resindices = []
             for ind in coordinating_resindices:
-                core_fragment = get_neighbors(ind, no_neighbors, start_resnum, end_resnum)
+                core_fragment = get_neighbors(structure, ind, no_neighbors)
                 binding_core_resindices += core_fragment
 
-            binding_core_resindices.append(ind)
-            binding_core = structure.select('resnum ' + ' '.join([str(num) for num in binding_core_resindices]))
+            binding_core_resindices.append(metal_ind)
+            binding_core = structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
             cores.append(binding_core)
             names.append(name)
 
@@ -202,7 +182,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
     """
 
     matrices = {}
-    binding_core_resnums = list(set(core.getResnums()))
+    binding_core_resnums = list(set(core.select('protein').getResnums()))
     binding_core_resnums.sort()
 
     for atom in ['CA', 'CB', 'C', 'N']:
@@ -213,7 +193,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
     matrices['label'] = compute_labels(core, metal_name)
     matrices['resnums'] = np.array(binding_core_resnums)
 
-    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()
+    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0]
     filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', (metal_name, metal_resnum))
 
     with open(os.path.join(output_dir, filename), 'wb') as f:
