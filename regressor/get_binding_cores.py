@@ -199,6 +199,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
         backbone_distances = buildDistMatrix(backbone, backbone)
         matrices[atom] = backbone_distances
 
+    matrices['full'] = buildDistMatrix(core.select('protein'), core.select('protein'))
     matrices['label'] = compute_labels(core, metal_name)
     matrices['resnums'] = np.array(binding_core_resnums)
 
