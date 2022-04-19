@@ -191,8 +191,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
     """
 
     matrices = {}
-    binding_core_resnums = list(set(core.select('protein').getResnums()))
-    binding_core_resnums.sort()
+    binding_core_resnums = core.select('protein').select('name N').getResnums()
 
     for atom in ['CA', 'CB', 'C', 'N']:
         backbone = core.select('protein').select('name ' + atom)
