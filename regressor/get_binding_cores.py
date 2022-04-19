@@ -120,6 +120,8 @@ def remove_degenerate_cores(cores: list, metal_names: list):
         unique_names (list): List of all metal names indexed by unique binding core.
     """
 
+    #TODO Update method to do structural alignment. For some reason, ProDy was not doing this properly.
+
     if len(cores) > 1:
         unique_cores = []
         unique_names = []
