@@ -191,7 +191,6 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
 
     matrices = {}
     binding_core_resnums = core.select('protein').select('name N').getResnums()
-    print(binding_core_resnums)
 
     for atom in ['CA', 'CB', 'C', 'N']:
         backbone = core.select('protein').select('name ' + atom)
@@ -201,7 +200,6 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
     matrices['full'] = buildDistMatrix(core.select('protein'), core.select('protein'))
     matrices['label'] = compute_labels(core, metal_name)
     matrices['resnums'] = binding_core_resnums
-    print(matrices['resnums'])
 
     metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0]
     filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', (metal_name, metal_resnum))
