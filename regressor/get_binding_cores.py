@@ -174,7 +174,7 @@ def compute_labels(core, metal_name: str):
     """
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
-    binding_core_backbone = core.select('protein').select('name CA C CB O')
+    binding_core_backbone = core.select('protein').select('name CA C CB N')
     distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
     return distances 
