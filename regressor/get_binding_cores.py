@@ -139,8 +139,6 @@ def remove_degenerate_cores(cores: list, metal_names: list):
                     reference, target, seqid, overlap = matchChains(current_core.select('protein'), core.select('protein'))[0]
                     pairwise_seqids = np.append(pairwise_seqids, seqid)
                     pairwise_overlap = np.append(pairwise_overlap, overlap)
-                    print(pairwise_seqids)
-                    print(pairwise_overlap)
 
                 else:
                     continue
