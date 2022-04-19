@@ -127,17 +127,26 @@ def remove_degenerate_cores(cores: list, metal_names: list):
             current_core = cores.pop() #extract last element in cores
             current_name = metal_names.pop()
             current_total_atoms = len(current_core.getResnums())
-            pairwise_rmsds = np.array([])
+            current_core.setChids('A')
+
+
+            pairwise_seqids = np.array([])
+            pairwise_overlap = np.array([])
 
             for core in cores: #iterate through all cores 
-                if current_total_atoms == len(core.getResnums()): #if the current cores and core have the same number of atoms, compute RMSD
-                    rmsd = calcRMSD(current_core, core)
-                    pairwise_rmsds = np.append(pairwise_rmsds, rmsd)
+                core.setChids('B')
+                if current_total_atoms == len(core.getResnums()): #if the current cores and core have the same number of atoms, compute RMSD    
+                    reference, target, seqid, overlap = matchChains(current_core.select('protein'), core.select('protein'))[0]
+                    pairwise_seqids = np.append(pairwise_seqids, seqid)
+                    pairwise_overlap = np.append(pairwise_overlap, overlap)
+                    print(pairwise_seqids)
+                    print(pairwise_overlap)
 
                 else:
                     continue
 
-            degenerate_core_indices = np.where(pairwise_rmsds < .3)[0] #find all cores that are essentially the same structure
+            degenerate_core_indices = list(set(np.where(pairwise_seqids == 100)[0]).intersection(set(np.where(pairwise_overlap == 100)[0]))) #find all cores that are essentially the same structure
+
 
             if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                 for ind in degenerate_core_indices:
