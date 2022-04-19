@@ -56,8 +56,7 @@ def writepdb(core, out_dir: str, metal_name: str):
         out_dir (str): Path to output directory.
         metal (str): The element symbol of the bound metal in all caps.
     """
-    binding_core_resnums = list(set(core.select('protein').getResnums())) #get all core residue numbers
-    binding_core_resnums.sort()
+    binding_core_resnums = core.select('protein').select('name N').getResnums() #get all core residue numbers
     pdb_id = core.getTitle()
 
     metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0] #get the residue number of the metal for output file title         
@@ -192,6 +191,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
 
     matrices = {}
     binding_core_resnums = core.select('protein').select('name N').getResnums()
+    print(binding_core_resnums)
 
     for atom in ['CA', 'CB', 'C', 'N']:
         backbone = core.select('protein').select('name ' + atom)
@@ -200,7 +200,8 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
 
     matrices['full'] = buildDistMatrix(core.select('protein'), core.select('protein'))
     matrices['label'] = compute_labels(core, metal_name)
-    matrices['resnums'] = np.array(binding_core_resnums)
+    matrices['resnums'] = binding_core_resnums
+    print(matrices['resnums'])
 
     metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0]
     filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', (metal_name, metal_resnum))
