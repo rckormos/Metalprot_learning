@@ -64,12 +64,13 @@ def writepdb(core, out_dir: str, metal_name: str):
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
-def extract_cores(pdb_file: str, no_neighbors=1):
+def extract_cores(pdb_file: str, no_neighbors=1, coordinating_resis=4):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
         no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
+        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
 
     Returns:
         cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
@@ -93,7 +94,7 @@ def extract_cores(pdb_file: str, no_neighbors=1):
         except:
             continue
         
-        if len(coordinating_resindices) <= 4 and len(coordinating_resindices) >= 2:
+        if len(coordinating_resindices) <= coordinating_resis and len(coordinating_resindices) >= 2:
             binding_core_resindices = []
             for ind in coordinating_resindices:
                 core_fragment = get_neighbors(structure, ind, no_neighbors)
@@ -161,13 +162,15 @@ def remove_degenerate_cores(cores: list, metal_names: list):
 
     return unique_cores, unique_names
 
-def compute_labels(core, metal_name: str):
+def compute_labels(core, metal_name: str, no_neighbors=1, coordinating_resis=4):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
 
     Args:
         structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
         binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
-        metal (int): Defines the residue number of the bound metal.
+        metal (str): Element name of bound metal.
+        no_neighbors (int, optional): Number of neighbors in primary sequence. Defaults to 1.
+        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
 
     Returns:
         distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. As an example, elements 0:4 contain distances between the metal and CA, C, O, and CB atoms of the binding core residue of lowest resnum.
@@ -177,9 +180,12 @@ def compute_labels(core, metal_name: str):
     binding_core_backbone = core.select('protein').select('name CA C CB N')
     distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
+    max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors)) #standardize shape of label matrix
+    distances.resize((1, distances.shape[1] - (max_atoms-distances.shape[1])))
+
     return distances 
 
-def write_distance_matrices(core, output_dir: str, metal_name: str):
+def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors=1, coordinating_resis=4):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -187,18 +193,30 @@ def write_distance_matrices(core, output_dir: str, metal_name: str):
         output_dir (str): Path to the directory to dump output files.
         binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
         metal (str): Element symbol of bound metal in all caps.
+        no_neighbors (int, optional): Number of neighbors in primary sequence. Defaults to 1.
+        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
     """
 
     matrices = {}
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
+    max_resis = coordinating_resis + (2*coordinating_resis*no_neighbors)
     for atom in ['CA', 'CB', 'C', 'N']:
         backbone = core.select('protein').select('name ' + atom)
         backbone_distances = buildDistMatrix(backbone, backbone)
+
+        padding = max_resis - backbone_distances.shape[0] #standardize shape of distance matrices
+        backbone_distances = np.lib.pad(backbone_distances, ((0,padding), (0,padding)), 'constant', constant_values=0)
         matrices[atom] = backbone_distances
 
+    max_atoms = 4*max_resis
     binding_core_backbone = core.select('protein').select('name CA CB C N')
-    matrices['full'] = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+    full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+    
+    padding = max_atoms - full_dist_mat.shape[0]
+    full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
+
+    matrices['full'] = full_dist_mat
     matrices['label'] = compute_labels(core, metal_name)
     matrices['resnums'] = binding_core_resnums
 
