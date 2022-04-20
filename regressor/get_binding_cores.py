@@ -177,7 +177,7 @@ def compute_labels(core, metal_name: str, no_neighbors=1, coordinating_resis=4):
     """
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
-    binding_core_backbone = core.select('protein').select('name CA C CB N')
+    binding_core_backbone = core.select('protein').select('name CA C O N')
     distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
     max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors)) #standardize shape of label matrix
@@ -201,7 +201,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
     max_resis = coordinating_resis + (2*coordinating_resis*no_neighbors)
-    for atom in ['CA', 'CB', 'C', 'N']:
+    for atom in ['CA', 'O', 'C', 'N']:
         backbone = core.select('protein').select('name ' + atom)
         backbone_distances = buildDistMatrix(backbone, backbone)
 
@@ -210,7 +210,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors
         matrices[atom] = backbone_distances
 
     max_atoms = 4*max_resis
-    binding_core_backbone = core.select('protein').select('name CA CB C N')
+    binding_core_backbone = core.select('protein').select('name CA O C N')
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
     
     padding = max_atoms - full_dist_mat.shape[0]
