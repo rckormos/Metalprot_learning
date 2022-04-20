@@ -181,7 +181,7 @@ def compute_labels(core, metal_name: str, no_neighbors=1, coordinating_resis=4):
     distances = buildDistMatrix(metal_sel, binding_core_backbone)
 
     max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors)) #standardize shape of label matrix
-    padding = max_atoms = distances.shape[1]
+    padding = max_atoms - distances.shape[1]
     distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
     return distances 
 
