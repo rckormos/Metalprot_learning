@@ -33,7 +33,7 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     return core_fragment
 
-def generate_filename(parent_structure_id: str, binding_core_resis: list, filetype: str, extension: str, metal: tuple):
+def generate_filename(parent_structure_id: str, binding_core_resis: list, metal: tuple):
     """Helper function for generating file names.
 
     Args:
@@ -44,25 +44,30 @@ def generate_filename(parent_structure_id: str, binding_core_resis: list, filety
         metal (tuple): A tuple containing the element symbol of the metal in all caps and the residue number of said metal. 
     """
 
-    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + '_' + metal[0] + str(metal[1]) + '_' + filetype + extension
+    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + '_' + metal[0] + str(metal[1])
     return filename
 
-def writepdb(core, out_dir: str, metal_name: str):
+def write_pdb(core, out_dir: str, filename: str):
     """Generates a pdb file for an input core
 
     Args:
         core (prody.atomic.atomgroup.AtomGroup): AtomGroup of binding core.
         metal (str): The element symbol of the bound metal in all caps.
     """
-    binding_core_resnums = core.select('protein').select('name N').getResnums() #get all core residue numbers
-    pdb_id = core.getTitle()
 
-    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0] #get the residue number of the metal for output file title         
-    filename = generate_filename(pdb_id, binding_core_resnums, 'core', '.pdb', (metal_name, metal_resnum))
-     
-    writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
+    writePDB(os.path.join(out_dir, filename + '_core.pdb'), core) #write core to a pdb file
 
-def extract_cores(pdb_file: str, no_neighbors, coordinating_resis):
+def write_features(features: dict, out_dir: str, filename: str):
+    """Writes a pickle file to hold feature information for a given core.
+
+    Args:
+        features (dict): Holds distance matrices for a given core.
+    """
+
+    with open(os.path.join(out_dir, filename + '_features.pkl'), 'wb') as f:
+        pickle.dump(features, f)
+
+def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
     """Finds all putative metal binding cores in an input protein structure.
 
     Returns:
@@ -171,7 +176,7 @@ def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
     return distances 
 
-def compute_distance_matrices(core, no_neighbors, coordinating_resis):
+def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
     """Generates binding core backbone distances and label files.
 
     Returns:
@@ -202,9 +207,36 @@ def compute_distance_matrices(core, no_neighbors, coordinating_resis):
 
     return distance_matrices
 
-def onehotencode():
-    pass
+def onehotencode(core, no_neighbors: int, coordinating_resis: int):
+    """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
 
+    Returns:
+        seq_channels (np.ndarray): array of encodings for 
+    """
+    seq = core.select('name CA').getResnames()
+    threelettercodes = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLU', 'GLN', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', \
+                        'MET','PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
+
+    encoding = np.array([[]])
+
+    for i in range(len(seq)):
+        aa = str(seq[i])
+        try:
+            idx = threelettercodes.index(aa)
+            one_hot = np.zeros((1,20))
+            one_hot[0,idx] = 1
+        except:
+            print('Resname of following atom not found: {}'.format(aa))
+            continue
+
+        encoding = np.concatenate((encoding, one_hot), axis=1)
+
+    max_resis = coordinating_resis +  (coordinating_resis * no_neighbors * 2)
+    padding = 20 * (max_resis - len(seq))
+    encoding = np.concatenate((encoding, np.zeros((1,padding))), axis=1)
+
+    return encoding
+    
 def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
     """For a given pdb file, constructs a training example and extracts all features.
 
@@ -214,18 +246,22 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         no_neighbors (int, optional): Number of neighbors in primary sequence to coordinating residues be included in core. Defaults to 1.
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
-    _features = []
+
+    _features = {}
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
 
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
-        _distance_matrices = compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
-        encoding = onehotencode()
+        _distance_matrices = compute_distance_matrices(core, no_neighbors, coordinating_resis)
+        encoding = onehotencode(core, no_neighbors, coordinating_resis)
 
         _features['label'] = label
         _features['encoding'] = encoding
-        features = _features | _distance_matrices
+        features = {**_distance_matrices, **_features}
 
+        metal_resnum = core.select(f'name {name}').getResnums()[0]
+        filename = generate_filename(core.getTitle(), core.select('name N').getResnums(), (name, metal_resnum))
 
-    pass
+        write_pdb(core, output_dir, filename)
+        write_features(features, output_dir, filename)
