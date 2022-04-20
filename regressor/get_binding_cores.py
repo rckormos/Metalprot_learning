@@ -64,13 +64,13 @@ def writepdb(core, out_dir: str, metal_name: str):
      
     writePDB(os.path.join(out_dir, filename), core) #write core to a pdb file
 
-def extract_cores(pdb_file: str, no_neighbors=1, coordinating_resis=4):
+def extract_cores(pdb_file: str, no_neighbors, coordinating_resis):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
         pdb_file (str): Path to pdb file.
-        no_neighbors (int, optional): Defines the number of neighboring residues from coordinating residues to include in binding core.
-        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
+        no_neighbors (int): Defines the number of neighboring residues from coordinating residues to include in binding core.
+        coordinating_resis (int): Upper limit on the number of coordinating residues.
 
     Returns:
         cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
@@ -162,15 +162,15 @@ def remove_degenerate_cores(cores: list, metal_names: list):
 
     return unique_cores, unique_names
 
-def compute_labels(core, metal_name: str, no_neighbors=1, coordinating_resis=4):
+def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
 
     Args:
         structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
         binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
         metal (str): Element name of bound metal.
-        no_neighbors (int, optional): Number of neighbors in primary sequence. Defaults to 1.
-        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
+        no_neighbors (int): Number of neighbors in primary sequence.
+        coordinating_resis (int): Upper limit on the number of coordinating residues.
 
     Returns:
         distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. As an example, elements 0:4 contain distances between the metal and CA, C, O, and CB atoms of the binding core residue of lowest resnum.
@@ -185,7 +185,7 @@ def compute_labels(core, metal_name: str, no_neighbors=1, coordinating_resis=4):
     distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
     return distances 
 
-def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors=1, coordinating_resis=4):
+def compute_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors=1, coordinating_resis=4):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -197,7 +197,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors
         coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
     """
 
-    matrices = {}
+    distance_matrices = {}
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
     max_resis = coordinating_resis + (2*coordinating_resis*no_neighbors)
@@ -207,7 +207,7 @@ def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors
 
         padding = max_resis - backbone_distances.shape[0] #standardize shape of distance matrices
         backbone_distances = np.lib.pad(backbone_distances, ((0,padding), (0,padding)), 'constant', constant_values=0)
-        matrices[atom] = backbone_distances
+        distance_matrices[atom] = backbone_distances
 
     max_atoms = 4*max_resis
     binding_core_backbone = core.select('protein').select('name CA O C N')
@@ -216,12 +216,27 @@ def write_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
 
-    matrices['full'] = full_dist_mat
-    matrices['label'] = compute_labels(core, metal_name)
-    matrices['resnums'] = binding_core_resnums
+    distance_matrices['full'] = full_dist_mat
+    distance_matrices['resnums'] = binding_core_resnums
 
-    metal_resnum = core.select('hetero').select(f'name {metal_name}').getResnums()[0]
-    filename = generate_filename(core.getTitle(), binding_core_resnums, 'distances', '.pkl', (metal_name, metal_resnum))
+    return distance_matrices
 
-    with open(os.path.join(output_dir, filename), 'wb') as f:
-        pickle.dump(matrices, f)
+def onehotencode():
+    pass
+
+def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
+    _features = []
+    cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
+    unique_cores, unique_names = remove_degenerate_cores(cores, names)
+
+    for core, name in zip(unique_cores, unique_names):
+        label = compute_labels(core, name, no_neighbors, coordinating_resis)
+        _distance_matrices = compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
+        encoding = onehotencode()
+
+        _features['label'] = label
+        _features['encoding'] = encoding
+        features = _features | _distance_matrices
+
+
+    pass
