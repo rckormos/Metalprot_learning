@@ -9,6 +9,7 @@ the number of jobs in this script and in the aforementioned submission script.
 
 #imports 
 import os
+from webbrowser import get
 from regressor import get_binding_cores
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
@@ -30,12 +31,6 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
 if __name__ == '__main__':
     path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data' #path to positive or negative input structures
     path2output = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data/outputs' #path to where you want positive
-    # no_jobs = 100 #number of jobs you are submitting
-
-    # try: 
-    #     job_id = os.environ['SGE_TASK_ID'] - 1
-    # except:
-    #     job_id = 0
 
     no_jobs = 1
     job_id = 0
@@ -43,9 +38,5 @@ if __name__ == '__main__':
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
 
     for file in tasks:
-        cores, names = get_binding_cores.extract_cores(file)
-        unique_cores, unique_names = get_binding_cores.remove_degenerate_cores(cores, names)
-
-        for core, name in zip(unique_cores, unique_names):
-            get_binding_cores.writepdb(core, path2output, name)
-            get_binding_cores.write_distance_matrices(core, path2output, name)
+        print(file)
+        get_binding_cores.construct_training_example(file, path2output) 
