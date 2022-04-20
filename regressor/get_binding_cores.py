@@ -15,7 +15,6 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     Args:
         coordinating_resnum (int): Residue number of coordinatign residue.
-        no_neighbors (int): Number of neighbors desired.
         start_resnum (int): Very first residue number in input structure.
         end_resnum (int): Very last residue number in input structure.
 
@@ -53,7 +52,6 @@ def writepdb(core, out_dir: str, metal_name: str):
 
     Args:
         core (prody.atomic.atomgroup.AtomGroup): AtomGroup of binding core.
-        out_dir (str): Path to output directory.
         metal (str): The element symbol of the bound metal in all caps.
     """
     binding_core_resnums = core.select('protein').select('name N').getResnums() #get all core residue numbers
@@ -66,11 +64,6 @@ def writepdb(core, out_dir: str, metal_name: str):
 
 def extract_cores(pdb_file: str, no_neighbors, coordinating_resis):
     """Finds all putative metal binding cores in an input protein structure.
-
-    Args:
-        pdb_file (str): Path to pdb file.
-        no_neighbors (int): Defines the number of neighboring residues from coordinating residues to include in binding core.
-        coordinating_resis (int): Upper limit on the number of coordinating residues.
 
     Returns:
         cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
@@ -165,13 +158,6 @@ def remove_degenerate_cores(cores: list, metal_names: list):
 def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
 
-    Args:
-        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
-        binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
-        metal (str): Element name of bound metal.
-        no_neighbors (int): Number of neighbors in primary sequence.
-        coordinating_resis (int): Upper limit on the number of coordinating residues.
-
     Returns:
         distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. As an example, elements 0:4 contain distances between the metal and CA, C, O, and CB atoms of the binding core residue of lowest resnum.
     """
@@ -185,16 +171,11 @@ def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
     return distances 
 
-def compute_distance_matrices(core, output_dir: str, metal_name: str, no_neighbors=1, coordinating_resis=4):
+def compute_distance_matrices(core, no_neighbors, coordinating_resis):
     """Generates binding core backbone distances and label files.
 
-    Args:
-        structure (prody.atomic.atomgroup.AtomGroup): AtomGroup of the whole structure.
-        output_dir (str): Path to the directory to dump output files.
-        binding_core_resnums (list): List of binding core residue numbers. Note that this should be a sorted list.
-        metal (str): Element symbol of bound metal in all caps.
-        no_neighbors (int, optional): Number of neighbors in primary sequence. Defaults to 1.
-        coordinating_resis (int, optional): Upper limit on the number of coordinating residues. Defaults to 4.
+    Returns:
+        distance_matrices (dict): Dictionary containing distance matrices and a numpy array of resnums that index these matrices.
     """
 
     distance_matrices = {}
@@ -225,6 +206,14 @@ def onehotencode():
     pass
 
 def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
+    """For a given pdb file, constructs a training example and extracts all features.
+
+    Args:
+        pdb_file (str): Path to input pdb file.
+        output_dir (str): Path to output directory.
+        no_neighbors (int, optional): Number of neighbors in primary sequence to coordinating residues be included in core. Defaults to 1.
+        coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
+    """
     _features = []
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
