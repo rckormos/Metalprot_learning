@@ -8,11 +8,7 @@ This file contains functions for preprocessing and manipulating data for model t
 import os
 import pickle
 import numpy as np
-
 import torch
-from torch import nn
-from torch.utils.data import DataLoader
-from torchvision import datasets, transforms
 
 class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
@@ -28,6 +24,36 @@ class DistanceData(torch.utils.data.Dataset):
         observation = self.observations[index]
         label = self.labels[index]
         return observation, label
+
+def get_contiguous_resnums(resnums: np.ndarray):
+    resnums = list(resnums)
+    fragments = []
+    for resnum in resnums:
+        fragment = []
+        print(f'resnum: {resnum}')
+        resnums.remove(resnum)
+        fragment.append(resnum)
+        queue = [i for i in resnums if abs(i-resnum)==1]
+
+        while len(queue) != 0:
+            current = queue.pop()
+            print(f'current queue: {current}')
+            fragment.append(current)
+            resnums.remove(current)
+            queue += [i for i in resnums if abs(i-current)==1]
+
+        fragments.sort()
+        fragments.append(fragment)
+
+    fragment_indices = []
+    for fragment in fragments:
+        fragment_indices.append([resnums.index(i) for i in fragment])
+
+    return fragment_indices
+
+def permute_inputs(X: np.ndarray, y: np.ndarray, resnums: np.ndarray):
+    
+    pass
 
 def process_features(path2features: str):
     """Reads in pickle files containing features for cores and writes them into model-readable form.
@@ -52,6 +78,7 @@ def process_features(path2features: str):
         distance_mat = data['full'] #get distance matrices, encodings, and labels
         encoding = data['encoding'].squeeze()
         label = data['label'].squeeze()
+        resnums = data['resnums'].squeeze()
 
         x = list(np.concatenate((distance_mat.flatten(), encoding))) #reshape and merge as necessary
         y = list(label)
@@ -76,7 +103,7 @@ def split_data(X: np.ndarray, y: np.ndarray, train_prop=0.8):
 
     Returns:
         training_data (__main__.DistanceData): Dataset object of training data.
-        validation_data (__main__.DistanceDat): Dataset object of validation data.
+        validation_data (__main__.DistanceData): Dataset object of validation data.
     """
 
     training_size = int(train_prop * X.shape[0])
