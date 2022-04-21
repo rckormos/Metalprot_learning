@@ -1,7 +1,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This file contains functions for preprocessing data for model training.
+This file contains functions for preprocessing and manipulating data for model training.
 """
 
 #imports 
@@ -14,7 +14,7 @@ from torch import nn
 from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
-class DistanceData(torch.utils.Dataset):
+class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
 
     def __init__(self, observations, labels):
@@ -61,22 +61,28 @@ def process_features(path2features: str):
     X = np.array(X)
     Y = np.array(Y)
 
-    np.savetxt(os.path.join(path2features, 'observations'), X)
-    np.savetxt(os.path.join(path2features, 'labels'), Y)    
+    np.savetxt(os.path.join(path2features, 'observations.txt'), X)
+    np.savetxt(os.path.join(path2features, 'labels.txt'), Y)    
 
     return X, Y    
 
-def split_data(X: np.ndarray, y: np.ndarray, train_size=0.8):
-    full = np.concatenate((X,y), axis=1)
-    split_index = X.shape[1]
-    train_dataset, test_dataset = torch.utils.data.random_split(full, [train_size, 1-train_size])
+def split_data(X: np.ndarray, y: np.ndarray, train_prop=0.8):
+    """Splits data into training and test sets.
 
-    X_train = train_dataset[:,0:split_index]
-    y_train = train_dataset[:,split_index:]
-    training_data = DistanceData(X_train, y_train)
+    Args:
+        X (np.ndarray): Observation data.
+        y (np.ndarray): Label data.
+        train_size (float, optional): The proportion of data to be paritioned into the training set. Defaults to 0.8.
 
-    X_val = test_dataset[:,0:split_index]
-    y_val = test_dataset[:,split_index:]
-    validation_data = DistanceData(X_val, y_val)
+    Returns:
+        training_data (__main__.DistanceData): Dataset object of training data.
+        validation_data (__main__.DistanceDat): Dataset object of validation data.
+    """
+
+    training_size = int(train_prop * X.shape[0])
+    indices = np.random.permutation(X.shape[0])
+    training_indices, val_indices = indices[:training_size], indices[training_size:]
+    X_train, y_train, X_val, y_val = X[training_indices], y[training_indices], X[val_indices], y[val_indices]
+    training_data, validation_data = DistanceData(X_train, y_train), DistanceData(X_val, y_val)
 
     return training_data, validation_data
