@@ -7,7 +7,6 @@ This file contains functions for preprocessing and manipulating data for model t
 #imports 
 import os
 import pickle
-import itertools
 import numpy as np
 import torch
 
@@ -26,7 +25,7 @@ class DistanceData(torch.utils.data.Dataset):
         label = self.labels[index]
         return observation, label
 
-def process_features(path2features: str):
+def load_data(path2features: str):
     """Reads in pickle files containing features for cores and writes them into model-readable form.
 
     Args:
@@ -46,13 +45,9 @@ def process_features(path2features: str):
         with open(file, 'rb') as f:
             data = pickle.load(f)
 
-        distance_mat = data['full'] #get distance matrices, encodings, and labels
-        encoding = data['encoding'].squeeze()
-        label = data['label'].squeeze()
-        resnums = data['resnums'].squeeze()
+        x = list(data['full_observations']) #get observations for all permutations of core
+        y = list(data['full_labels'])
 
-        x = list(np.concatenate((distance_mat.flatten(), encoding))) #reshape and merge as necessary
-        y = list(label)
         X.append(x)
         Y.append(y)
 
