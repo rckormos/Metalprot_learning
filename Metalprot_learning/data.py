@@ -7,6 +7,7 @@ This file contains functions for preprocessing and manipulating data for model t
 #imports 
 import os
 import pickle
+import itertools
 import numpy as np
 import torch
 
@@ -27,33 +28,66 @@ class DistanceData(torch.utils.data.Dataset):
 
 def get_contiguous_resnums(resnums: np.ndarray):
     resnums = list(resnums)
+    temp = resnums[:]
     fragments = []
-    for resnum in resnums:
+    for resnum in temp:
         fragment = []
-        print(f'resnum: {resnum}')
-        resnums.remove(resnum)
+        temp.remove(resnum)
         fragment.append(resnum)
-        queue = [i for i in resnums if abs(i-resnum)==1]
+        queue = [i for i in temp if abs(i-resnum)==1]
 
         while len(queue) != 0:
             current = queue.pop()
-            print(f'current queue: {current}')
             fragment.append(current)
-            resnums.remove(current)
-            queue += [i for i in resnums if abs(i-current)==1]
+            temp.remove(current)
+            queue += [i for i in temp if abs(i-current)==1]
 
-        fragments.sort()
+        fragment.sort()
         fragments.append(fragment)
 
     fragment_indices = []
     for fragment in fragments:
         fragment_indices.append([resnums.index(i) for i in fragment])
-
+    
     return fragment_indices
 
-def permute_inputs(X: np.ndarray, y: np.ndarray, resnums: np.ndarray):
-    
-    pass
+def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
+    all_features = {}
+
+    fragment_indices = get_contiguous_resnums(resnums)
+    fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
+    for index, index_permutation in enumerate(fragment_index_permutations):
+        feature = {}
+        permutation = sum([fragment_indices[i] for i in index_permutation], [])
+        permuted_dist_mat = np.zeros(dist_mat.shape)
+
+        r = 1
+        for i in range(0,len(permutation)):
+            for j in range(1+r,len(permutation)):
+                permuted_dist_mat[i,j] = dist_mat[permutation[i], permutation[j]]
+                permuted_dist_mat[j,i] = permuted_dist_mat[i,j]
+            r += 1
+
+        split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
+        _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
+        zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
+        permuted_encoding = np.concatenate((_permuted_encoding, zeros))
+
+        permuted_label = []
+        for i in index_permutation:
+            frag = fragment_indices[i]
+            for j in range(0,len(frag)):
+                ind = frag[j]
+                permuted_label += list(label[4*ind:4*ind+4])
+
+
+
+        feature['distance'] = permuted_dist_mat
+        feature['encoding'] = permuted_encoding
+        feature['label'] = permuted_label
+
+        all_features[index] = feature
+    return all_features
 
 def process_features(path2features: str):
     """Reads in pickle files containing features for cores and writes them into model-readable form.

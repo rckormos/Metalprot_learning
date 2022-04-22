@@ -183,29 +183,20 @@ def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
         distance_matrices (dict): Dictionary containing distance matrices and a numpy array of resnums that index these matrices.
     """
 
-    distance_matrices = {}
+    distance_matrix = {}
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
-    max_resis = coordinating_resis + (2*coordinating_resis*no_neighbors)
-    for atom in ['CA', 'O', 'C', 'N']:
-        backbone = core.select('protein').select('name ' + atom)
-        backbone_distances = buildDistMatrix(backbone, backbone)
-
-        padding = max_resis - backbone_distances.shape[0] #standardize shape of distance matrices
-        backbone_distances = np.lib.pad(backbone_distances, ((0,padding), (0,padding)), 'constant', constant_values=0)
-        distance_matrices[atom] = backbone_distances
-
-    max_atoms = 4*max_resis
+    max_atoms = 4 * coordinating_resis + (2*coordinating_resis*no_neighbors)
     binding_core_backbone = core.select('protein').select('name CA O C N')
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
     
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
 
-    distance_matrices['full'] = full_dist_mat
-    distance_matrices['resnums'] = binding_core_resnums
+    distance_matrix['dist'] = full_dist_mat
+    distance_matrix['resnums'] = binding_core_resnums
 
-    return distance_matrices
+    return distance_matrix
 
 def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
