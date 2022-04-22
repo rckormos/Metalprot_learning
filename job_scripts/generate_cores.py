@@ -9,7 +9,6 @@ the number of jobs in this script and in the aforementioned submission script.
 
 #imports 
 import os
-from webbrowser import get
 from Metalprot_learning.get_binding_cores import construct_training_example 
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
@@ -33,7 +32,8 @@ if __name__ == '__main__':
     path2output = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data/outputs' #path to where you want positive
 
     no_jobs = 1 #set the number of jobs and job_id
-    job_id = os.getenv('SGE_TASK_ID')
+    # SGE_TASK_ID = os.getenv('SGE_TASK_ID')
+    job_id = 0
 
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
 
