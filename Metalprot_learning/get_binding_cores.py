@@ -85,21 +85,28 @@ def get_contiguous_resnums(resnums: np.ndarray):
 
 def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
     all_features = {}
+    full_observations = []
+    full_labels = []
 
     fragment_indices = get_contiguous_resnums(resnums)
     fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
+    atom_indices = np.split(np.linspace(0, len(resnums)*4-1, len(resnums)*4), len(resnums))
     for index, index_permutation in enumerate(fragment_index_permutations):
         feature = {}
         permutation = sum([fragment_indices[i] for i in index_permutation], [])
+        atom_ind_permutation = sum([list(atom_indices[i]) for i in permutation], [])
         permuted_dist_mat = np.zeros(dist_mat.shape)
 
-        r = 1
-        for i in range(0,len(permutation)):
-            for j in range(1+r,len(permutation)):
-                permuted_dist_mat[i,j] = dist_mat[permutation[i], permutation[j]]
-                permuted_dist_mat[j,i] = permuted_dist_mat[i,j]
-            r += 1
+        for i, atom_indi in enumerate(atom_ind_permutation):
+            for j, atom_indj in enumerate(atom_ind_permutation):
+                permuted_dist_mat[i,j] = dist_mat[int(atom_indi), int(atom_indj)]
 
+        if index == 0:
+            for i in range(0,permuted_dist_mat.shape[0]):
+                for j in range(0, permuted_dist_mat.shape[1]):
+                    assert permuted_dist_mat[i,j] == dist_mat[i,j]
+
+            
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
         zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
@@ -117,7 +124,12 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         feature['encoding'] = permuted_encoding
         feature['label'] = permuted_label
 
+        full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
+        full_labels.append(list(permuted_label))
+
         all_features[index] = feature
+    all_features['full_observations'] = np.array(full_observations)
+    all_features['full_labels'] = np.array(full_labels)
     return all_features
 
 def write_features(features: dict, out_dir: str, filename: str):
