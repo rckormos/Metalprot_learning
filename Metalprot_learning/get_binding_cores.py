@@ -9,6 +9,7 @@ from prody import *
 import numpy as np
 import os
 import pickle
+import itertools
 
 def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
     """Finds neighbors of an input coordinating residue.
@@ -56,6 +57,68 @@ def write_pdb(core, out_dir: str, filename: str):
     """
 
     writePDB(os.path.join(out_dir, filename + '_core.pdb'), core) #write core to a pdb file
+
+def get_contiguous_resnums(resnums: np.ndarray):
+    resnums = list(resnums)
+    temp = resnums[:]
+    fragments = []
+    for resnum in temp:
+        fragment = []
+        temp.remove(resnum)
+        fragment.append(resnum)
+        queue = [i for i in temp if abs(i-resnum)==1]
+
+        while len(queue) != 0:
+            current = queue.pop()
+            fragment.append(current)
+            temp.remove(current)
+            queue += [i for i in temp if abs(i-current)==1]
+
+        fragment.sort()
+        fragments.append(fragment)
+
+    fragment_indices = []
+    for fragment in fragments:
+        fragment_indices.append([resnums.index(i) for i in fragment])
+    
+    return fragment_indices
+
+def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
+    all_features = {}
+
+    fragment_indices = get_contiguous_resnums(resnums)
+    fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
+    for index, index_permutation in enumerate(fragment_index_permutations):
+        feature = {}
+        permutation = sum([fragment_indices[i] for i in index_permutation], [])
+        permuted_dist_mat = np.zeros(dist_mat.shape)
+
+        r = 1
+        for i in range(0,len(permutation)):
+            for j in range(1+r,len(permutation)):
+                permuted_dist_mat[i,j] = dist_mat[permutation[i], permutation[j]]
+                permuted_dist_mat[j,i] = permuted_dist_mat[i,j]
+            r += 1
+
+        split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
+        _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
+        zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
+        permuted_encoding = np.concatenate((_permuted_encoding, zeros))
+
+        permuted_label = []
+        for i in index_permutation:
+            frag = fragment_indices[i]
+            for j in range(0,len(frag)):
+                ind = frag[j]
+                permuted_label += list(label[4*ind:4*ind+4])
+        permuted_label = np.array(permuted_label)
+
+        feature['distance'] = permuted_dist_mat
+        feature['encoding'] = permuted_encoding
+        feature['label'] = permuted_label
+
+        all_features[index] = feature
+    return all_features
 
 def write_features(features: dict, out_dir: str, filename: str):
     """Writes a pickle file to hold feature information for a given core.
@@ -238,18 +301,15 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
-    _features = {}
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
 
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
-        _distance_matrices = compute_distance_matrices(core, no_neighbors, coordinating_resis)
+        distance_matrix = compute_distance_matrices(core, no_neighbors, coordinating_resis)
         encoding = onehotencode(core, no_neighbors, coordinating_resis)
 
-        _features['label'] = label
-        _features['encoding'] = encoding
-        features = {**_distance_matrices, **_features}
+        features = permute_features(distance_matrix, encoding, label)
 
         metal_resnum = core.select(f'name {name}').getResnums()[0]
         filename = generate_filename(core.getTitle(), core.select('name N').getResnums(), (name, metal_resnum))
