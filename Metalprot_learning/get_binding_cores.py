@@ -78,7 +78,6 @@ def get_contiguous_resnums(resnums):
         for index in fragment:
             temp.remove(index)
     
-    assert len(fragment_indices) == len(resnums)
     return fragment_indices
 
 def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
@@ -122,6 +121,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         feature['distance'] = permuted_dist_mat
         feature['encoding'] = permuted_encoding
         feature['label'] = permuted_label
+        feature['resnums'] = [resnums[i] for i in permutation]
 
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
