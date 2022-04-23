@@ -58,29 +58,27 @@ def write_pdb(core, out_dir: str, filename: str):
 
     writePDB(os.path.join(out_dir, filename + '_core.pdb'), core) #write core to a pdb file
 
-def get_contiguous_resnums(resnums: np.ndarray):
+def get_contiguous_resnums(resnums):
     resnums = list(resnums)
     temp = resnums[:]
-    fragments = []
-    for resnum in temp:
-        fragment = []
-        temp.remove(resnum)
-        fragment.append(resnum)
-        queue = [i for i in temp if abs(i-resnum)==1]
-
-        while len(queue) != 0:
-            current = queue.pop()
-            fragment.append(current)
-            temp.remove(current)
-            queue += [i for i in temp if abs(i-current)==1]
-
-        fragment.sort()
-        fragments.append(fragment)
-
     fragment_indices = []
-    for fragment in fragments:
-        fragment_indices.append([resnums.index(i) for i in fragment])
+    while len(temp) != 0:
+        for i in range(0,len(temp)):
+            if i == 0:
+                fragment = [temp[i]]
+
+            elif 1 in set([abs(temp[i] - j) for j in fragment]):
+                fragment.append(temp[i])
+
+        fragment = list(set(fragment))
+        fragment.sort()
+        one_fragment_indices = [resnums.index(i) for i in fragment]
+        fragment_indices.append(one_fragment_indices)
+
+        for index in fragment:
+            temp.remove(index)
     
+    assert len(fragment_indices) == len(resnums)
     return fragment_indices
 
 def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
@@ -106,11 +104,12 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
                 for j in range(0, permuted_dist_mat.shape[1]):
                     assert permuted_dist_mat[i,j] == dist_mat[i,j]
 
-            
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
         zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
         permuted_encoding = np.concatenate((_permuted_encoding, zeros))
+
+        assert len(permuted_encoding) == len(encoding)
 
         permuted_label = []
         for i in index_permutation:
@@ -262,10 +261,8 @@ def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
     max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors))
-    print(max_atoms)
     binding_core_backbone = core.select('protein').select('name CA O C N')
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
-    print(full_dist_mat.shape)
     
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
