@@ -10,9 +10,10 @@ from prody import *
 import os
 import numpy as np
 
+
 def load_data():
     "Helper function for loading structures"
-    data_path = './data/'
+    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
@@ -30,11 +31,13 @@ def compute_labels_test(label, core, metal_name, no_neighbors, coordinating_resi
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     tracker = 0
     tol = 10e-6
+    label = label.squeeze()
     for resnum in resnums:
         for atom in ['N', 'CA', 'C', 'O']:
             atom_sel = core.select(f'resnum {resnum}').select(f'name {atom}')
             distance = buildDistMatrix(metal_sel, atom_sel)[0,0]
             assert abs(distance - label[tracker]) < tol
+            tracker += 1
 
     assert len(label) == max_atoms
 
@@ -63,15 +66,16 @@ def onehotencode_test(encoding, no_neighbors, coordinating_resis, core):
     threelettercodes = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLU', 'GLN', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', \
                         'MET','PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
 
-    resnums = core.select('CA').getResnums()
-    seq = core.select('CA').getResnames()
+    resnums = core.select('name CA').getResnums()
+    seq = core.select('name CA').getResnames()
     max_resis = (no_neighbors * 2 * coordinating_resis) + coordinating_resis
     no_resis = len(resnums)
-    assert len(encoding) == 40*max_resis
+    encoding = encoding.squeeze()
+    assert len(encoding) == 20*max_resis
 
-    splits = np.array_split((encoding, max_resis))
+    splits = np.array_split(encoding, max_resis)
 
-    if no_resis < max_resis
+    if no_resis < max_resis:
         for empty in splits[no_resis:]:
             assert set(list(empty)) == {0}
 
@@ -85,43 +89,51 @@ def permute_features_test(features, dist_mat, label, encoding, no_neighbors, coo
     no_resis = len(resnums)
     tol = 10e-6
 
+    label = label.squeeze()
+    encoding = encoding.squeeze()
+
+    counter = 0
     for key in keys:
-        permuted_feature = features['keys']
+        counter += 1
+        permuted_feature = features[key]
         perm_dist_mat = permuted_feature['distance']
         assert perm_dist_mat.shape[0] == dist_mat.shape[0] == max_resis*4
 
-        perm_label = permuted_feature['label']
+        perm_label = permuted_feature['label'].squeeze()
         assert len(perm_label) == len(label) == max_resis*4
 
-        perm_encoding = permuted_feature['encoding']
+        perm_encoding = permuted_feature['encoding'].squeeze()
         assert len(perm_encoding) == len(encoding) == max_resis*20
 
         perm_resnums = permuted_feature['resnums']
         assert len(perm_resnums) == len(resnums) <= max_resis
 
-        atom_indices = np.array_split(np.linspace(0, dist_mat.shape[0]-1, dist_mat.shape[0]), no_resis)
+        atom_indices = np.array_split(np.linspace(0, dist_mat.shape[0]-1, dist_mat.shape[0]), max_resis)
 
         #check permutation of distance matrix
         for resnum1 in resnums:
             for resnum2 in resnums:
                 perm_atoms_i = atom_indices[perm_resnums.index(resnum1)]
                 perm_atoms_j = atom_indices[perm_resnums.index(resnum2)]
-                atoms_i = atom_indices[resnums.index(resnum1)]
-                atoms_j = atom_indices[resnums.index(resnum2)]
+                atoms_i = atom_indices[np.where(resnums == resnum1)[0][0]]
+                atoms_j = atom_indices[np.where(resnums == resnum2)[0][0]]
 
                 for perm_ind_i, ind_i in zip(perm_atoms_i, atoms_i):
                     for perm_ind_j, ind_j in zip(perm_atoms_j, atoms_j):
-                        perm_dist = perm_dist_mat[perm_ind_i, perm_ind_j]
-                        dist = dist_mat[ind_i, ind_j]
+                        perm_dist = perm_dist_mat[int(perm_ind_i), int(perm_ind_j)]
+                        dist = dist_mat[int(ind_i), int(ind_j)]
                         assert abs(dist-perm_dist) < tol
+
         
         #check permutation of label and encoding
         encoding_split = np.split(encoding, max_resis)
         perm_encoding_split = np.split(perm_encoding, max_resis)
-        for resnum in resnum:
-            ind = resnums.index(resnum)
+        for resnum in resnums:
+            ind = np.where(resnums == resnum)[0][0]
             perm_ind = perm_resnums.index(resnum)
-            assert abs(label[ind] - perm_label[perm_ind]) < tol
+            
+            for i in range(0,4):
+                assert abs(label[ind*4+i] - perm_label[perm_ind*4+i]) < tol
             
             res = encoding_split[ind]
             perm_res = perm_encoding_split[perm_ind]
@@ -139,6 +151,7 @@ def test_all():
     no_neighbors = 1
     coordinating_resis = 4
     for pdb in pdbs:
+        print(pdb)
         cores, names = extract_cores(pdb, no_neighbors, coordinating_resis)
         extract_cores_test(cores, names, no_neighbors, coordinating_resis)
         unique_cores, unique_names = remove_degenerate_cores(cores, names)
@@ -150,8 +163,8 @@ def test_all():
             full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
             compute_distance_matrices_test(full_dist_mat, binding_core_resnums, core, no_neighbors, coordinating_resis)
 
-            encoding = onehotencode(core, no_neighbors, coordinating_resis, binding_core_resnums)
+            encoding = onehotencode(core, no_neighbors, coordinating_resis)
             onehotencode_test(encoding, no_neighbors, coordinating_resis, core)
 
             features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
-            permute_features_test()
+            permute_features_test(features, full_dist_mat, label, encoding, no_neighbors, coordinating_resis, binding_core_resnums)
