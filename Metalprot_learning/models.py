@@ -5,6 +5,7 @@ This file contains the architecture of the metalprot_learning model version 1. T
 """
 
 #imports
+import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
@@ -21,6 +22,43 @@ class SingleLayerNet(nn.Module):
     def forward(self, x):
         y = self.block1(x.float())
         return y
+
+class DistanceData(torch.utils.data.Dataset):
+    "Custom dataset class"
+
+    def __init__(self, observations, labels):
+        self.labels = labels
+        self.observations = observations
+
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, index):
+        observation = self.observations[index]
+        label = self.labels[index]
+        return observation, label 
+
+def split_data(X, y, train_prop, seed):
+    """Splits data into training and test sets.
+
+    Args:
+        X (np.ndarray): Observation data.
+        y (np.ndarray): Label data.
+        train_size (float): The proportion of data to be paritioned into the training set. 
+        seed (int): The random seed for splitting.
+
+    Returns:
+        training_data (__main__.DistanceData): Dataset object of training data.
+        validation_data (__main__.DistanceData): Dataset object of validation data.
+    """
+
+    training_size = int(train_prop * X.shape[0])
+    indices = np.random.RandomState(seed=seed).permutation(X.shape[0])
+    training_indices, val_indices = indices[:training_size], indices[training_size:]
+    X_train, y_train, X_val, y_val = X[training_indices], y[training_indices], X[val_indices], y[val_indices]
+    training_data, validation_data = DistanceData(X_train, y_train), DistanceData(X_val, y_val)
+
+    return training_data, validation_data
 
 def train_loop(model, train_dataloader, loss_fn, optimizer):
 
@@ -47,18 +85,36 @@ def validation_loop(model, validation_dataloader, loss_fn):
     validation_loss /= len(validation_dataloader)
     return validation_loss
 
-def train_model(model, train_data, test_data, epochs: int, batch_size: int, lr: float, loss_fn: str, optimizer: str, filename=None):
+def train_model(model, 
+                observation_file: str, 
+                label_file: str, 
+                epochs: int, 
+                batch_size: int, 
+                lr: float, 
+                loss_fn: str, 
+                optimizer: str, 
+                filename=None,
+                 train_prop=0.8, 
+                 seed=42):
     """Runs model training.
 
     Args:
         model (SingleLayerNet): SingleLayerNet object.
-        train_data: DataLoader object containing training data.
-        test_data: Dataloader object containing validation data.
+        observation_file (str): Path to observation matrix.
+        label_file (str): Path to label matrix.
         batch_size (int): Batch size for training.
         lr (float): Learning rate for training.
         loss_fn (str): Defines the loss function for backpropagation. Must be a string in {'MAE', 'MSE'}
         optimizer (str): Defines the optimization algorithm for backpropagation. Must be a string in {'SGD'}
+        filename (str, optional): Filename to write trained model weights and biases to. Defaults to None.
+        train_size (float, optional): The proportion of data to be paritioned into the training set. Defaults to 0.8.
+        seed (int, optional): The random seed for splitting. Defaults to 42.
     """
+
+    #split dataset into training and testing sets
+    observations = np.load(observation_file)
+    labels = np.load(label_file)
+    train_data, test_data = split_data(observations, labels, train_prop, seed)
 
     #instantiate dataloader objects for train and test sets
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
