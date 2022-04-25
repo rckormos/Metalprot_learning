@@ -144,6 +144,19 @@ def permute_features_test(features, dist_mat, label, encoding, no_neighbors, coo
             for i in range(no_resis, max_resis):
                 assert set(perm_encoding_split[i]) == set(encoding_split[i]) == {0}
 
+def observation_construction_test(observation, dist_mat, encoding):
+
+    assert len(observation.squeeze()) == len(encoding.squeeze()) + (dist_mat.shape[0] * dist_mat.shape[1])
+
+    indexer = 0
+    for i in range(0, dist_mat.shape[0]):
+        for j in range(0, dist_mat.shape[1]):
+            assert dist_mat[i,j] == observation.squeeze()[indexer]
+            indexer += 1
+
+    for i in range(0, len(encoding.squeeze)):
+        assert encoding.squeeze([i]) == observation.squeeze()[i + (dist_mat.shape[0] * dist_mat.shape[1])]
+
 def test_all():
     "Main function that implements all unit tests."
 
@@ -168,3 +181,11 @@ def test_all():
 
             features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
             permute_features_test(features, full_dist_mat, label, encoding, no_neighbors, coordinating_resis, binding_core_resnums)
+
+            all_observations = features['full_observations']
+            for key in [x for x in features.keys() if type(x) == int]:
+                data = features[key]
+                observation = all_observations[key]
+                curr_dist_mat = data['distance']
+                curr_encoding = data['encoding']
+                observation_construction_test(observation, curr_dist_mat, curr_encoding)
