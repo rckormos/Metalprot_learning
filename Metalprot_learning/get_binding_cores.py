@@ -88,6 +88,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
     fragment_indices = get_contiguous_resnums(resnums)
     fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
     atom_indices = np.split(np.linspace(0, len(resnums)*4-1, len(resnums)*4), len(resnums))
+    label = label.squeeze()
     for index, index_permutation in enumerate(fragment_index_permutations):
         feature = {}
         permutation = sum([fragment_indices[i] for i in index_permutation], [])
@@ -108,15 +109,17 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
         permuted_encoding = np.concatenate((_permuted_encoding, zeros))
 
-        assert len(permuted_encoding) == len(encoding)
+        assert len(permuted_encoding) == len(encoding.squeeze())
 
-        permuted_label = []
+        permuted_label = np.array([])
         for i in index_permutation:
             frag = fragment_indices[i]
-            for j in range(0,len(frag)):
-                ind = frag[j]
-                permuted_label += list(label[4*ind:4*ind+4])
-        permuted_label = np.array(permuted_label)
+            for j in frag:
+                atoms = atom_indices[j]
+                for atom in atoms:
+                    permuted_label = np.append(permuted_label, label[int(atom)])
+
+        permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
 
         feature['distance'] = permuted_dist_mat
         feature['encoding'] = permuted_encoding
