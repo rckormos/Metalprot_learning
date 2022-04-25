@@ -94,8 +94,8 @@ def train_model(model,
                 loss_fn: str, 
                 optimizer: str, 
                 filename=None,
-                 train_prop=0.8, 
-                 seed=42):
+                train_prop=0.8, 
+                seed=42):
     """Runs model training.
 
     Args:
