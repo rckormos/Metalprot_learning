@@ -1,10 +1,11 @@
+#!/usr/bin/env python3
+
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
 This file contains unit tests for functions in get_binding_cores.py
 """
 
-import pytest
 from Metalprot_learning.get_binding_cores import *
 from prody import *
 import os
@@ -154,8 +155,8 @@ def observation_construction_test(observation, dist_mat, encoding):
             assert dist_mat[i,j] == observation.squeeze()[indexer]
             indexer += 1
 
-    for i in range(0, len(encoding.squeeze)):
-        assert encoding.squeeze([i]) == observation.squeeze()[i + (dist_mat.shape[0] * dist_mat.shape[1])]
+    for i in range(0, len(encoding.squeeze())):
+        assert encoding.squeeze()[i] == observation.squeeze()[i + (dist_mat.shape[0] * dist_mat.shape[1])]
 
 def test_all():
     "Main function that implements all unit tests."
@@ -189,3 +190,5 @@ def test_all():
                 curr_dist_mat = data['distance']
                 curr_encoding = data['encoding']
                 observation_construction_test(observation, curr_dist_mat, curr_encoding)
+
+test_all()
