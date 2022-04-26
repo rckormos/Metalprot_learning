@@ -314,6 +314,6 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         #write files to disk
         metal_resnum = core.select(f'name {name}') .getResnums()[0]
         filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + name + str(metal_resnum)
-        writePDB(os.path.join(output_dir, filename + '_core.pdb'), core)
+        writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
