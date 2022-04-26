@@ -9,6 +9,7 @@ the number of jobs in this script and in the aforementioned submission script.
 
 #imports 
 import os
+import sys
 from Metalprot_learning.get_binding_cores import construct_training_example 
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
@@ -28,15 +29,18 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     return tasks
 
 if __name__ == '__main__':
-    path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data' #path to positive or negative input structures
-    path2output = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data/outputs' #path to where you want positive
-
-    no_jobs = 1 #set the number of jobs and job_id
-    # SGE_TASK_ID = os.getenv('SGE_TASK_ID')
+    path2output = sys.argv[1] #path to store outputs    
+    no_jobs = 1
     job_id = 0
 
-    tasks = distribute_tasks(path2examples, no_jobs, job_id)
+    if len(sys.argv) > 3:
+        no_jobs = int(sys.argv[2])
+        job_id = int(sys.argv[3]) - 1
+    
+    #YOU WILL NEED TO EDIT THIS PATH HERE
+    path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data' #path to positive or negative input structures
 
+    tasks = distribute_tasks(path2examples, no_jobs, job_id)
     for file in tasks:
         print(file)
         construct_training_example(file, path2output) 
