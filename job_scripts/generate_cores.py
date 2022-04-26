@@ -39,7 +39,15 @@ if __name__ == '__main__':
     #YOU WILL NEED TO EDIT THIS PATH HERE
     path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data' #path to positive or negative input structures
 
+    failed = []
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
     for file in tasks:
-        print(file)
-        construct_training_example(file, path2output) 
+        try:
+            construct_training_example(file, path2output) 
+
+        except:
+            failed.append(file)
+
+    with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+        f.write('\n'.join([path for path in failed]))
+
