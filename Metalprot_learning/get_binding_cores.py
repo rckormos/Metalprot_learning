@@ -1,7 +1,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This file contains functions for extracting binding core examples and writing their corresponding distance matrix/ sequence encodings.
+This file contains functions for extracting binding core examples and writing their corresponding distance matrices, sequence encodings, and labels.
 """
 
 #imports
@@ -12,7 +12,7 @@ import pickle
 import itertools
 
 def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
-    """Finds neighbors of an input coordinating residue.
+    """Helper function for extract_cores. Finds neighbors of an input coordinating residue.
 
     Args:
         coordinating_resnum (int): Residue number of coordinatign residue.
@@ -34,31 +34,16 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     return core_fragment
 
-def generate_filename(parent_structure_id: str, binding_core_resis: list, metal: tuple):
-    """Helper function for generating file names.
+def get_contiguous_resnums(resnums: np.ndarray):
+    """Helper function for permute_features. 
 
     Args:
-        parent_structure_id (str): The pdb identifier of the parent structure.
-        binding_core_resis (list): List of residue numbers that comprise the binding core.
-        filetype (str): The type of file.
-        extension (str): The file extension.
-        metal (tuple): A tuple containing the element symbol of the metal in all caps and the residue number of said metal. 
+        resnums (np.ndarray): Array of resnums in the order they appear when calling core.getResnums().
+
+    Returns:
+        fragment (list): List of sorted lists containing indices of contiguous stretches of resnums. 
     """
 
-    filename = parent_structure_id + '_' + '_'.join([str(num) for num in binding_core_resis]) + '_' + metal[0] + str(metal[1])
-    return filename
-
-def write_pdb(core, out_dir: str, filename: str):
-    """Generates a pdb file for an input core
-
-    Args:
-        core (prody.atomic.atomgroup.AtomGroup): AtomGroup of binding core.
-        metal (str): The element symbol of the bound metal in all caps.
-    """
-
-    writePDB(os.path.join(out_dir, filename + '_core.pdb'), core) #write core to a pdb file
-
-def get_contiguous_resnums(resnums):
     resnums = list(resnums)
     temp = resnums[:]
     fragment_indices = []
@@ -81,6 +66,17 @@ def get_contiguous_resnums(resnums):
     return fragment_indices
 
 def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
+    """Computes fragment permutations for input features and labels. 
+
+    Args:
+        dist_mat (np.ndarray): Distance matrix.
+        encoding (np.ndarray): One-hot encoding of sequence.
+        label (np.ndarray): Backbone atom distances to the metal.
+        resnums (np.ndarray): Resnums of core atoms in the order the appear when calling core.getResnums().
+
+    Returns:
+        all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as distance matrices and labels for individual permutations.
+    """
     all_features = {}
     full_observations = []
     full_labels = []
@@ -133,16 +129,6 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
     all_features['full_observations'] = np.array(full_observations)
     all_features['full_labels'] = np.array(full_labels)
     return all_features
-
-def write_features(features: dict, out_dir: str, filename: str):
-    """Writes a pickle file to hold feature information for a given core.
-
-    Args:
-        features (dict): Holds distance matrices for a given core.
-    """
-
-    with open(os.path.join(out_dir, filename + '_features.pkl'), 'wb') as f:
-        pickle.dump(features, f)
 
 def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
     """Finds all putative metal binding cores in an input protein structure.
@@ -312,18 +298,22 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
+    #find all the unique cores within a given pdb structure
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
 
+    #extract features for each unique core found
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
         full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
         encoding = onehotencode(core, no_neighbors, coordinating_resis)
 
+        #permute distance matrices, labels, and encodings
         features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
 
+        #write files to disk
         metal_resnum = core.select(f'name {name}') .getResnums()[0]
-        filename = generate_filename(core.getTitle(), binding_core_resnums, (name, metal_resnum))
-
-        write_pdb(core, output_dir, filename)
-        write_features(features, output_dir, filename)
+        filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + name + str(metal_resnum)
+        writePDB(os.path.join(output_dir, filename + '_core.pdb'), core)
+        with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
+            pickle.dump(features,f)
