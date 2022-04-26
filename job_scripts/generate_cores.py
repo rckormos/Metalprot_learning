@@ -3,8 +3,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-Note that this script is meant to be called from within a SGE bash submission script. Note that you need to define
-the number of jobs in this script and in the aforementioned submission script.
+Note that this script is meant to be called from within a SGE bash submission script. 
 """
 
 #imports 
