@@ -39,6 +39,8 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, max_permutati
             weighted_observations = np.vstack([weighted_observations, core_observations[int(row_index)]])
             weighted_labels = np.vstack([weighted_labels, core_labels[int(row_index)]])
 
+        assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations
+
     return weighted_observations, weighted_labels
 
 def compile_data(path2features: str, max_permutations=24, seed=42):
@@ -75,5 +77,5 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
     np.save(os.path.join(path2features, 'labels'), Y)    
 
 if __name__ == '__main__':
-    path2features = ''
+    path2features = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data/outputs'
     compile_data(path2features)
