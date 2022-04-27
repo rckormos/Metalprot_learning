@@ -293,15 +293,29 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
+    max_resis = 2*coordinating_resis*no_neighbors
+
     #find all the unique cores within a given pdb structure
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
+    assert len(unique_cores) < 0, "This structure has no identified binding cores."
 
     #extract features for each unique core found
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
+        if len(label) != max_resis * 4:
+            print('Core with inproper label dimensions present')
+            continue
+
         full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
+        if len(full_dist_mat) != max_resis * 4:
+            print('Core with improper distance matrix dimensions present')
+            continue
+
         encoding = onehotencode(core, no_neighbors, coordinating_resis)
+        if len(encoding) != max_resis * 20:
+            print('Core with improper encoding dimensions present')
+            continue
 
         #permute distance matrices, labels, and encodings
         features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
