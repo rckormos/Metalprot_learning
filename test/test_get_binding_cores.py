@@ -14,7 +14,7 @@ import numpy as np
 
 def load_data():
     "Helper function for loading structures"
-    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data'
+    data_path = '/wynton/home/rotation/jzhang1198/protein_des_mod/Metalprot_learning/data'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
