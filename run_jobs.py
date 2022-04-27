@@ -32,7 +32,7 @@ import shutil
 import os
 import subprocess
 
-def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='00:05:00', mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
+def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00:00', mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
 
     """Runs SGE job on UCSF Wynton cluster.
 
