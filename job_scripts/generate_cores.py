@@ -43,7 +43,9 @@ if __name__ == '__main__':
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
     for file in tasks:
         try:
-            construct_training_example(file, path2output) 
+            print(f'Current file: {file}')
+            construct_training_example(file, path2output)
+            print('')
 
         except:
             failed.append(file)
