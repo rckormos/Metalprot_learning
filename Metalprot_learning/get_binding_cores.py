@@ -293,17 +293,17 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
-    max_resis = 2*coordinating_resis*no_neighbors
+    max_resis = (2*coordinating_resis*no_neighbors) + coordinating_resis
 
     #find all the unique cores within a given pdb structure
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
-    assert len(unique_cores) < 0, "This structure has no identified binding cores."
+    assert len(unique_cores) > 0, "This structure has no identified binding cores."
 
     #extract features for each unique core found
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
-        if len(label) != max_resis * 4:
+        if label.shape[1] != max_resis * 4:
             print('Core with inproper label dimensions present')
             continue
 
@@ -313,7 +313,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
             continue
 
         encoding = onehotencode(core, no_neighbors, coordinating_resis)
-        if len(encoding) != max_resis * 20:
+        if encoding.shape[1] != max_resis * 20:
             print('Core with improper encoding dimensions present')
             continue
 
@@ -326,3 +326,5 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
+
+        print('finished writing files')
