@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 '''
+Author: Jonathan Zhang <jon.zhang@ucsf.edu>
+
 Wrapper script to run jobs for Metalprot_learning on wynton. Code 
 adapted from Xingjie Pan's loop-helix-loop reshaping repository.
 
@@ -30,7 +32,7 @@ import shutil
 import os
 import subprocess
 
-def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='00:05:00', mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
+def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00:00', mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
 
     """Runs SGE job on UCSF Wynton cluster.
 
