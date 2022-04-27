@@ -272,14 +272,9 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
 
     for i in range(len(seq)):
         aa = str(seq[i])
-        try:
-            idx = threelettercodes.index(aa)
-            one_hot = np.zeros((1,20))
-            one_hot[0,idx] = 1
-        except:
-            print('Resname of following atom not found: {}'.format(aa))
-            continue
-
+        idx = threelettercodes.index(aa)
+        one_hot = np.zeros((1,20))
+        one_hot[0,idx] = 1
         encoding = np.concatenate((encoding, one_hot), axis=1)
 
     max_resis = coordinating_resis +  (coordinating_resis * no_neighbors * 2)

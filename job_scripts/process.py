@@ -77,5 +77,5 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
     np.save(os.path.join(path2features, 'labels'), Y)    
 
 if __name__ == '__main__':
-    path2features = '/Users/jonathanzhang/Documents/ucsf/degrado/Metalprot_learning/data/outputs'
+    path2features = '/wynton/home/rotation/jzhang1198/data/ZN_binding_cores'
     compile_data(path2features)
