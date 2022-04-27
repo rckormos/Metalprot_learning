@@ -49,6 +49,7 @@ if __name__ == '__main__':
         except:
             failed.append(file)
 
-    with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
-        f.write('\n'.join([path for path in failed]))
+    if len(failed) != 0:
+        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+            f.write('\n'.join([path for path in failed]))
 
