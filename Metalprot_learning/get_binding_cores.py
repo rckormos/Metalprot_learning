@@ -167,6 +167,7 @@ def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
             names.append(name)
 
         else:
+            print(f'Number of coordinating resiudes not between 2 and {coordinating_resis}')
             continue
     return cores, names
 
@@ -207,7 +208,6 @@ def remove_degenerate_cores(cores: list, metal_names: list):
                     continue
 
             degenerate_core_indices = list(set(np.where(pairwise_seqids == 100)[0]).intersection(set(np.where(pairwise_overlap == 100)[0]))) #find all cores that are essentially the same structure
-
 
             if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                 for ind in degenerate_core_indices:
