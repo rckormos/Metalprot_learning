@@ -56,8 +56,10 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
         Y (np.ndarray): Matrix with rows indexed by observations and columns indexed by labels.
     """
     
+    failed = []
     feature_files = [os.path.join(path2features, file) for file in os.listdir(path2features) if 'features.pkl' in file] #extract feature files
     for iteration, file in enumerate(feature_files):
+        print(file, iteration)
         with open(file, 'rb') as f:
             data = pickle.load(f)
 
@@ -69,12 +71,21 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
         else:
             x_unweighted = data['full_observations']
             y_unweighted = data['full_labels']
-            x_weighted, y_weighted = sample(x_unweighted, y_unweighted, max_permutations, seed)
-            X = np.vstack([X, x_weighted])
-            Y = np.vstack([Y, y_weighted])
+
+            try:
+                x_weighted, y_weighted = sample(x_unweighted, y_unweighted, max_permutations, seed)
+                X = np.vstack([X, x_weighted])
+                Y = np.vstack([Y, y_weighted])
+
+            except:
+                failed.append(file)
 
     np.save(os.path.join(path2features, 'observations'), X)
     np.save(os.path.join(path2features, 'labels'), Y)    
+    
+    if len(failed) > 0:
+        with open(os.path.join(path2features, 'failed_process.txt'), 'w') as f:
+            f.write('\n'.join(failed))
 
 if __name__ == '__main__':
     path2features = '/wynton/home/rotation/jzhang1198/data/ZN_binding_cores'
