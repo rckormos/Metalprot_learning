@@ -5,6 +5,7 @@ This file contains functions for extracting binding core examples and writing th
 """
 
 #imports
+from re import L
 from prody import *
 import numpy as np
 import os
@@ -272,6 +273,10 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
 
     for i in range(len(seq)):
         aa = str(seq[i])
+
+        if aa not in threelettercodes:
+            print('Unrecognized amino acid present in core.')
+            
         idx = threelettercodes.index(aa)
         one_hot = np.zeros((1,20))
         one_hot[0,idx] = 1
