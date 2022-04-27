@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 
 '''
+Author: Jonathan Zhang <jon.zhang@ucsf.edu>
+
 Wrapper script to run jobs for Metalprot_learning on wynton. Code 
 adapted from Xingjie Pan's loop-helix-loop reshaping repository.
 
