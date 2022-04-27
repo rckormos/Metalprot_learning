@@ -45,6 +45,7 @@ if __name__ == '__main__':
         try:
             construct_training_example(file, path2output) 
             print(file)
+            print('\n')
 
         except:
             failed.append(file)
