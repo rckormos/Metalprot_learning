@@ -28,38 +28,42 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
 
     return tasks
 
-def construct_training_example(file: str, path2output: str):
+def run_construct_training_example(file: str, path2output: str):
     """Calls main function from get_binding_cores.py to construct training example. For quality control and de-bugging purposes, there are multiple try/except statements.
 
     Args:
         file (str): Path to pdb file.
         path2output (str): Path to output.
     """
+    failed = []
 
     try:
         construct_training_example(file,path2output)
 
     except utils.NoCoresError as e:
-        pass
+        failed.append(file + ' No cores identified')
 
     except utils.DistMatDimError as e:
-        pass
+        failed.append(file + ' Distance matrix dimensions are incorrect')
 
     except utils.LabelDimError as e:
-        pass
+        failed.append(file + ' Label dimensions are incorrect')
 
     except utils.EncodingDimError as e:
-        pass
+        failed.append(file + ' Encoding dimensions are incorrect')
 
     except utils.EncodingError as e:
-        pass
+        failed.append(file + ' Unrecognized amino acid during sequence encoding')
 
     except utils.PermutationError as e:
-        pass
+        failed.append(file + ' Issue with permutation of fragments')
 
     except:
-        pass
-    pass
+        failed.append(file + ' Unknown error occured')
+
+    if len(failed) > 0:
+        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+            f.write('\n'.join([line for line in failed]))
 
 
 if __name__ == '__main__':
@@ -77,17 +81,5 @@ if __name__ == '__main__':
     failed = []
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
     for file in tasks:
-        try:
-            print(f'Current file: {file}')
-            construct_training_example(file, path2output)
-            print('')
-
-        except DistMatDimError as e:
-            failed.append(file)
-
-        except 
-
-    if len(failed) != 0:
-        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
-            f.write('\n'.join([path for path in failed]))
+        run_construct_training_example(file, path2output)
 
