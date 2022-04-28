@@ -9,6 +9,7 @@ import numpy as np
 import torch
 from torch import nn
 from torch.utils.data import DataLoader
+from collections import OrderedDict
 
 class SingleLayerNet(nn.Module):
     def __init__(self, arch: list):
@@ -20,16 +21,13 @@ class SingleLayerNet(nn.Module):
         for ind, layer in enumerate(arch):
             input_dim = layer['input_dim']
             output_dim = layer['output_dim']
-            activation = activation_function_dict(layer['activation'])
+
+            activation_key = layer['activation']
+            activation = activation_function_dict[activation_key] if activation_key else None
 
             layers.append((f'layer{ind}', nn.Linear(input_dim, output_dim)))
             if activation:
-                layers.append(f'activation{ind}', activation)
-
-        # self.block1 = nn.Sequential(
-        #     nn.Linear(2544, 48),
-        #     nn.ReLU(),
-        # )
+                layers.append((f'activation{ind}', activation))
 
         self.block1 = nn.Sequential(OrderedDict(layers))
 
@@ -52,13 +50,13 @@ class DistanceData(torch.utils.data.Dataset):
         label = self.labels[index]
         return observation, label 
 
-def split_data(X, y, train_prop, seed):
+def split_data(X, y, partitions, seed):
     """Splits data into training and test sets.
 
     Args:
         X (np.ndarray): Observation data.
         y (np.ndarray): Label data.
-        train_size (float): The proportion of data to be paritioned into the training set. 
+        partitions (tuple): Tuple containing proportion to partition into training, testing, and validation sets respectively.
         seed (int): The random seed for splitting.
 
     Returns:
@@ -66,13 +64,21 @@ def split_data(X, y, train_prop, seed):
         validation_data (__main__.DistanceData): Dataset object of validation data.
     """
 
-    training_size = int(train_prop * X.shape[0])
-    indices = np.random.RandomState(seed=seed).permutation(X.shape[0])
-    training_indices, val_indices = indices[:training_size], indices[training_size:]
-    X_train, y_train, X_val, y_val = X[training_indices], y[training_indices], X[val_indices], y[val_indices]
-    training_data, validation_data = DistanceData(X_train, y_train), DistanceData(X_val, y_val)
+    train_prop, test_prop, val_prop = partitions
+    assert sum([train_prop, test_prop, val_prop]) == 1
 
-    return training_data, validation_data
+    training_size = int(train_prop * X.shape[0])
+    testing_size = int(test_prop * X.shape[0])
+    validation_size = int(val_prop * X.shape[0])
+
+    indices = np.random.RandomState(seed=seed).permutation(X.shape[0])
+    training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
+    X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
+    assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
+
+    training_data, testing_data, validation_data = DistanceData(X_train, y_train), DistanceData(X_test, y_test), DistanceData(X_val, y_val)
+
+    return training_data, testing_data, validation_data
 
 def train_loop(model, train_dataloader, loss_fn, optimizer):
 
@@ -108,7 +114,7 @@ def train_model(model,
                 loss_fn: str, 
                 optimizer: str, 
                 filename=None,
-                train_prop=0.8, 
+                partition=(0.8,0.1,0.1), 
                 seed=42):
     """Runs model training.
 
@@ -128,11 +134,11 @@ def train_model(model,
     #split dataset into training and testing sets
     observations = np.load(observation_file)
     labels = np.load(label_file)
-    train_data, test_data = split_data(observations, labels, train_prop, seed)
+    train_data, test_data, val_data = split_data(observations, labels, partition, seed)
 
     #instantiate dataloader objects for train and test sets
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    validation_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
 
     #define optimizer and loss function
     optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=lr)}
@@ -143,17 +149,16 @@ def train_model(model,
     loss_fn = loss_fn_dict[loss_fn]
 
     train_loss =[]
-    validation_loss = []
+    test_loss = []
     for epoch in range(0, epochs):
+        print(f'Now on epoch {epoch}')
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer)
-        _validation_loss = validation_loop(model, validation_dataloader, loss_fn)
+        _test_loss = validation_loop(model, test_dataloader, loss_fn)
 
         train_loss.append(_train_loss)
-        validation_loss.append(_validation_loss)
+        test_loss.append(_test_loss)
 
     if filename:
         torch.save(model.state_dict(), filename + '.pth')
 
-    return train_loss, validation_loss
-
-    
+    return train_loss, test_loss, val_data
