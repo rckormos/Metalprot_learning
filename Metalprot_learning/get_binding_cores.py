@@ -336,4 +336,4 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
 
         completed += 1
 
-    print(f'{completed} cores identified and featurized for {pdb_file}')
+    print(f'{completed} core(s) identified and featurized for {pdb_file}')
