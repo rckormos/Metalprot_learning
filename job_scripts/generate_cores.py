@@ -35,35 +35,33 @@ def run_construct_training_example(file: str, path2output: str):
         file (str): Path to pdb file.
         path2output (str): Path to output.
     """
-    failed = []
 
     try:
         construct_training_example(file,path2output)
+        failed_file_line = None
 
     except utils.NoCoresError as e:
-        failed.append(file + ' No cores identified')
+        failed_file_line = file + ' No cores identified'
 
     except utils.DistMatDimError as e:
-        failed.append(file + ' Distance matrix dimensions are incorrect')
+        failed_file_line = file + ' Distance matrix dimensions are incorrect'
 
     except utils.LabelDimError as e:
-        failed.append(file + ' Label dimensions are incorrect')
+        failed_file_line = file + ' Label dimensions are incorrect'
 
     except utils.EncodingDimError as e:
-        failed.append(file + ' Encoding dimensions are incorrect')
+        failed_file_line = file + ' Encoding dimensions are incorrect'
 
     except utils.EncodingError as e:
-        failed.append(file + ' Unrecognized amino acid during sequence encoding')
+        failed_file_line = file + ' Unrecognized amino acid during sequence encoding'
 
     except utils.PermutationError as e:
-        failed.append(file + ' Issue with permutation of fragments')
+        failed_file_line = file + ' Issue with permutation of fragments'
 
     except:
-        failed.append(file + ' Unknown error occured')
+        failed_file_line = file + ' Unknown error occured'
 
-    if len(failed) > 0:
-        with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
-            f.write('\n'.join([line for line in failed]))
+    return failed_file_line
 
 
 if __name__ == '__main__':
@@ -81,5 +79,9 @@ if __name__ == '__main__':
     failed = []
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
     for file in tasks:
-        run_construct_training_example(file, path2output)
+        failed_file_line = run_construct_training_example(file, path2output)
+        failed.append(failed_file_line)
 
+    if len(failed) > 0:
+        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+            f.write('\n'.join([line for line in failed if line != None]))
