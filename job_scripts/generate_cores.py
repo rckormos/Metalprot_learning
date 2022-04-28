@@ -83,5 +83,5 @@ if __name__ == '__main__':
         failed.append(failed_file_line)
 
     if len(failed) > 0:
-        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+        with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
             f.write('\n'.join([line for line in failed if line != None]))
