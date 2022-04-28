@@ -10,6 +10,23 @@ Compiles training examples into an observation and label matrix.
 import numpy as np
 import pickle
 import os
+import sys
+
+def distribute_tasks(path2features: str, no_jobs: int, job_id: int):
+    """Distributes pdb files for core generation.
+
+    Args:
+        path2features (str): Path to directory containing feature files.
+        no_jobs (int): Total number of jobs.
+        job_id (int): The job id.
+
+    Returns:
+        tasks (list): list of feature files assigned to particular job id.
+    """
+    feature_files = [os.path.join(path2features, file) for file in os.listdir(path2features) if 'features.pkl' in file]
+    tasks = [feature_files[i] for i in range(0, len(feature_files)) if i % no_jobs == job_id]
+
+    return tasks
 
 def sample(core_observations: np.ndarray, core_labels: np.ndarray, max_permutations, seed):
     """Addresses oversampling of cores with large permutation numbers.
@@ -43,7 +60,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, max_permutati
 
     return weighted_observations, weighted_labels
 
-def compile_data(path2features: str, max_permutations=24, seed=42):
+def compile_data(feature_files, max_permutations=24, seed=42):
     """Reads in pickle files containing features for cores and writes them into model-readable form.
 
     Args:
@@ -57,7 +74,6 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
     """
     
     failed = []
-    feature_files = [os.path.join(path2features, file) for file in os.listdir(path2features) if 'features.pkl' in file] #extract feature files
     for iteration, file in enumerate(feature_files):
         print(file, iteration)
         with open(file, 'rb') as f:
@@ -88,5 +104,14 @@ def compile_data(path2features: str, max_permutations=24, seed=42):
             f.write('\n'.join(failed))
 
 if __name__ == '__main__':
+    path2output = sys.argv[1] #path to store outputs    
+    no_jobs = 1
+    job_id = 0
+
+    if len(sys.argv) > 3:
+        no_jobs = int(sys.argv[2])
+        job_id = int(sys.argv[3]) - 1
+
     path2features = '/wynton/home/rotation/jzhang1198/data/ZN_binding_cores'
-    compile_data(path2features)
+    feature_files = distribute_tasks(path2features, no_jobs, job_id)
+    compile_data(feature_files)
