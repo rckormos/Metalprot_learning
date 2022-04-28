@@ -11,13 +11,27 @@ from torch import nn
 from torch.utils.data import DataLoader
 
 class SingleLayerNet(nn.Module):
-    def __init__(self):
+    def __init__(self, arch: list):
         super(SingleLayerNet, self).__init__()
 
-        self.block1 = nn.Sequential(
-            nn.Linear(2544, 48),
-            nn.ReLU(),
-        )
+        activation_function_dict = {'ReLU': nn.ReLU()}
+
+        layers = []
+        for ind, layer in enumerate(arch):
+            input_dim = layer['input_dim']
+            output_dim = layer['output_dim']
+            activation = activation_function_dict(layer['activation'])
+
+            layers.append((f'layer{ind}', nn.Linear(input_dim, output_dim)))
+            if activation:
+                layers.append(f'activation{ind}', activation)
+
+        # self.block1 = nn.Sequential(
+        #     nn.Linear(2544, 48),
+        #     nn.ReLU(),
+        # )
+
+        self.block1 = nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
         y = self.block1(x.float())
