@@ -10,8 +10,8 @@ This script runs model training.
 from Metalprot_learning.models import *
 
 if __name__ == '__main__':
-    path2observations = ''
-    path2labels = ''
+    path2observations = '/Users/jonathanzhang/Documents/ucsf/degrado/data/observations.npy'
+    path2labels = '/Users/jonathanzhang/Documents/ucsf/degrado/data/labels.npy'
 
     #define architecture of neural network
     arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': None}, 
@@ -26,10 +26,10 @@ if __name__ == '__main__':
     learning_rate = 0.001
     loss_function = 'MAE' #can be mean absolute error (MAE) or mean squared error (MSE)
     optimizer = 'SGD' #currently can only be stochastic gradient descent (SGD)
-    training_proportion = 0.8
+    partition = (0.8,0.1,0.1)
     seed = 42
-    filename = None
+    filename = '/Users/jonathanzhang/Documents/ucsf/degrado/data/deezma.pth'
 
-    model = SingleLayerNet()
+    model = SingleLayerNet(arch)
     train_model(model, path2observations, path2labels, epochs, batch_size, learning_rate, loss_function, 
-                optimizer, filename=filename, train_prop=training_proportion, seed=seed)
+                optimizer, filename=filename, partition=partition, seed=seed)
