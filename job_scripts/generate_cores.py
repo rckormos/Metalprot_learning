@@ -9,7 +9,8 @@ Note that this script is meant to be called from within a SGE bash submission sc
 #imports 
 import os
 import sys
-from Metalprot_learning.get_binding_cores import construct_training_example 
+from Metalprot_learning.get_binding_cores import construct_training_example
+from Metalprot_learning import utils
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     """Distributes pdb files for core generation.
@@ -26,6 +27,40 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
 
     return tasks
+
+def construct_training_example(file: str, path2output: str):
+    """Calls main function from get_binding_cores.py to construct training example. For quality control and de-bugging purposes, there are multiple try/except statements.
+
+    Args:
+        file (str): Path to pdb file.
+        path2output (str): Path to output.
+    """
+
+    try:
+        construct_training_example(file,path2output)
+
+    except utils.NoCoresError as e:
+        pass
+
+    except utils.DistMatDimError as e:
+        pass
+
+    except utils.LabelDimError as e:
+        pass
+
+    except utils.EncodingDimError as e:
+        pass
+
+    except utils.EncodingError as e:
+        pass
+
+    except utils.PermutationError as e:
+        pass
+
+    except:
+        pass
+    pass
+
 
 if __name__ == '__main__':
     path2output = sys.argv[1] #path to store outputs    
@@ -47,8 +82,10 @@ if __name__ == '__main__':
             construct_training_example(file, path2output)
             print('')
 
-        except:
+        except DistMatDimError as e:
             failed.append(file)
+
+        except 
 
     if len(failed) != 0:
         with open(os.path.join(path2output, 'failed.txt'), 'w') as f:

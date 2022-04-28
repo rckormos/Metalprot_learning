@@ -8,8 +8,12 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass 
 
+class NoCoresError(Error):
+    """Raised when no cores are found"""
+    pass
+
 class DistMatDimError(Error):
-    "Raised when dimensions of distance matrix are incorrect"
+    """Raised when dimensions of distance matrix are incorrect"""
     pass
 
 class LabelDimError(Error):
@@ -26,4 +30,4 @@ class EncodingError(Error):
 
 class PermutationError(Error):
     """Raised when permutations are done incorrectly"""
-    pass
+    pass 

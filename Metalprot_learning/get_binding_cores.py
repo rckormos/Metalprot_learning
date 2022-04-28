@@ -5,12 +5,12 @@ This file contains functions for extracting binding core examples and writing th
 """
 
 #imports
-from re import L
 from prody import *
 import numpy as np
 import os
 import pickle
 import itertools
+from Metalprot_learning import utils
 
 def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
     """Helper function for extract_cores. Finds neighbors of an input coordinating residue.
@@ -275,8 +275,8 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
         aa = str(seq[i])
 
         if aa not in threelettercodes:
-            print('Unrecognized amino acid present in core.')
-            
+           raise utils.EncodingError
+
         idx = threelettercodes.index(aa)
         one_hot = np.zeros((1,20))
         one_hot[0,idx] = 1
@@ -299,31 +299,33 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     """
 
     max_resis = (2*coordinating_resis*no_neighbors) + coordinating_resis
+    max_permutations = int(np.prod(np.linspace(1,coordinating_resis,coordinating_resis)))
 
     #find all the unique cores within a given pdb structure
     cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = remove_degenerate_cores(cores, names)
-    assert len(unique_cores) > 0, "This structure has no identified binding cores."
+    if len(unique_cores) == 0:
+        raise utils.NoCoresError
 
     #extract features for each unique core found
+    completed = 0
     for core, name in zip(unique_cores, unique_names):
         label = compute_labels(core, name, no_neighbors, coordinating_resis)
         if label.shape[1] != max_resis * 4:
-            print('Core with inproper label dimensions present')
-            continue
+            raise utils.LabelDimError
 
         full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
         if len(full_dist_mat) != max_resis * 4:
-            print('Core with improper distance matrix dimensions present')
-            continue
+            raise utils.DistMatDimError
 
         encoding = onehotencode(core, no_neighbors, coordinating_resis)
         if encoding.shape[1] != max_resis * 20:
-            print('Core with improper encoding dimensions present')
-            continue
+            raise utils.EncodingDimError
 
         #permute distance matrices, labels, and encodings
         features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
+        if len([key for key in features.keys() if type(key) == int]) > max_permutations:
+            raise utils.PermutationError
 
         #write files to disk
         metal_resnum = core.select(f'name {name}') .getResnums()[0]
@@ -332,4 +334,6 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
 
-        print('finished writing files')
+        completed += 1
+
+    print(f'{completed} cores identified and featurized for {pdb_file}')
