@@ -13,6 +13,13 @@ if __name__ == '__main__':
     path2observations = ''
     path2labels = ''
 
+    #define architecture of neural network
+    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': None}, 
+            {'input_dim': 1272, 'output_dim': 636, 'activation': None},
+            {'input_dim': 636, 'output_dim': 318, 'activation': None},
+            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
+
+
     #define hyperparameters
     epochs = 1000
     batch_size = 4
