@@ -67,6 +67,9 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00
 
     subprocess.check_call(qsub_command)
 
+def run_sequential(job_script: str, path: str):
+    subprocess.check_call([job_script, path])
+
 if __name__ == '__main__':
     
     arguments = docopt.docopt(__doc__)
@@ -79,5 +82,10 @@ if __name__ == '__main__':
         
         run_SGE(job_name, num_jobs, path, job_script)
 
+    elif arguments['--job-distributor'] == 'sequential':
+        path = arguments['<path>']
+        job_script = arguments['<job-script>']
+        run_sequential(job_script, path)
+        
     else:
         raise IOError('Unknown job distributor: {0}'.format(arguments['--job-distributor']))
