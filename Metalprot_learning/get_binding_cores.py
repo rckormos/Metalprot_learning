@@ -168,7 +168,6 @@ def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
             names.append(name)
 
         else:
-            print(f'Number of coordinating resiudes not between 2 and {coordinating_resis}')
             continue
     return cores, names
 
