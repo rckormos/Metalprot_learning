@@ -62,7 +62,7 @@ def run_construct_training_example(file: str, path2output: str):
         failed.append(file + ' Unknown error occured')
 
     if len(failed) > 0:
-        with open(os.path.join(path2output, 'failed.txt'), 'w') as f:
+        with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
             f.write('\n'.join([line for line in failed]))
 
 
