@@ -5,8 +5,10 @@ This file contains functions for model training and hyperparameter optimization.
 """
 
 #imports
+import os
 import numpy as np
 import torch
+from torch.utils.data import DataLoader
 
 def train_loop(model, train_dataloader, loss_fn, optimizer):
 
@@ -35,39 +37,27 @@ def validation_loop(model, validation_dataloader, loss_fn):
 
 def train_model(model, 
                 path2output: str,
-                observation_file: str, 
-                label_file: str, 
-                epochs: int, 
-                batch_size: int, 
-                lr: float, 
-                loss_fn: str, 
-                optimizer: str, 
-                name=None,
-                partition=(0.8,0.1,0.1), 
-                seed=42):
+                training_data, 
+                testing_data, 
+                hyperparams: tuple):
+
     """Runs model training.
 
     Args:
         model (SingleLayerNet): SingleLayerNet object.
-        observation_file (str): Path to observation matrix.
-        label_file (str): Path to label matrix.
-        batch_size (int): Batch size for training.
-        lr (float): Learning rate for training.
-        loss_fn (str): Defines the loss function for backpropagation. Must be a string in {'MAE', 'MSE'}
-        optimizer (str): Defines the optimization algorithm for backpropagation. Must be a string in {'SGD'}
-        name (str, optional): Filename to write trained model weights and biases to. Defaults to None.
-        train_size (float, optional): The proportion of data to be paritioned into the training set. Defaults to 0.8.
+        path2output (str): Path to directory to contain output files.
+        training_data (__main__.DistanceData): Dataset object of training data.
+        testing_data (__main__.DistanceData): Dataset object of testing_data.
+        hyperparams (tuple): Tuple containing hyperparams.
         seed (int, optional): The random seed for splitting. Defaults to 42.
     """
 
-    #split dataset into training and testing sets
-    observations = np.load(observation_file)
-    labels = np.load(label_file)
-    train_data, test_data, X_val, y_val = split_data(observations, labels, partition, seed)
+    #expand hyperparamters
+    epochs, batch_size, lr, loss_fn, optimizer = hyperparams
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(test_data, batch_size=batch_size, shuffle=True)
+    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(testing_data, batch_size=batch_size, shuffle=True)
 
     #define optimizer and loss function
     optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=lr)}
@@ -87,9 +77,6 @@ def train_model(model,
         train_loss.append(_train_loss)
         test_loss.append(_test_loss)
 
-
-    torch.save(model.state_dict(), os.path.join(path2output, name + '.pth'))
-    np.save(os.path.join(path2output, name + '_train_loss'), np.array(train_loss))
-    np.save(os.path.join(path2output, name + '_test_loss'), np.array(test_loss))
-    np.save(os.path.join(path2output, 'X_val'), X_val)
-    np.save(os.path.join(path2output, 'y_val'), y_val)
+    torch.save(model.state_dict(), os.path.join(path2output, model + '.pth'))
+    np.save(os.path.join(path2output, 'train_loss'), np.array(train_loss))
+    np.save(os.path.join(path2output, 'test_loss'), np.array(test_loss))
