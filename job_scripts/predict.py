@@ -11,7 +11,9 @@ import scipy
 import numpy as np
 import torch
 import sys
+import json
 from Metalprot_learning.core_generator import *
+from Metalprot_learning.models import *
 
 def distribute_tasks(path2pdbs: str, no_jobs: int, job_id: int):
     """Distributes pdb files for core generation.
@@ -41,34 +43,35 @@ def compute_features_matrix(pdbs: list, no_neighbors: int, coordinating_resis: i
         features (np.ndarray): Features matrix with rows indexed by observations.
         resnums (list): List of resnums for each observation. Indexed by observation.
         names (list): List of metal identities, if known. Indexed by observation. 
-        cores (list): List of cores.
+        core_list (list): List of cores.
     """
 
-    names = []
+    metal_names = []
     resnums = []
-    cores = []
+    core_list = []
     ids = []
+    no_iter = 0
     for pdb in pdbs:
-        ids.append(pdb.split('/')[-1].split('.')[0])
         cores, names = extract_cores(pdb, no_neighbors, coordinating_resis)
+        id = pdb.split('/')[-1].split('.')[0]
 
-        no_iter = 0
         for core, name in zip(cores, names):
             full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
             encoding = onehotencode(core, no_neighbors, coordinating_resis)
 
             if no_iter == 0:
-                features = np.concatenate((full_dist_mat.flatten(), encoding))
+                features = np.concatenate((full_dist_mat.flatten(), encoding.squeeze()))
 
             else:
-                features = np.vstack([features, np.concatenate((full_dist_mat.flatten(), encoding))])
+                features = np.vstack([features, np.concatenate((full_dist_mat.flatten(), encoding.squeeze()))])
 
-            no_iter += 1
-            names.append(name)
+            metal_names.append(name)
             resnums.append(binding_core_resnums)
-            cores.append(cores)
+            core_list.append(core)
+            ids.append(id)
+            no_iter += 1
     
-    return features, resnums, names, cores, ids
+    return features, resnums, metal_names, core_list, ids
 
 def triangulate(core, resnums, label):
     """Given core coordinates and a label, will compute putative coordinates of metal and uncertainty. 
@@ -89,6 +92,7 @@ def triangulate(core, resnums, label):
         else:
             coords = np.vstack([coords, core.select(f'resnum {resnum}').select('name C CA N O').getCoords()])
     
+
     def objective(v):
         x,y,z = v
         distances = np.zeros(coords.shape[0])
@@ -101,7 +105,7 @@ def triangulate(core, resnums, label):
     
     result = scipy.optimize.minimize(objective, guess)
     solution = result.x
-    rmsd = np.sqrt(np.mean(np.square(solution - label)))
+    rmsd = objective(solution)
 
     return solution, rmsd
 
@@ -120,19 +124,22 @@ if __name__ == '__main__':
     tasks = distribute_tasks(path2pdbs, no_jobs, job_id)
 
     path2model = ''
-    model = torch.load(path2model)
+    path2architecture = ''
+    with open(path2architecture, 'r') as f:
+        arch = json.load(f)
+    model = SingleLayerNet(arch)
+    model.load_state_dict(torch.load(path2model))
     
     features, resnums, names, cores, ids = compute_features_matrix(tasks, no_neighbors, coordinating_resis)
     distances = model(torch.from_numpy(features)).cpu().detach().numpy()
 
     file_contents = []
     for i in range(0, distances.shape[0]):
-        distance = distances[i]
         resnum = resnums[i]
+        distance = distances[i][0:len(resnum)*4]
         name = names[i]
         core = cores[i]
         id = ids[i]
-
         solution, uncertainty = triangulate(core, resnum, distance)
         line = str(id) + '  ' + str(name) + '  ' + str(solution) + '  ' + str(uncertainty) + '  ' + str(resnums)
         file_contents.append(line)
