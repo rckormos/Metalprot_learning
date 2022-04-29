@@ -47,7 +47,9 @@ def compute_features_matrix(pdbs: list, no_neighbors: int, coordinating_resis: i
     names = []
     resnums = []
     cores = []
+    ids = []
     for pdb in pdbs:
+        ids.append(pdb.split('/')[-1].split('.')[0])
         cores, names = extract_cores(pdb, no_neighbors, coordinating_resis)
 
         no_iter = 0
@@ -66,7 +68,7 @@ def compute_features_matrix(pdbs: list, no_neighbors: int, coordinating_resis: i
             resnums.append(binding_core_resnums)
             cores.append(cores)
     
-    return features, resnums, names, cores
+    return features, resnums, names, cores, ids
 
 def triangulate(core, resnums, label):
     """Given core coordinates and a label, will compute putative coordinates of metal and uncertainty. 
@@ -120,13 +122,20 @@ if __name__ == '__main__':
     path2model = ''
     model = torch.load(path2model)
     
-    features, resnums, names, cores = compute_features_matrix(tasks, no_neighbors, coordinating_resis)
+    features, resnums, names, cores, ids = compute_features_matrix(tasks, no_neighbors, coordinating_resis)
     distances = model(torch.from_numpy(features)).cpu().detach().numpy()
 
+    file_contents = []
     for i in range(0, distances.shape[0]):
         distance = distances[i]
         resnum = resnums[i]
         name = names[i]
         core = cores[i]
+        id = ids[i]
 
         solution, uncertainty = triangulate(core, resnum, distance)
+        line = str(id) + '  ' + str(name) + '  ' + str(solution) + '  ' + str(uncertainty) + '  ' + str(resnums)
+        file_contents.append(line)
+
+    with open(os.path.join(path2output, 'predicted_distances.txt'), 'w') as f:
+        f.write('\n'.join([line for line in file_contents]))
