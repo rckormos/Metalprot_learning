@@ -12,6 +12,7 @@ from Metalprot_learning.datasets import *
 from Metalprot_learning.trainer import *
 import sys
 import os
+import json
 
 def distribute_tasks(no_jobs: int, job_id: int, epochs: list, batch_sizes: list, learning_rates: list, 
                     loss_functions: list, optimizers: list):
@@ -35,6 +36,18 @@ def distribute_tasks(no_jobs: int, job_id: int, epochs: list, batch_sizes: list,
     
     return tasks
 
+def run_train(combination: tuple):
+    name = '_'.join([str(i) for i in list(combination)])
+
+    model_dir = os.path.join(path2observations, name)
+    os.makedirs(model_dir)
+
+    model = SingleLayerNet(arch)
+    train_model(model, model_dir, training_data, testing_data, combination)
+
+    with open(os.path.join(model_dir, 'architecture.json'), 'w') as f:
+        json.dump(arch, f)
+
 if __name__ == '__main__':
     path2output = sys.argv[1] 
     no_jobs = 1
@@ -49,13 +62,13 @@ if __name__ == '__main__':
     path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/labels.npy'
 
     #define architecture of neural network
-    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': None}, 
-            {'input_dim': 1272, 'output_dim': 636, 'activation': None},
-            {'input_dim': 636, 'output_dim': 318, 'activation': None},
+    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU'}, 
+            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU'},
+            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU'},
             {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
-    epochs = [1000]
+    epochs = [2]
     batch_sizes = [2000]
     learning_rates = [0.001]
     loss_functions = ['MAE'] #can be mean absolute error (MAE) or mean squared error (MSE)
@@ -69,10 +82,4 @@ if __name__ == '__main__':
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, epochs, batch_sizes, learning_rates, loss_functions, optimizers)
     for combination in tasks:
-        name = '_'.join([str(i) for i in list(combination)])
-
-        model_dir = os.path.join(path2observations, name)
-        os.makedirs(model_dir)
-
-        model = SingleLayerNet(arch)
-        train_model(model, model_dir, training_data, testing_data, combination)
+        run_train(combination)
