@@ -31,15 +31,16 @@ def distribute_tasks(no_jobs: int, job_id: int, epochs: list, batch_sizes: list,
         tasks (list): List of tuples containing hyperparameter combinations.
     """
 
-    combinations = [(i,j,k,l,m) for i in epochs for j in batch_sizes for k in learning_rates for l in loss_functions for m in optimizers]
+    combinations = list(set([(i,j,k,l,m) for i in epochs for j in batch_sizes for k in learning_rates for l in loss_functions for m in optimizers]))
+    combinations.sort()
     tasks = [combinations[i] for i in range(0,len(combinations)) if i % no_jobs == job_id]
     
     return tasks
 
-def run_train(combination: tuple):
+def run_train(path2output: str, combination: tuple):
     name = '_'.join([str(i) for i in list(combination)])
 
-    model_dir = os.path.join(path2observations, name)
+    model_dir = os.path.join(path2output, name)
     os.makedirs(model_dir)
 
     model = SingleLayerNet(arch)
@@ -68,9 +69,9 @@ if __name__ == '__main__':
             {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
-    epochs = [2]
-    batch_sizes = [2000]
-    learning_rates = [0.001]
+    epochs = [1000, 1500, 2000]
+    batch_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
+    learning_rates = [0.01, 0.001, 0.0001, 0.0001]
     loss_functions = ['MAE'] #can be mean absolute error (MAE) or mean squared error (MSE)
     optimizers = ['SGD'] #currently can only be stochastic gradient descent (SGD)
     partition = (0.8,0.1,0.1)
@@ -82,4 +83,4 @@ if __name__ == '__main__':
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, epochs, batch_sizes, learning_rates, loss_functions, optimizers)
     for combination in tasks:
-        run_train(combination)
+        run_train(path2output, combination)

@@ -77,6 +77,6 @@ def train_model(model,
         train_loss.append(_train_loss)
         test_loss.append(_test_loss)
 
-    torch.save(model.state_dict(), os.path.join(path2output, model + '.pth'))
+    torch.save(model.state_dict(), os.path.join(path2output, "model" + '.pth'))
     np.save(os.path.join(path2output, 'train_loss'), np.array(train_loss))
     np.save(os.path.join(path2output, 'test_loss'), np.array(test_loss))
