@@ -8,6 +8,8 @@ This script runs model training.
 
 #imports
 from Metalprot_learning.models import *
+from Metalprot_learning.datasets import *
+from Metalprot_learning.trainer import *
 import sys
 
 if __name__ == '__main__':

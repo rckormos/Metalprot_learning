@@ -11,7 +11,7 @@ import scipy
 import numpy as np
 import torch
 import sys
-from Metalprot_learning.get_binding_cores import *
+from Metalprot_learning.core_generator import *
 
 def distribute_tasks(path2pdbs: str, no_jobs: int, job_id: int):
     """Distributes pdb files for core generation.

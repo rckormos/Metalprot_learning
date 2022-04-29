@@ -9,7 +9,7 @@ Note that this script is meant to be called from within a SGE bash submission sc
 #imports 
 import os
 import sys
-from Metalprot_learning.get_binding_cores import construct_training_example
+from Metalprot_learning.core_generator import construct_training_example
 from Metalprot_learning import utils
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
