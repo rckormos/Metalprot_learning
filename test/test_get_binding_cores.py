@@ -14,17 +14,18 @@ import numpy as np
 
 def load_data():
     "Helper function for loading structures"
-    data_path = '/wynton/home/rotation/jzhang1198/protein_des_mod/Metalprot_learning/data'
+    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/src'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
-def extract_cores_test(cores, names, no_neighbors, coordinating_resis):
-    max_resis = (no_neighbors * 2 * coordinating_resis) + coordinating_resis
+def extract_cores_test(cores, names, coordination_numbers, no_neighbors, coordinating_resis):
+    max_resis = coordinating_resis + (2 * no_neighbors * coordinating_resis)
     
-    for core, name in zip(cores, names):
+    for core, name, coordination_number in zip(cores, names, coordination_numbers):
         no_resis = len(core.select('name CA'))
         assert no_resis <= max_resis 
         assert name
+        assert coordination_number
 
 def compute_labels_test(label, core, metal_name, no_neighbors, coordinating_resis):
     max_atoms = 4*((no_neighbors * 2 * coordinating_resis) + coordinating_resis)
@@ -163,12 +164,13 @@ def test_all():
 
     pdbs = load_data()
     no_neighbors = 1
-    coordinating_resis = 4
+    coordinating_resis = 6
     for pdb in pdbs:
         print(pdb)
-        cores, names = extract_cores(pdb, no_neighbors, coordinating_resis)
-        extract_cores_test(cores, names, no_neighbors, coordinating_resis)
-        unique_cores, unique_names = remove_degenerate_cores(cores, names)
+        cores, names, nums = extract_cores(pdb, no_neighbors, coordinating_resis=coordinating_resis)
+        extract_cores_test(cores, names, nums, no_neighbors, coordinating_resis)
+        unique_cores, unique_names = remove_degenerate_cores(cores, names, nums)
+        assert len(unique_cores) > 0
 
         for core, name in zip(unique_cores, unique_names):
             label = compute_labels(core, name, no_neighbors, coordinating_resis)
