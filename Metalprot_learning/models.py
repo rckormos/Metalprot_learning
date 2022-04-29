@@ -10,6 +10,7 @@ import torch
 from torch import nn
 from torch.utils.data import DataLoader
 from collections import OrderedDict
+import os
 
 class SingleLayerNet(nn.Module):
     def __init__(self, arch: list):
@@ -76,9 +77,9 @@ def split_data(X, y, partitions, seed):
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 
-    training_data, testing_data, validation_data = DistanceData(X_train, y_train), DistanceData(X_test, y_test), DistanceData(X_val, y_val)
+    training_data, testing_data = DistanceData(X_train, y_train), DistanceData(X_test, y_test)
 
-    return training_data, testing_data, validation_data
+    return training_data, testing_data, X_val, y_val
 
 def train_loop(model, train_dataloader, loss_fn, optimizer):
 
@@ -106,6 +107,7 @@ def validation_loop(model, validation_dataloader, loss_fn):
     return validation_loss
 
 def train_model(model, 
+                path2output: str,
                 observation_file: str, 
                 label_file: str, 
                 epochs: int, 
@@ -113,7 +115,7 @@ def train_model(model,
                 lr: float, 
                 loss_fn: str, 
                 optimizer: str, 
-                filename=None,
+                name=None,
                 partition=(0.8,0.1,0.1), 
                 seed=42):
     """Runs model training.
@@ -126,7 +128,7 @@ def train_model(model,
         lr (float): Learning rate for training.
         loss_fn (str): Defines the loss function for backpropagation. Must be a string in {'MAE', 'MSE'}
         optimizer (str): Defines the optimization algorithm for backpropagation. Must be a string in {'SGD'}
-        filename (str, optional): Filename to write trained model weights and biases to. Defaults to None.
+        name (str, optional): Filename to write trained model weights and biases to. Defaults to None.
         train_size (float, optional): The proportion of data to be paritioned into the training set. Defaults to 0.8.
         seed (int, optional): The random seed for splitting. Defaults to 42.
     """
@@ -134,7 +136,7 @@ def train_model(model,
     #split dataset into training and testing sets
     observations = np.load(observation_file)
     labels = np.load(label_file)
-    train_data, test_data, val_data = split_data(observations, labels, partition, seed)
+    train_data, test_data, X_val, y_val = split_data(observations, labels, partition, seed)
 
     #instantiate dataloader objects for train and test sets
     train_dataloader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -158,7 +160,9 @@ def train_model(model,
         train_loss.append(_train_loss)
         test_loss.append(_test_loss)
 
-    if filename:
-        torch.save(model.state_dict(), filename + '.pth')
 
-    return train_loss, test_loss, val_data
+    torch.save(model.state_dict(), os.path.join(path2output, name + '.pth'))
+    np.save(os.path.join(path2output, name + '_train_loss'), np.array(train_loss))
+    np.save(os.path.join(path2output, name + '_test_loss'), np.array(test_loss))
+    np.save(os.path.join(path2output, 'X_val'), X_val)
+    np.save(os.path.join(path2output, 'y_val'), y_val)
