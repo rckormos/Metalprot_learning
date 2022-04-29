@@ -6,6 +6,7 @@ This file contains classes for Metalprot_learning models and datasets.
 
 #imports
 import numpy as np
+import torch
 from torch import nn
 from collections import OrderedDict
 
@@ -35,3 +36,7 @@ class SingleLayerNet(nn.Module):
     def forward(self, x):
         y = self.block1(x.float())
         return y
+
+def SumOfSquaresLoss(output, target):
+    loss = torch.sum(torch.square(output - target))
+    return loss

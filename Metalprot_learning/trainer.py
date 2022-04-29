@@ -64,7 +64,8 @@ def train_model(model,
     optimizer = optimizer_dict[optimizer]
 
     loss_fn_dict = {'MAE': torch.nn.L1Loss(),
-                    'MSE': torch.nn.MSELoss()}
+                    'MSE': torch.nn.MSELoss(),
+                    'SumOfSquaresLoss': SumOfSquaresLoss()}
     loss_fn = loss_fn_dict[loss_fn]
 
     train_loss =[]
@@ -80,3 +81,7 @@ def train_model(model,
     torch.save(model.state_dict(), os.path.join(path2output, "model" + '.pth'))
     np.save(os.path.join(path2output, 'train_loss'), np.array(train_loss))
     np.save(os.path.join(path2output, 'test_loss'), np.array(test_loss))
+
+def SumOfSquaresLoss(output, target):
+    loss = torch.sum(torch.square(output - target))
+    return loss
