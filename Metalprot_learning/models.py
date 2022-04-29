@@ -19,13 +19,16 @@ class SingleLayerNet(nn.Module):
         for ind, layer in enumerate(arch):
             input_dim = layer['input_dim']
             output_dim = layer['output_dim']
+            layers.append((f'layer{ind}', nn.Linear(input_dim, output_dim)))
 
             activation_key = layer['activation']
             activation = activation_function_dict[activation_key] if activation_key else None
-
-            layers.append((f'layer{ind}', nn.Linear(input_dim, output_dim)))
             if activation:
                 layers.append((f'activation{ind}', activation))
+
+            dropout = nn.Dropout(layer['dropout']) if layer['dropout'] else None
+            if dropout:
+                layers.append(f'droupout{ind}', dropout)
 
         self.block1 = nn.Sequential(OrderedDict(layers))
 
