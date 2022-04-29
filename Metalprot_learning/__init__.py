@@ -3,7 +3,8 @@ Metalprot_learning
 DeGrado Lab 2021
 """
 
-from .get_binding_cores import *
+from .core_generator import *
+from .trainer import *
 from .models import *
 from .utils import *
 
