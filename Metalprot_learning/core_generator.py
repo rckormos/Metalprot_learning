@@ -35,7 +35,7 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     return core_fragment
 
-def get_contiguous_resnums(resnums: np.ndarray):
+def get_contiguous_resindices(resnums: np.ndarray):
     """Helper function for permute_features. 
 
     Args:
@@ -66,25 +66,27 @@ def get_contiguous_resnums(resnums: np.ndarray):
     
     return fragment_indices
 
-def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
+def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resindices: np.ndarray, resnums: np.ndarray):
     """Computes fragment permutations for input features and labels. 
 
     Args:
         dist_mat (np.ndarray): Distance matrix.
         encoding (np.ndarray): One-hot encoding of sequence.
         label (np.ndarray): Backbone atom distances to the metal.
+        resindices (np.ndarray): Resindices of core atoms in the order they appear when calling core.getResindices().
         resnums (np.ndarray): Resnums of core atoms in the order the appear when calling core.getResnums().
 
     Returns:
         all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as distance matrices and labels for individual permutations.
     """
+
     all_features = {}
     full_observations = []
     full_labels = []
 
-    fragment_indices = get_contiguous_resnums(resnums)
+    fragment_indices = get_contiguous_resindices(resindices)
     fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
-    atom_indices = np.split(np.linspace(0, len(resnums)*4-1, len(resnums)*4), len(resnums))
+    atom_indices = np.split(np.linspace(0, len(resindices)*4-1, len(resindices)*4), len(resindices))
     label = label.squeeze()
     for index, index_permutation in enumerate(fragment_index_permutations):
         feature = {}
@@ -103,7 +105,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
 
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
-        zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
+        zeros = np.zeros(20 * (len(split_encoding) - len(resindices)))
         permuted_encoding = np.concatenate((_permuted_encoding, zeros))
 
         assert len(permuted_encoding) == len(encoding.squeeze())
@@ -122,6 +124,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         feature['encoding'] = permuted_encoding
         feature['label'] = permuted_label
         feature['resnums'] = [resnums[i] for i in permutation]
+        feature['resindices'] = [resindices[i] for i in permutation]
 
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
@@ -131,12 +134,13 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
     all_features['full_labels'] = np.array(full_labels)
     return all_features
 
-def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
+def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis=6):
     """Finds all putative metal binding cores in an input protein structure.
 
     Returns:
         cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
-        metal_names (list): List of metal names indexed by binding core.
+        names (list): List of metal names indexed by binding core.
+        coordination_numbers (list): List of coordination numbers indexed by binding core.
     """
 
     metal_sel = f'name NI MN ZN CO CU MG FE'
@@ -144,6 +148,7 @@ def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
 
     cores = []
     names = []
+    coordination_numbers = []
 
     metal_resindices = structure.select('hetero').select(metal_sel).getResindices()
     metal_names = structure.select('hetero').select(metal_sel).getNames()
@@ -166,20 +171,24 @@ def extract_cores(pdb_file: str, no_neighbors: int, coordinating_resis: int):
             binding_core = structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
             cores.append(binding_core)
             names.append(name)
+            coordination_numbers.append(len(coordinating_resindices))
 
         else:
             continue
-    return cores, names
+    return cores, names, coordination_numbers
 
-def remove_degenerate_cores(cores: list, metal_names: list):
+def remove_degenerate_cores(cores: list, metal_names: list, coordination_numbers: list):
     """Function to remove cores that are the same. For example, if the input structure is a homotetramer, this function will only return one of the binding cores.
 
     Args:
         cores (list): List of metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
+        metal_names (list): List of metal names indexed by core.
+        coordination_numbers (list): List of coordination numbers indexed by core.
 
     Returns:
         unique_cores (list): List of all unique metal binding cores. Each element is a prody.atomic.atomgroup.AtomGroup object.
         unique_names (list): List of all metal names indexed by unique binding core.
+        unique_coordination_numbers (list): List of all unique coordination numbers indexed by binding core.
     """
 
     #TODO Update method to do structural alignment. For some reason, ProDy was not doing this properly.
@@ -187,12 +196,14 @@ def remove_degenerate_cores(cores: list, metal_names: list):
     if len(cores) > 1:
         unique_cores = []
         unique_names = []
+        unique_coordination_numbers = []
+
         while cores:
             current_core = cores.pop() #extract last element in cores
             current_name = metal_names.pop()
+            current_coordination_number = coordination_numbers.pop()
             current_total_atoms = len(current_core.getResnums())
             current_core.setChids('A')
-
 
             pairwise_seqids = np.array([])
             pairwise_overlap = np.array([])
@@ -216,12 +227,14 @@ def remove_degenerate_cores(cores: list, metal_names: list):
 
             unique_cores.append(current_core) #add reference core 
             unique_names.append(current_name)
+            unique_coordination_numbers.append(current_coordination_number)
 
     else:
         unique_cores = cores 
         unique_names = metal_names
+        unique_coordination_numbers = coordination_numbers
 
-    return unique_cores, unique_names
+    return unique_cores, unique_names, unique_coordination_numbers
 
 def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
@@ -243,10 +256,10 @@ def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
     """Generates binding core backbone distances and label files.
 
     Returns:
-        distance_matrices (dict): Dictionary containing distance matrices and a numpy array of resnums that index these matrices.
+        distance_matrices (dict): Dictionary containing distance matrices and a numpy array of resindices that index these matrices.
     """
 
-    distance_matrix = {}
+    binding_core_resindices = core.select('protein').select('name N').getResindices()
     binding_core_resnums = core.select('protein').select('name N').getResnums()
 
     max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors))
@@ -256,7 +269,7 @@ def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
 
-    return full_dist_mat, binding_core_resnums
+    return full_dist_mat, binding_core_resindices, binding_core_resnums
 
 def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
@@ -287,7 +300,7 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
 
     return encoding
     
-def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
+def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1):
     """For a given pdb file, constructs a training example and extracts all features.
 
     Args:
@@ -297,38 +310,38 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         coordinating_resis (int, optional): Sets a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
-    max_resis = (2*coordinating_resis*no_neighbors) + coordinating_resis
-    max_permutations = int(np.prod(np.linspace(1,coordinating_resis,coordinating_resis)))
-
     #find all the unique cores within a given pdb structure
-    cores, names = extract_cores(pdb_file, no_neighbors, coordinating_resis)
-    unique_cores, unique_names = remove_degenerate_cores(cores, names)
+    cores, names, coordination_numbers = extract_cores(pdb_file, no_neighbors)
+    unique_cores, unique_names, unique_coordination_numbers = remove_degenerate_cores(cores, names, coordination_numbers)
     if len(unique_cores) == 0:
         raise utils.NoCoresError
 
     #extract features for each unique core found
     completed = 0
-    for core, name in zip(unique_cores, unique_names):
-        label = compute_labels(core, name, no_neighbors, coordinating_resis)
+    for core, name, num in zip(unique_cores, unique_names, unique_coordination_numbers):
+        max_resis = num + (num * 2 * no_neighbors)
+        max_permutations = np.product(np.linspace(1,max_resis,max_resis))
+
+        label = compute_labels(core, name, no_neighbors, num)
         if label.shape[1] != max_resis * 4:
             raise utils.LabelDimError
 
-        full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
+        full_dist_mat, binding_core_resindices, binding_core_resnums = compute_distance_matrices(core, no_neighbors, num)
         if len(full_dist_mat) != max_resis * 4:
             raise utils.DistMatDimError
 
-        encoding = onehotencode(core, no_neighbors, coordinating_resis)
+        encoding = onehotencode(core, no_neighbors, num)
         if encoding.shape[1] != max_resis * 20:
             raise utils.EncodingDimError
 
         #permute distance matrices, labels, and encodings
-        features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
+        features = permute_features(full_dist_mat, encoding, label, binding_core_resindices, binding_core_resnums)
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
         #write files to disk
-        metal_resnum = core.select(f'name {name}') .getResnums()[0]
-        filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + name + str(metal_resnum)
+        metal_resnum = core.select(f'name {name}') .getResindicess()[0]
+        filename = str(num) + '_' + core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resindices]) + '_' + name + str(metal_resnum)
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
