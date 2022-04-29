@@ -25,6 +25,9 @@ Options:
 
     --num-jobs=<NJ>, -n=<NJ>
         Number of jobs for parallel run.
+
+    --time=<T>, -t=<T>
+        Time to alot for each parallel run. For example, 05:00:00 will alot 5 hours.
 '''
 
 import docopt
@@ -75,12 +78,16 @@ if __name__ == '__main__':
     arguments = docopt.docopt(__doc__)
 
     if arguments['--job-distributor'] == 'SGE':
-        num_jobs = arguments['--num-jobs'] if arguments['--num-jobs'] else 1
+        num_jobs = arguments['--num-jobs'] if arguments['--num-jobs'] else '1'
         path = arguments['<path>']
         job_script = arguments['<job-script>']
         job_name = arguments['<job-name>']
+
+        if arguments['--time']:
+            run_SGE(job_name, num_jobs, path, job_script, time=arguments['--time'])
         
-        run_SGE(job_name, num_jobs, path, job_script)
+        else:
+            run_SGE(job_name, num_jobs, path, job_script)
 
     elif arguments['--job-distributor'] == 'sequential':
         path = arguments['<path>']
