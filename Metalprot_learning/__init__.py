@@ -5,6 +5,7 @@ DeGrado Lab 2021
 
 from .core_generator import *
 from .trainer import *
+from .datasets import *
 from .models import *
 from .utils import *
 
