@@ -169,10 +169,10 @@ def test_all():
         print(pdb)
         cores, names, nums = extract_cores(pdb, no_neighbors, coordinating_resis=coordinating_resis)
         extract_cores_test(cores, names, nums, no_neighbors, coordinating_resis)
-        unique_cores, unique_names = remove_degenerate_cores(cores, names, nums)
+        unique_cores, unique_names, unique_nums = remove_degenerate_cores(cores, names, nums)
         assert len(unique_cores) > 0
 
-        for core, name in zip(unique_cores, unique_names):
+        for core, name, num in zip(unique_cores, unique_names, unique_nums):
             label = compute_labels(core, name, no_neighbors, coordinating_resis)
             compute_labels_test(label, core, name, no_neighbors, coordinating_resis)
 
