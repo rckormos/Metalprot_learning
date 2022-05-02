@@ -69,9 +69,9 @@ if __name__ == '__main__':
             {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
-    epochs = [1000, 1500, 2000]
-    batch_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
-    learning_rates = [0.01, 0.001, 0.0001, 0.0001]
+    epochs = [2000]
+    batch_sizes = [1000]
+    learning_rates = [0.01]
     loss_functions = ['MAE'] #can be mean absolute error (MAE) or mean squared error (MSE)
     optimizers = ['SGD'] #currently can only be stochastic gradient descent (SGD)
     partition = (0.8,0.1,0.1)
