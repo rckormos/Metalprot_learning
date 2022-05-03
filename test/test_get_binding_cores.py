@@ -6,7 +6,7 @@ Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 This file contains unit tests for functions in get_binding_cores.py
 """
 
-from Metalprot_learning.get_binding_cores import *
+from Metalprot_learning.core_generator import *
 from prody import *
 import os
 import numpy as np
@@ -14,7 +14,7 @@ import numpy as np
 
 def load_data():
     "Helper function for loading structures"
-    data_path = '/wynton/home/rotation/jzhang1198/protein_des_mod/Metalprot_learning/data'
+    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/src'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
