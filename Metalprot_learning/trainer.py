@@ -56,8 +56,10 @@ def train_model(model,
     epochs, batch_size, lr, loss_fn, optimizer = hyperparams
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader = DataLoader(training_data, batch_size=batch_size, shuffle=True)
-    test_dataloader = DataLoader(testing_data, batch_size=batch_size, shuffle=True)
+    train_dataset = DistanceData(training_data)
+    test_dataset = DistanceData(testing_data)
+    train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
+    test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
     #define optimizer and loss function
     optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=lr)}
