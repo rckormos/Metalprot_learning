@@ -9,6 +9,12 @@ import os
 import numpy as np
 import torch
 from torch.utils.data import DataLoader
+from .trainer import datasets
+from .trainer import models
+
+def load_data():
+    
+    pass
 
 def train_loop(model, train_dataloader, loss_fn, optimizer):
 
@@ -56,8 +62,8 @@ def train_model(model,
     epochs, batch_size, lr, loss_fn, optimizer = hyperparams
 
     #instantiate dataloader objects for train and test sets
-    train_dataset = DistanceData(training_data)
-    test_dataset = DistanceData(testing_data)
+    train_dataset = datasets.DistanceData(training_data)
+    test_dataset = datasets.DistanceData(testing_data)
     train_dataloader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     test_dataloader = DataLoader(test_dataset, batch_size=batch_size, shuffle=True)
 
@@ -66,8 +72,7 @@ def train_model(model,
     optimizer = optimizer_dict[optimizer]
 
     loss_fn_dict = {'MAE': torch.nn.L1Loss(),
-                    'MSE': torch.nn.MSELoss(),
-                    'SumOfSquaresLoss': SumOfSquaresLoss()}
+                    'MSE': torch.nn.MSELoss()}
     loss_fn = loss_fn_dict[loss_fn]
 
     train_loss =[]
@@ -83,7 +88,3 @@ def train_model(model,
     torch.save(model.state_dict(), os.path.join(path2output, "model" + '.pth'))
     np.save(os.path.join(path2output, 'train_loss'), np.array(train_loss))
     np.save(os.path.join(path2output, 'test_loss'), np.array(test_loss))
-
-def SumOfSquaresLoss(output, target):
-    loss = torch.sum(torch.square(output - target))
-    return loss
