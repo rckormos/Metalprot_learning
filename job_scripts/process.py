@@ -82,10 +82,13 @@ def compile_data(feature_files, max_permutations=24, seed=42):
         if iteration == 0:
             X_unweighted = data['full_observations']
             Y_unweighted = data['full_labels']
-            ids.append(data['id'])
-            metals.append(data['metal'])
-            coordinates.append(data['metal_coords'])
             X, Y = sample(X_unweighted, Y_unweighted, max_permutations, seed)
+
+            ids += [data['id']] * len(X)
+            metals += [data['metal']] * len(X)
+            coordinates += [data['metal_coords']] * len(X)
+
+            assert len(ids) == len(metals) == len(coordinates) == len(X)
 
         else:
             x_unweighted = data['full_observations']
@@ -95,9 +98,12 @@ def compile_data(feature_files, max_permutations=24, seed=42):
                 x_weighted, y_weighted = sample(x_unweighted, y_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-                ids.append(data['id'])
-                metals.append(data['metal'])
-                coordinates.append(data['metal_coords'])
+
+                ids += [data['id']] * len(x_weighted)
+                metals += [data['metal']] * len(x_weighted)
+                coordinates += [data['metal_coords']] * len(x_weighted)
+
+                assert len(ids) == len(metals) == len(coordinates) == len(x_weighted)
 
             except:
                 failed.append(file)
@@ -126,6 +132,6 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    path2features = '/wynton/home/rotation/jzhang1198/data/ZN_binding_cores'
+    path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores'
     feature_files = distribute_tasks(path2features, no_jobs, job_id)
     compile_data(feature_files)
