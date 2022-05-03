@@ -78,7 +78,7 @@ if __name__ == '__main__':
     seed = 42
 
     #load data
-    training_data, testing_data, validation_data = split_data(path2observations, path2labels, partition, seed)
+    training_data, testing_data, validation_data, train_index, test_index, val_index = split_data(path2observations, path2labels, partition, seed)
 
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, epochs, batch_sizes, learning_rates, loss_functions, optimizers)
