@@ -61,19 +61,19 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, max_permutati
     return weighted_observations, weighted_labels
 
 def compile_data(feature_files, max_permutations=24, seed=42):
-    """Reads in pickle files containing features for cores and writes them into model-readable form.
+    """Reads in pickle files containing features for cores and writes them into model-readable form. Also writes an index.pkl file containing metal names, coordinates, and pdb IDs indexed by observation number.
 
     Args:
         path2features (str): Directory containing feature files.
         max_permutations (int, optional): Upper limit on maximum permutation number. In our initial formulation, we are addressing 2-4 coordinate binding sites. Therefore, since 4! = 24, there are a maximum of 24 possible permutations for a 4-coordinate binding site. Defaults to 24.
         seed (int, optional): Random seed for reproducibility. Defaults to 42.
-
-    Returns:
-        X (np.ndarray): Matrix with rows indexed by observations and columns indexed by features.
-        Y (np.ndarray): Matrix with rows indexed by observations and columns indexed by labels.
     """
     
+    indexing = {}
     failed = []
+    ids = []
+    metals = []
+    coordinates = []
     for iteration, file in enumerate(feature_files):
         print(file, iteration)
         with open(file, 'rb') as f:
@@ -82,6 +82,9 @@ def compile_data(feature_files, max_permutations=24, seed=42):
         if iteration == 0:
             X_unweighted = data['full_observations']
             Y_unweighted = data['full_labels']
+            ids.append(data['id'])
+            metals.append(data['metal'])
+            coordinates.append(data['metal_coords'])
             X, Y = sample(X_unweighted, Y_unweighted, max_permutations, seed)
 
         else:
@@ -92,12 +95,23 @@ def compile_data(feature_files, max_permutations=24, seed=42):
                 x_weighted, y_weighted = sample(x_unweighted, y_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
+                ids.append(data['id'])
+                metals.append(data['metal'])
+                coordinates.append(data['metal_coords'])
 
             except:
                 failed.append(file)
 
+    indexing['ids'] = ids
+    indexing['metals'] = metals
+    indexing['coordinates'] = coordinates
+
+    assert len(ids) == len(metals) == len(coordinates) == len(X) == len(Y)
+
     np.save(os.path.join(path2features, 'observations'), X)
     np.save(os.path.join(path2features, 'labels'), Y)    
+    with open(os.path.join(path2features, 'index.pkl'), 'wb') as f:
+        pickle.dump(indexing, f)
     
     if len(failed) > 0:
         with open(os.path.join(path2features, 'failed_process.txt'), 'w') as f:
