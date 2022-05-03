@@ -237,7 +237,9 @@ def compute_labels(core, metal_name: str, no_neighbors, coordinating_resis):
     max_atoms = 4 * (coordinating_resis + (2*coordinating_resis*no_neighbors)) #standardize shape of label matrix
     padding = max_atoms - distances.shape[1]
     distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
-    return distances 
+    coordinates = metal_sel.getCoords()[0]
+
+    return distances, coordinates
 
 def compute_distance_matrices(core, no_neighbors: int, coordinating_resis: int):
     """Generates binding core backbone distances and label files.
@@ -309,7 +311,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     #extract features for each unique core found
     completed = 0
     for core, name in zip(unique_cores, unique_names):
-        label = compute_labels(core, name, no_neighbors, coordinating_resis)
+        label, coords = compute_labels(core, name, no_neighbors, coordinating_resis)
         if label.shape[1] != max_resis * 4:
             raise utils.LabelDimError
 
@@ -325,6 +327,10 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         features = permute_features(full_dist_mat, encoding, label, binding_core_resnums)
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
+
+        features['id'] = core.getTitle()
+        features['metal'] = name
+        features['metal_coords'] = coords
 
         #write files to disk
         metal_resnum = core.select(f'name {name}') .getResnums()[0]
