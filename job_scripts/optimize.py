@@ -10,6 +10,7 @@ This script optimizes model performance by tuning dropout rate.
 import sys
 import numpy as np
 from copy import deepcopy
+import json
 from Metalprot_learning.models import *
 from Metalprot_learning.datasets import *
 from Metalprot_learning.trainer import *
@@ -77,6 +78,8 @@ if __name__ == '__main__':
         model = SingleLayerNet(architecture)
         train_model(model, name, training_data, testing_data, (epochs, batch_size, learning_rate, loss_function, optimizer))
 
+        with open(os.path.join(name, 'architecture.json'), 'w') as f:
+            json.dump(architecture, f)
 
 
 
