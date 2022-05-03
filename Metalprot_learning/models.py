@@ -29,7 +29,7 @@ class SingleLayerNet(nn.Module):
 
             dropout = nn.Dropout(layer['dropout']) if layer['dropout'] else None
             if dropout:
-                layers.append(f'droupout{ind}', dropout)
+                layers.append((f'droupout{ind}', dropout))
 
         self.block1 = nn.Sequential(OrderedDict(layers))
 

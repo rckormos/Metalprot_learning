@@ -1,34 +1,39 @@
+#!/usr/bin/env python3
+
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-This script optimizes model performance by tuning dropout rate.
+This script optimizes model performance by tuning dropout rate. 
 """
 
 #imports
+import sys
+import numpy as np
+from copy import deepcopy
 from Metalprot_learning.models import *
 from Metalprot_learning.datasets import *
 from Metalprot_learning.trainer import *
-import sys
-import numpy as np
 
 def distribute_tasks(no_jobs: int, job_id: int, arch: list, input_layer_rates: np.ndarray, hidden_layer_rates: np.ndarray):
-    architectures = []
     combinations = [(i,j) for i in input_layer_rates for j in hidden_layer_rates]
-    for comb in combinations:
-        _arch = arch
+    architectures = [arch] * len(combinations)
+    updated = []
+
+    for i, comb in enumerate(combinations):
+        _arch = deepcopy(architectures[i]) #need to copy due to the way python stores dictionaries and lists in memory
         input_rate, hidden_rate = comb
 
-        for ind, layer in enumerate(_arch):
-            if ind == 0:
+        for j, layer in enumerate(_arch):
+            if j == 0:
                 layer['dropout'] = input_rate
-            elif ind == len(arch):
+            elif j == len(_arch)-1:
                 layer['dropout'] = 0
             else:
                 layer['dropout'] = hidden_rate
 
-        architectures.append(_arch)
+        updated.append(_arch)
 
-    tasks = [architectures[i] for i in range(0,len(architectures)) if i % no_jobs == job_id]
+    tasks = [updated[i] for i in range(0,len(updated)) if i % no_jobs == job_id]
     return tasks
 
 if __name__ == '__main__':
@@ -66,7 +71,7 @@ if __name__ == '__main__':
     training_data, testing_data, validation_data = split_data(path2observations, path2labels, partition, seed)
     tasks = distribute_tasks(no_jobs, job_id, arch, input_layer_rates, hidden_layer_rates)
     for architecture in tasks:
-        name = os.path.join(path2output, str(architecture[0]['dropout']) + '_' + str(architecture[1]['dropout']))
+        name = os.path.join(path2output, str(architecture[0]['dropout']) + '_' + str(round(architecture[1]['dropout'],2)))
         os.makedirs(name)
 
         model = SingleLayerNet(architecture)
