@@ -25,7 +25,6 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     """
     pdbs = [os.path.join(path2examples, file) for file in os.listdir(path2examples) if '.pdb' in file]
     tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
-
     return tasks
 
 def run_construct_training_example(file: str, path2output: str):
@@ -34,6 +33,9 @@ def run_construct_training_example(file: str, path2output: str):
     Args:
         file (str): Path to pdb file.
         path2output (str): Path to output.
+
+    Returns:
+        failed_file_line: Line to write to failed.txt
     """
 
     try:
@@ -63,7 +65,6 @@ def run_construct_training_example(file: str, path2output: str):
 
     return failed_file_line
 
-
 if __name__ == '__main__':
     path2output = sys.argv[1] #path to store outputs    
     no_jobs = 1
@@ -82,6 +83,7 @@ if __name__ == '__main__':
         failed_file_line = run_construct_training_example(file, path2output)
         failed.append(failed_file_line)
 
+    failed.remove('None')
     if len(failed) > 0:
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
-            f.write('\n'.join([line for line in failed if line != None]))
+            f.write('\n'.join([line for line in failed]))

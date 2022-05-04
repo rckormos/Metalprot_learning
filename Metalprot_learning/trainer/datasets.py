@@ -5,8 +5,8 @@ This file contains functions for loading and splitting data for model training a
 """
 
 #imports
-import torch
 import numpy as np
+import torch
 import pickle
 
 class DistanceData(torch.utils.data.Dataset):
@@ -35,12 +35,9 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
         seed (int): The random seed for splitting.
 
     Returns:
-        training_data (tuple): Tuple containing training observations and labels.
-        testing_data (tuple): Tuple containing testing data and labels.
-        validation_data (tuple): Tuple containing validation data and labels.
-        train_index (dict): Dictionary containing PDB IDs, metal names, and metal coordinates indexed by training observations.
-        test_index (dict): Dictionary containing PDB IDs, metal names, and metal coordinates indexed by test observations.
-        val_index (dict): Dictionary containing PDB IDs, metal names, and metal coordinates indexed by validation observations.
+        training_data (tuple): Tuple containing numpy arrays of training observations and labels as well as indices.
+        testing_data (tuple): Tuple containing numpy arrays testing data and labels as well as indices.
+        validation_data (tuple): Tuple containing numpy arrays validation data and labels as well as indices.
     """
 
     #load data
@@ -71,6 +68,6 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
 
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 
-    training_data, testing_data, validation_data = (X_train, y_train), (X_test, y_test), (X_val, y_val)
+    training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
 
-    return training_data, testing_data, validation_data, train_index, test_index, val_index
+    return training_data, testing_data, validation_data
