@@ -12,7 +12,7 @@ def get_contiguous_resindices(resindices: np.ndarray):
     """Helper function for permute_features. 
 
     Args:
-        resnums (np.ndarray): Array of resindices in the order they appear when calling core.getResindices().
+        resindices (np.ndarray): Array of resindices in the order they appear when calling core.getResindices().
 
     Returns:
         fragment (list): List of sorted lists containing indices of contiguous stretches of resindices. 
@@ -94,7 +94,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         feature['distance'] = permuted_dist_mat
         feature['encoding'] = permuted_encoding
         feature['label'] = permuted_label
-        feature['resnums'] = [resindices[i] for i in permutation]
+        feature['resindices'] = [resindices[i] for i in permutation]
 
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
