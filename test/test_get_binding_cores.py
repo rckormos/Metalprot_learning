@@ -14,7 +14,7 @@ import numpy as np
 
 def load_data():
     "Helper function for loading structures"
-    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/src'
+    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
@@ -28,14 +28,14 @@ def extract_cores_test(cores, names, no_neighbors, coordinating_resis):
 
 def compute_labels_test(label, core, metal_name, no_neighbors, coordinating_resis):
     max_atoms = 4*((no_neighbors * 2 * coordinating_resis) + coordinating_resis)
-    resnums = core.select('name CA').getResnums()
+    resnums = core.select('name CA').getResindices()
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     tracker = 0
     tol = 10e-6
     label = label.squeeze()
     for resnum in resnums:
         for atom in ['N', 'CA', 'C', 'O']:
-            atom_sel = core.select(f'resnum {resnum}').select(f'name {atom}')
+            atom_sel = core.select(f'resindex {resnum}').select(f'name {atom}')
             distance = buildDistMatrix(metal_sel, atom_sel)[0,0]
             assert abs(distance - label[tracker]) < tol
             tracker += 1
@@ -52,8 +52,8 @@ def compute_distance_matrices_test(dist_mat, resnums, core, no_neighbors, coordi
         for atom1 in ['N', 'CA', 'C', 'O']:
             for resnum2 in resnums:
                 for atom2 in ['N', 'CA', 'C', 'O']:
-                    sel1 = core.select(f'resnum {resnum1}').select(f'name {atom1}')
-                    sel2 = core.select(f'resnum {resnum2}').select(f'name {atom2}')
+                    sel1 = core.select(f'resindex {resnum1}').select(f'name {atom1}')
+                    sel2 = core.select(f'resindex {resnum2}').select(f'name {atom2}')
                     distance = buildDistMatrix(sel1, sel2)[0,0]
                     assert abs(distance - dist_mat[row_index, column_index]) < tol
                     assert abs(distance - dist_mat[column_index, row_index]) < tol
@@ -166,17 +166,16 @@ def test_all():
     coordinating_resis = 4
     for pdb in pdbs:
         print(pdb)
-        cores, names = extract_cores(pdb, no_neighbors, coordinating_resis)
+        cores, names = extract_positive_cores(pdb, no_neighbors, coordinating_resis)
         extract_cores_test(cores, names, no_neighbors, coordinating_resis)
         unique_cores, unique_names = remove_degenerate_cores(cores, names)
 
         for core, name in zip(unique_cores, unique_names):
-            label = compute_labels(core, name, no_neighbors, coordinating_resis)
-            compute_labels_test(label, core, name, no_neighbors, coordinating_resis)
 
-            full_dist_mat, binding_core_resnums = compute_distance_matrices(core, no_neighbors, coordinating_resis)
+            full_dist_mat, binding_core_resnums, label, coords = compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
             compute_distance_matrices_test(full_dist_mat, binding_core_resnums, core, no_neighbors, coordinating_resis)
-
+            compute_labels_test(label, core, name, no_neighbors, coordinating_resis)
+            
             encoding = onehotencode(core, no_neighbors, coordinating_resis)
             onehotencode_test(encoding, no_neighbors, coordinating_resis, core)
 
