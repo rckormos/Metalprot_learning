@@ -13,8 +13,8 @@ import numpy as np
 from prody import *
 from Metalprot_learning.utils import EncodingError
 
-def compute_labels(core, metal_name: str, no_neighbors, coordination_number):
-    """Given a metal binding core, will compute the distance of all backbone atoms to metal site.
+def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordination_number: int):
+    """Generates binding core backbone distances and label files.
 
     Args:
         core (prody.atomic.atomgroup.AtomGroup): Input core.
@@ -23,44 +23,27 @@ def compute_labels(core, metal_name: str, no_neighbors, coordination_number):
         coordination_number (int): User-defined upper limit for coordination number.
 
     Returns:
-        distances (np.ndarray): A 1xn array containing backbone distances to metal, where n is the number of residues in the binding core. 
+        full_dist_mat (np.ndarray): Numpy array containing pairwise distances between all atoms in the core.
+        binding_core_resindices (np.ndarray): Numpy array containing resindices of binding core residues.
+        label (np.ndarray): A numpy array containing backbone distances to metal. 
         coordinates (np.ndarray): A numpy array with 3 elements containing the cartesian coordinates of the bound metal.
     """
 
-    metal_sel = core.select('hetero').select(f'name {metal_name}') 
-    binding_core_backbone = core.select('protein').select('name CA C O N') 
-    distances = buildDistMatrix(metal_sel, binding_core_backbone)
+    binding_core_resindices = core.select('protein').select('name N').getResindices()
 
-    max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors)) #standardize shape of label matrix
-    padding = max_atoms - distances.shape[1]
-    distances = np.lib.pad(distances, ((0,0),(0,padding)), 'constant', constant_values=0)
-    coordinates = metal_sel.getCoords()[0]
-
-    return distances, coordinates
-
-def compute_distance_matrices(core, no_neighbors: int, coordination_number: int):
-    """Generates binding core backbone distances and label files.
-
-    Args:
-        core (prody.atomic.atomgroup.AtomGroup): Input core.
-        no_neighbors (int): Number of neighbors in primary sequence.
-        coordination_number (int): User-defined upper limit for coordination number.
-
-    Returns:
-        full_dist_mat (np.ndarray): Numpy array containing pairwise distances between all atoms in the core.
-        binding_core_resnus (np.ndarray): Numpy array containing resnums of binding core residues.
-    """
-
-    binding_core_resnums = core.select('protein').select('name N').getResnums()
-
-    max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors))
     binding_core_backbone = core.select('protein').select('name CA O C N')
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+
+    metal_sel = core.select('hetero').select(f'name {metal_name}')
+    label = buildDistMatrix(metal_sel, binding_core_backbone)
+    coordinates = metal_sel.getCoords()[0]
     
+    max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors))
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
+    label = np.lib.pad(label, ((0,0),(0,padding)), 'constant', constant_values=0)
 
-    return full_dist_mat, binding_core_resnums
+    return full_dist_mat, binding_core_resindices, label, coordinates
 
 def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
