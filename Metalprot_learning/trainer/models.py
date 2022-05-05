@@ -8,11 +8,11 @@ This file contains classes for Metalprot_learning models.
 import torch
 from collections import OrderedDict
 
-class SingleLayerNet(nn.Module):
+class SingleLayerNet(torch.nn.Module):
     def __init__(self, arch: list):
         super(SingleLayerNet, self).__init__()
 
-        activation_function_dict = {'ReLU': nn.ReLU()}
+        activation_function_dict = {'ReLU': torch.nn.ReLU()}
 
         layers = []
         for ind, layer in enumerate(arch):
