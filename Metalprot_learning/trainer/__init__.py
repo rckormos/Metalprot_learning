@@ -1,3 +1,3 @@
-from .trainer import datasets
-from .trainer import models
-from .trainer import trainer
+from .datasets import *
+from .models import *
+from .trainer import *
