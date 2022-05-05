@@ -28,7 +28,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     max_permutations = int(np.prod(np.linspace(1,coordinating_resis,coordinating_resis)))
 
     #find all the unique cores within a given pdb structure
-    cores, names = core_loader.extract_cores(pdb_file, no_neighbors, coordinating_resis)
+    cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
     if len(unique_cores) == 0:
         raise utils.NoCoresError
@@ -36,20 +36,20 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     #extract features for each unique core found
     completed = 0
     for core, name in zip(unique_cores, unique_names):
-        label, coords = core_featurizer.compute_labels(core, name, no_neighbors, coordinating_resis)
-        if label.shape[1] != max_resis * 4:
-            raise utils.LabelDimError
 
-        full_dist_mat, binding_core_resnums = core_featurizer.compute_distance_matrices(core, no_neighbors, coordinating_resis)
+        full_dist_mat, binding_core_resindices, label, coords = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
         if len(full_dist_mat) != max_resis * 4:
             raise utils.DistMatDimError
+
+        if label.shape[1] != max_resis * 4:
+            raise utils.LabelDimError
 
         encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis)
         if encoding.shape[1] != max_resis * 20:
             raise utils.EncodingDimError
 
         #permute distance matrices, labels, and encodings
-        features = core_permuter.permute_features(full_dist_mat, encoding, label, binding_core_resnums)
+        features = core_permuter.permute_features(full_dist_mat, encoding, label, binding_core_resindices)
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
@@ -58,8 +58,8 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         features['metal_coords'] = coords
 
         #write files to disk
-        metal_resnum = core.select(f'name {name}') .getResnums()[0]
-        filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resnums]) + '_' + name + str(metal_resnum)
+        metal_resindex = core.select(f'name {name}') .getResindices()[0]
+        filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resindices]) + '_' + name + str(metal_resindex)
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
