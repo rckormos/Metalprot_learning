@@ -106,7 +106,7 @@ def permute_features_test(features, dist_mat, label, encoding, no_neighbors, coo
         perm_encoding = permuted_feature['encoding'].squeeze()
         assert len(perm_encoding) == len(encoding) == max_resis*20
 
-        perm_resnums = permuted_feature['resnums']
+        perm_resnums = permuted_feature['resindices']
         assert len(perm_resnums) == len(resnums) <= max_resis
 
         atom_indices = np.array_split(np.linspace(0, dist_mat.shape[0]-1, dist_mat.shape[0]), max_resis)
