@@ -8,18 +8,18 @@ import numpy as np
 from prody import *
 import itertools
 
-def get_contiguous_resnums(resnums: np.ndarray):
+def get_contiguous_resindices(resindices: np.ndarray):
     """Helper function for permute_features. 
 
     Args:
-        resnums (np.ndarray): Array of resnums in the order they appear when calling core.getResnums().
+        resnums (np.ndarray): Array of resindices in the order they appear when calling core.getResindices().
 
     Returns:
-        fragment (list): List of sorted lists containing indices of contiguous stretches of resnums. 
+        fragment (list): List of sorted lists containing indices of contiguous stretches of resindices. 
     """
 
-    resnums = list(resnums)
-    temp = resnums[:]
+    resindices = list(resindices)
+    temp = resindices[:]
     fragment_indices = []
     while len(temp) != 0:
         for i in range(0,len(temp)):
@@ -31,7 +31,7 @@ def get_contiguous_resnums(resnums: np.ndarray):
 
         fragment = list(set(fragment))
         fragment.sort()
-        one_fragment_indices = [resnums.index(i) for i in fragment]
+        one_fragment_indices = [resindices.index(i) for i in fragment]
         fragment_indices.append(one_fragment_indices)
 
         for index in fragment:
@@ -39,14 +39,14 @@ def get_contiguous_resnums(resnums: np.ndarray):
     
     return fragment_indices
 
-def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resnums: np.ndarray):
+def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resindices: np.ndarray):
     """Computes fragment permutations for input features and labels. 
 
     Args:
         dist_mat (np.ndarray): Distance matrix.
         encoding (np.ndarray): One-hot encoding of sequence.
         label (np.ndarray): Backbone atom distances to the metal.
-        resnums (np.ndarray): Resnums of core atoms in the order the appear when calling core.getResnums().
+        resindices (np.ndarray): Resindices of core atoms in the order the appear when calling core.getResindices().
 
     Returns:
         all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as distance matrices and labels for individual permutations.
@@ -55,9 +55,9 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
     full_observations = []
     full_labels = []
 
-    fragment_indices = get_contiguous_resnums(resnums)
+    fragment_indices = get_contiguous_resindices(resindices)
     fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
-    atom_indices = np.split(np.linspace(0, len(resnums)*4-1, len(resnums)*4), len(resnums))
+    atom_indices = np.split(np.linspace(0, len(resindices)*4-1, len(resindices)*4), len(resindices))
     label = label.squeeze()
     for index, index_permutation in enumerate(fragment_index_permutations):
         feature = {}
@@ -76,7 +76,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
 
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in index_permutation], []), [])
-        zeros = np.zeros(20 * (len(split_encoding) - len(resnums)))
+        zeros = np.zeros(20 * (len(split_encoding) - len(resindices)))
         permuted_encoding = np.concatenate((_permuted_encoding, zeros))
 
         assert len(permuted_encoding) == len(encoding.squeeze())
@@ -94,7 +94,7 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         feature['distance'] = permuted_dist_mat
         feature['encoding'] = permuted_encoding
         feature['label'] = permuted_label
-        feature['resnums'] = [resnums[i] for i in permutation]
+        feature['resnums'] = [resindices[i] for i in permutation]
 
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
