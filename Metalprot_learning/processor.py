@@ -42,7 +42,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, max_permutati
     return weighted_observations, weighted_labels
 
 def compile_data(path2features: str, feature_files, max_permutations=24, seed=42):
-    """Reads in pickle files containing features for cores and writes them into model-readable form. Also writes an index.pkl file containing metal names, coordinates, and pdb IDs indexed by observation number.
+    """Reads in pickle files containing features for cores and writes them into model-readable form. Also writes an index.pkl file containing source pdb files.
 
     Args:
         path2features (str): Directory containing feature files.
@@ -50,11 +50,7 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
         seed (int, optional): Random seed for reproducibility. Defaults to 42.
     """
     
-    indexing = {}
     failed = []
-    ids = []
-    metals = []
-    coordinates = []
     for iteration, file in enumerate(feature_files):
         print(file, iteration)
         with open(file, 'rb') as f:
@@ -65,11 +61,9 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
             Y_unweighted = data['full_labels']
             X, Y = sample(X_unweighted, Y_unweighted, max_permutations, seed)
 
-            ids += [data['id']] * len(X)
-            metals += [data['metal']] * len(X)
-            coordinates += [data['metal_coords']] * len(X)
+            pointers = [data['source']] * len(X)
 
-            assert len(ids) == len(metals) == len(coordinates) == len(X)
+            assert len(pointers) == len(X)
 
         else:
             x_unweighted = data['full_observations']
@@ -80,25 +74,19 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
 
-                ids += [data['id']] * len(x_weighted)
-                metals += [data['metal']] * len(x_weighted)
-                coordinates += [data['metal_coords']] * len(x_weighted)
-
-                assert len(ids) == len(metals) == len(coordinates) == len(x_weighted)
+                pointers += [data['source']] * len(x_weighted)
+                
+                assert len(pointers) == len(x_weighted)
 
             except:
                 failed.append(file)
 
-    indexing['ids'] = ids
-    indexing['metals'] = metals
-    indexing['coordinates'] = coordinates
-
-    assert len(ids) == len(metals) == len(coordinates) == len(X) == len(Y)
+    assert len(pointers) == len(X) == len(Y)
 
     np.save(os.path.join(path2features, 'observations'), X)
     np.save(os.path.join(path2features, 'labels'), Y)    
     with open(os.path.join(path2features, 'index.pkl'), 'wb') as f:
-        pickle.dump(indexing, f)
+        pickle.dump(pointers, f)
     
     if len(failed) > 0:
         with open(os.path.join(path2features, 'failed_process.txt'), 'w') as f:
