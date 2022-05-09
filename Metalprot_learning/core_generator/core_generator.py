@@ -53,9 +53,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
-        features['id'] = core.getTitle()
-        features['metal'] = name
-        features['metal_coords'] = coords
+        features['source'] = pdb_file
 
         #write files to disk
         metal_resindex = core.select(f'name {name}') .getResindices()[0]
