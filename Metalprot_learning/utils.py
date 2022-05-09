@@ -31,3 +31,7 @@ class EncodingError(Error):
 class PermutationError(Error):
     """Raised when permutations are done incorrectly"""
     pass 
+
+class ConstructionError(Error):
+    """Raised when the number of permutations, observation rows, and label rows do not match"""
+    pass

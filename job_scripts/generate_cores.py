@@ -60,6 +60,9 @@ def run_construct_training_example(file: str, path2output: str):
     except utils.PermutationError as e:
         failed_file_line = file + ' Issue with permutation of fragments'
 
+    except utils.ConstructionError as e:
+        failed_file_line = file + 'Number of permutations, observation rows, and label rows do not align'
+
     except:
         failed_file_line = file + ' Unknown error occured'
 
