@@ -102,5 +102,5 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
 
     all_features['full_observations'] = np.array(full_observations)
     all_features['full_labels'] = np.array(full_labels)
-    all_features['permutations'] = permutations
+    all_features['permutations'] = np.array(permutations)
     return all_features
