@@ -51,6 +51,7 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
     """
     
     failed = []
+    index = {}
     for iteration, file in enumerate(feature_files):
         print(file, iteration)
         with open(file, 'rb') as f:
@@ -62,8 +63,9 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
             X, Y = sample(X_unweighted, Y_unweighted, max_permutations, seed)
 
             pointers = [data['source']] * len(X)
+            permutations = [data['permutations']]
 
-            assert len(pointers) == len(X)
+            assert len(pointers) == len(permutations) == len(X)
 
         else:
             x_unweighted = data['full_observations']
@@ -75,18 +77,22 @@ def compile_data(path2features: str, feature_files, max_permutations=24, seed=42
                 Y = np.vstack([Y, y_weighted])
 
                 pointers += [data['source']] * len(x_weighted)
+                permutations += [data['permutations']]
                 
                 assert len(pointers) == len(x_weighted)
 
             except:
                 failed.append(file)
 
-    assert len(pointers) == len(X) == len(Y)
+    assert len(pointers) == len(permutations) == len(X) == len(Y)
+
+    index['pointers'] = pointers
+    index['permutations'] = permutations
 
     np.save(os.path.join(path2features, 'observations'), X)
     np.save(os.path.join(path2features, 'labels'), Y)    
     with open(os.path.join(path2features, 'index.pkl'), 'wb') as f:
-        pickle.dump(pointers, f)
+        pickle.dump(index, f)
     
     if len(failed) > 0:
         with open(os.path.join(path2features, 'failed_process.txt'), 'w') as f:
