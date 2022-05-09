@@ -58,13 +58,7 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     
-    train_index = {}
-    test_index = {}
-    val_index = {}
-    for key in index.keys():
-        train_index[key] = index[key][training_indices]
-        test_index[key] = index[key][test_indices]
-        val_index[key] = index[key][val_indices]
+    train_index, test_index, val_index = index[training_indices], index[test_indices], index[val_indices]
 
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 
