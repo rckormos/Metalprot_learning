@@ -43,3 +43,7 @@ def triangulate(core, resnums, label):
     rmsd = objective(solution)
 
     return solution, rmsd
+
+def evaluate_positives(predictions, coords, ids):
+    
+    pass
