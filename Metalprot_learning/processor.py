@@ -40,7 +40,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
             weighted_labels = np.vstack([weighted_labels, core_labels[int(row_index)]])
             weighted_permutations = np.vstack([weighted_permutations, core_permutations[int(row_index)]])
 
-        assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == weighted_permutations
+        assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == len(weighted_permutations)
 
     return weighted_observations, weighted_labels, weighted_permutations
 
@@ -79,9 +79,8 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
                 x_weighted, y_weighted, permutations_weighted = sample(x_unweighted, y_unweighted, permutations_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-
+                permutations = np.vstack([permutations, permutations_weighted])
                 pointers += [data['source']] * len(x_weighted)
-                permutations += permutations_weighted
                 
                 assert len(pointers) == len(x_weighted) == len(permutations)
 
