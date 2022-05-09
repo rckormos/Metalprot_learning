@@ -7,9 +7,7 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.models import *
-from Metalprot_learning.datasets import *
-from Metalprot_learning.trainer import *
+from Metalprot_learning.trainer.model_trainer import train_model
 import sys
 import os
 import json
@@ -37,14 +35,13 @@ def distribute_tasks(no_jobs: int, job_id: int, epochs: list, batch_sizes: list,
     
     return tasks
 
-def run_train(path2output: str, combination: tuple):
+def run_train(path2output: str, arch: dict, observation_file: str, label_file: str, index_file: str, partition: tuple, seed: int, combination: tuple):
     name = '_'.join([str(i) for i in list(combination)])
 
     model_dir = os.path.join(path2output, name)
     os.makedirs(model_dir)
 
-    model = SingleLayerNet(arch)
-    train_model(model, model_dir, training_data, testing_data, combination)
+    train_model(path2output, arch, observation_file, label_file, index_file, partition, seed, combination)
 
     with open(os.path.join(model_dir, 'architecture.json'), 'w') as f:
         json.dump(arch, f)
@@ -59,8 +56,9 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #provide paths to observations and labels
-    path2observations = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/observations.npy'
-    path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/labels.npy'
+    path2observations = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/observations.npy'
+    path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/labels.npy'
+    path2index = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/index.pkl'
 
     #define architecture of neural network
     arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU'}, 
@@ -69,16 +67,13 @@ if __name__ == '__main__':
             {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
-    epochs = [1000, 1500, 2000]
-    batch_sizes = [1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000]
-    learning_rates = [0.01, 0.001, 0.0001, 0.0001]
+    epochs = [2000]
+    batch_sizes = [1000]
+    learning_rates = [0.01]
     loss_functions = ['MAE'] #can be mean absolute error (MAE) or mean squared error (MSE)
     optimizers = ['SGD'] #currently can only be stochastic gradient descent (SGD)
     partition = (0.8,0.1,0.1)
     seed = 42
-
-    #load data
-    training_data, testing_data, validation_data, train_index, test_index, val_index = split_data(path2observations, path2labels, partition, seed)
 
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, epochs, batch_sizes, learning_rates, loss_functions, optimizers)
