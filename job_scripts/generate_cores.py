@@ -9,7 +9,7 @@ Note that this script is meant to be called from within a SGE bash submission sc
 #imports 
 import os
 import sys
-from Metalprot_learning.core_generator import construct_training_example
+from Metalprot_learning.core_generator.core_creator import construct_training_example
 from Metalprot_learning import utils
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
@@ -83,7 +83,7 @@ if __name__ == '__main__':
         failed_file_line = run_construct_training_example(file, path2output)
         failed.append(failed_file_line)
 
-    failed.remove('None')
+    failed = list(filter(None, failed))
     if len(failed) > 0:
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
-            f.write('\n'.join([line for line in failed]))
+            f.write('\n'.join([line for line in failed]) + '_')
