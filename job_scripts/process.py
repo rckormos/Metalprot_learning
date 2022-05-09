@@ -38,4 +38,4 @@ if __name__ == '__main__':
 
     path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1'
     feature_files = distribute_tasks(path2features, no_jobs, job_id)
-    compile_data(path2features, feature_files)
+    compile_data(path2features, job_id, feature_files)

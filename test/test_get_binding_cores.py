@@ -18,7 +18,7 @@ def load_data():
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
-def extract_cores_test(cores, names, no_neighbors, coordinating_resis):
+def extract_positive_cores_test(cores, names, no_neighbors, coordinating_resis):
     max_resis = (no_neighbors * 2 * coordinating_resis) + coordinating_resis
     
     for core, name in zip(cores, names):
@@ -167,7 +167,7 @@ def test_all():
     for pdb in pdbs:
         print(pdb)
         cores, names = extract_positive_cores(pdb, no_neighbors, coordinating_resis)
-        extract_cores_test(cores, names, no_neighbors, coordinating_resis)
+        extract_positive_cores_test(cores, names, no_neighbors, coordinating_resis)
         unique_cores, unique_names = remove_degenerate_cores(cores, names)
 
         for core, name in zip(unique_cores, unique_names):

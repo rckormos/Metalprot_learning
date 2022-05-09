@@ -72,11 +72,3 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
 
     return training_data, testing_data, validation_data
-
-path2observations = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/observations.npy'
-path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/labels.npy'
-path2index = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/index.pkl'
-partition = (0.8,0.1,0.1)
-seed = 42
-
-split_data(path2observations, path2labels, path2index, partition, seed)
