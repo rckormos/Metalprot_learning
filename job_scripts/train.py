@@ -61,10 +61,10 @@ if __name__ == '__main__':
     path2index = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/index.pkl'
 
     #define architecture of neural network
-    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU'}, 
-            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU'},
-            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU'},
-            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
+    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU', 'dropout': None}, 
+            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU', 'dropout': None},
+            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU', 'dropout': None},
+            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU', 'dropout': None}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
     epochs = [2000]
@@ -78,4 +78,4 @@ if __name__ == '__main__':
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, epochs, batch_sizes, learning_rates, loss_functions, optimizers)
     for combination in tasks:
-        run_train(path2output, combination)
+        run_train(path2output, arch, path2observations, path2labels, path2index, partition, seed, combination)
