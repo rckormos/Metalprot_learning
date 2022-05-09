@@ -45,6 +45,9 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     y = np.load(label_file)
     with open(index_file, 'rb') as f:
         index = pickle.load(f)
+    permutations = index['permutations']
+    sources = index['pointers']
+
 
     #define data partitions
     train_prop, test_prop, val_prop = partitions
@@ -58,10 +61,22 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     
-    train_index, test_index, val_index = index[training_indices], index[test_indices], index[val_indices]
+    train_sources, test_sources, val_sources = sources[training_indices], sources[test_indices], sources[val_indices]
+    train_permutations, test_permutations, val_permutations = permutations[training_indices], permutations[test_indices], permutations[val_indices]
 
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 
+    train_index = {'sources': train_sources, 'permutations': train_permutations}
+    test_index = {'sources': test_sources, 'permutations': test_permutations}
+    val_index = {'sources': val_sources, 'permutations': val_permutations}
     training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
 
     return training_data, testing_data, validation_data
+
+path2observations = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/observations.npy'
+path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/labels.npy'
+path2index = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/index.pkl'
+partition = (0.8,0.1,0.1)
+seed = 42
+
+split_data(path2observations, path2labels, path2index, partition, seed)
