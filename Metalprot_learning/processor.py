@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 import os
 
-def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutations, max_permutations, seed):
+def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutations: np.ndarray, max_permutations, seed):
     """Addresses oversampling of cores with large permutation numbers.
 
     Args:
@@ -19,12 +19,15 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
     Returns:
         weighted_observations (np.ndarray): max_permutations x m observation matrix, where m is number of features. 
         weighted_labels (np.ndarray): Label matrix with max_permutations rows.
+        weighted_permutations (list): List of numpy arrays containing resindex permutations for a given observation/label pair.
     """
-    core_permutations = np.array(core_permutations)
+
+    core_permutations = list(core_permutations)
 
     if core_observations.shape[0] == max_permutations:
         weighted_observations = core_observations
         weighted_labels = core_labels
+        weighted_permutations = core_permutations
 
     else:
         rows = np.linspace(0, core_observations.shape[0] - 1, core_observations.shape[0])
@@ -38,7 +41,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
         for row_index in sampled_rows:
             weighted_observations = np.vstack([weighted_observations, core_observations[int(row_index)]])
             weighted_labels = np.vstack([weighted_labels, core_labels[int(row_index)]])
-            weighted_permutations = np.vstack([weighted_permutations, core_permutations[int(row_index)]])
+            weighted_permutations = weighted_permutations.append(core_permutations[int(row_index)])
 
         assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == len(weighted_permutations)
 
@@ -79,10 +82,10 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
                 x_weighted, y_weighted, permutations_weighted = sample(x_unweighted, y_unweighted, permutations_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-                permutations = np.vstack([permutations, permutations_weighted])
+                permutations.append(permutations_weighted)
                 pointers += [data['source']] * len(x_weighted)
                 
-                assert len(pointers) == len(x_weighted) == len(permutations)
+                assert len(pointers) == len(X) == len(permutations)
 
             except:
                 failed.append(file)
