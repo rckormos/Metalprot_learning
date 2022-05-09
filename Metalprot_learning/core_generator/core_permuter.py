@@ -49,12 +49,12 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         resindices (np.ndarray): Resindices of core atoms in the order the appear when calling core.getResindices().
 
     Returns:
-        all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as distance matrices and labels for individual permutations.
+        all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as a list of permutations indexed by observation matrix row.
     """
     all_features = {}
     full_observations = []
     full_labels = []
-    permutation = []
+    permutations = []
 
     fragment_indices = get_contiguous_resindices(resindices)
     fragment_index_permutations = itertools.permutations(list(range(0,len(fragment_indices))))
@@ -95,11 +95,12 @@ def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarr
         # feature['distance'] = permuted_dist_mat
         # feature['encoding'] = permuted_encoding
         # feature['label'] = permuted_label
-        permutation.append([resindices[i] for i in permutation])
+        permutations.append([resindices[i] for i in permutation])
 
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
 
     all_features['full_observations'] = np.array(full_observations)
     all_features['full_labels'] = np.array(full_labels)
+    all_features['permutations'] = permutations
     return all_features
