@@ -12,13 +12,11 @@ import torch
 from Metalprot_learning.trainer import datasets
 from Metalprot_learning.trainer import models
 
-def load_data(observation_file: str, label_file: str, index_file: str, partitions: tuple, batch_size: int, seed: int):
+def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int):
     """Loads data for model training.
 
     Args:
-        observation_file (str): Path to observation matrix file.
-        label_file (str): Path to label matrix file. 
-        index_file (str): Path to index file.
+        feature_file (str): Path to compiled_features.pkl file.
         partitions (tuple): Tuple containing percentages of the dataset partitioned into training, testing, and validation sets respectively.
         batch_size (int): The batch size.
         seed (int): Random seed defined by user.
@@ -26,9 +24,8 @@ def load_data(observation_file: str, label_file: str, index_file: str, partition
     Returns:
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
-
     """
-    training_data, testing_data, validation_data = datasets.split_data(observation_file, label_file, index_file, partitions, seed)
+    training_data, testing_data, _ = datasets.split_data(features_file, partitions, seed)
 
     training_observations, training_labels, _ = training_data
     train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(training_observations, training_labels), batch_size=batch_size, shuffle=True)
@@ -86,8 +83,7 @@ def validation_loop(model, test_dataloader, loss_fn):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_model(path2output: str, arch: dict, observation_file: str, label_file: str, 
-                index_file: str, partitions: tuple, seed: int, hyperparams: tuple):
+def train_model(path2output: str, arch: dict, features_file: str, partitions: tuple, seed: int, hyperparams: tuple):
     """Runs model training.
 
     Args:
@@ -106,7 +102,7 @@ def train_model(path2output: str, arch: dict, observation_file: str, label_file:
     model = models.SingleLayerNet(arch)
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader = load_data(observation_file, label_file, index_file, partitions, batch_size, seed)
+    train_dataloader, test_dataloader = load_data(features_file, partitions, batch_size, seed)
 
     #define optimizer and loss function
     optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=lr)}
