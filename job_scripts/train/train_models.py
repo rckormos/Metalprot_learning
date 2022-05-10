@@ -42,7 +42,7 @@ def run_train(task: str, feature_file: str):
     combination = (hyperparams['epochs'], hyperparams['batch_size'], hyperparams['lr'], hyperparams['loss_fn'], hyperparams['optimizer'])
     partition = hyperparams['partition']
     seed = hyperparams['seed']
-    train_model(task, arch, feature_file, partition, seed, combination)w
+    train_model(task, arch, feature_file, partition, seed, combination)
 
 if __name__ == '__main__':
     path2output = sys.argv[1] #note that this is not actually where output files are written to. they are written to the model directories.
