@@ -78,7 +78,7 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
     
     #YOU WILL NEED TO EDIT THIS PATH HERE
-    path2examples = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
+    path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
 
     failed = []
     tasks = distribute_tasks(path2examples, no_jobs, job_id)
@@ -89,4 +89,4 @@ if __name__ == '__main__':
     failed = list(filter(None, failed))
     if len(failed) > 0:
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
-            f.write('\n'.join([line for line in failed]) + '_')
+            f.write('\n'.join([line for line in failed]) + '\n')
