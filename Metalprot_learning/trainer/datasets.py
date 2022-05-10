@@ -60,9 +60,13 @@ def split_data(features_file: str, partitions: tuple, seed: int):
     training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     
-    train_sources, test_sources, val_sources = sources[training_indices], sources[test_indices], sources[val_indices]
-    train_permutations, test_permutations, val_permutations = permutations[training_indices], permutations[test_indices], permutations[val_indices]
+    train_sources, test_sources, val_sources = [sources[int(i)] for i in training_indices], [sources[int(i)] for i in test_indices], [sources[int(i)] for i in val_indices]
+    train_permutations, test_permutations, val_permutations = [permutations[int(i)] for i in training_indices], [permutations[int(i)] for i in test_indices], [permutations[int(i)] for i in val_indices]
 
+    
+    assert len({X_train.shape[0], y_train.shape[0], len(train_sources), len(train_permutations)}) == 1
+    assert len({X_test.shape[0], y_test.shape[0], len(test_sources), len(test_permutations)}) == 1
+    assert len({X_val.shape[0], y_val.shape[0], len(val_sources), len(val_permutations)}) == 1
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 
     train_index = {'sources': train_sources, 'permutations': train_permutations}
