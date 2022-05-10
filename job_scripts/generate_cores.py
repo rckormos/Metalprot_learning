@@ -61,7 +61,7 @@ def run_construct_training_example(file: str, path2output: str):
         failed_file_line = file + ' Issue with permutation of fragments'
 
     except utils.ConstructionError as e:
-        failed_file_line = file + 'Number of permutations, observation rows, and label rows do not align'
+        failed_file_line = file + ' Number of permutations, observation rows, and label rows do not align'
 
     except:
         failed_file_line = file + ' Unknown error occured'
@@ -78,7 +78,7 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
     
     #YOU WILL NEED TO EDIT THIS PATH HERE
-    path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
+    path2examples = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
 
     failed = []
     tasks = distribute_tasks(path2examples, no_jobs, job_id)

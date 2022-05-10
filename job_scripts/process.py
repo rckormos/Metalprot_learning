@@ -36,6 +36,6 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    path2features = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
+    path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1'
     feature_files = distribute_tasks(path2features, no_jobs, job_id)
     compile_data(path2features, job_id, feature_files)
