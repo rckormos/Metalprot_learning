@@ -49,7 +49,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
     return weighted_observations, weighted_labels, weighted_permutations
 
 def compile_data(path2features: str, job_id: int, feature_files, max_permutations=24, seed=42):
-    """Reads in pickle files containing features for cores and writes them into model-readable form. Also writes an index.pkl file containing source pdb files.
+    """Reads in pickle files containing features for cores and writes them to a pickle file containing model-readable features with an index.
 
     Args:
         path2features (str): Directory containing feature files.
@@ -75,15 +75,15 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
             assert len(pointers) == len(permutations) == len(X)
 
         else:
-            x_unweighted = data['full_observations']
-            y_unweighted = data['full_labels']
+            X_unweighted = data['full_observations']
+            Y_unweighted = data['full_labels']
             permutations_unweighted = data['permutations']
 
             try:
-                x_weighted, y_weighted, permutations_weighted = sample(x_unweighted, y_unweighted, permutations_unweighted, max_permutations, seed)
+                x_weighted, y_weighted, permutations_weighted = sample(X_unweighted, Y_unweighted, permutations_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-                permutations.append(permutations_weighted)
+                permutations += permutations_weighted
                 pointers += [data['source']] * len(x_weighted)
                 
                 assert len(pointers) == len(X) == len(permutations)
