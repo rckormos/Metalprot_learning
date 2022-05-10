@@ -24,13 +24,11 @@ class DistanceData(torch.utils.data.Dataset):
         label = self.labels[index]
         return observation, label 
 
-def split_data(observation_file: str, label_file: str, index_file: str, partitions: tuple, seed: int):
+def split_data(features_file: str, partitions: tuple, seed: int):
     """Splits data into training and test sets.
 
     Args:
-        observation_file (str): Path to observations.npy file.
-        label_file (str): Path to labels.npy file.
-        index_file (str): Path to index.pkl file.
+        features_file (str): Path to compiled_features.pkl file.
         partitions (tuple): Tuple containing proportion to partition into training, testing, and validation sets respectively.
         seed (int): The random seed for splitting.
 
@@ -41,12 +39,13 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     """
 
     #load data
-    X = np.load(observation_file)
-    y = np.load(label_file)
-    with open(index_file, 'rb') as f:
-        index = pickle.load(f)
-    permutations = index['permutations']
-    sources = index['pointers']
+    with open(features_file, 'rb') as f:
+        features = pickle.load(f)
+
+    X = features['observations']
+    y = features['labels']
+    permutations = features['permutations']
+    sources = features['pointers']
 
 
     #define data partitions
