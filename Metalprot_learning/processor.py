@@ -15,6 +15,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
     Args:
         core_observations (np.ndarray): Observation matrix for a given core. Rows are indexed by observation, columns are indexed by feature.
         core_labels (np.ndarray): Label matrix for a given core. 
+        core_permutations (np.ndarray): Matrix with rows indexed by resindex permutation for a given observation.
 
     Returns:
         weighted_observations (np.ndarray): max_permutations x m observation matrix, where m is number of features. 
@@ -41,7 +42,7 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, core_permutat
         for row_index in sampled_rows:
             weighted_observations = np.vstack([weighted_observations, core_observations[int(row_index)]])
             weighted_labels = np.vstack([weighted_labels, core_labels[int(row_index)]])
-            weighted_permutations = weighted_permutations.append(core_permutations[int(row_index)])
+            weighted_permutations.append(core_permutations[int(row_index)])
 
         assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == len(weighted_permutations)
 
