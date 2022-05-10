@@ -54,7 +54,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
             raise utils.PermutationError
 
         features['source'] = pdb_file
-        if set([len(features['full_observations']), len(features['full_labels']), len(features['permutations'])]) != 1:
+        if len(set([len(features['full_observations']), len(features['full_labels']), len(features['permutations'])])) != 1:
             raise utils.ConstructionError
 
         #write files to disk
