@@ -60,7 +60,7 @@ if __name__ == '__main__':
             {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU', 'dropout': None}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
-    epochs = [2000]
+    epochs = [2001]
     batch_sizes = [1000]
     learning_rates = [0.01]
     loss_functions = ['MAE'] #can be mean absolute error (MAE) or mean squared error (MSE)

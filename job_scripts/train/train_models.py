@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     #provide paths to observations and labels
     path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/compiled_features.pkl'
-    path2models = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1'
+    path2models = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/'
 
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, path2models)
