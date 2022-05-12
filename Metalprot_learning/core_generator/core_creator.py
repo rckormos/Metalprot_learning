@@ -53,7 +53,6 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
-        features['source'] = pdb_file
         features['metal_coords'] = metal_coords
         if len(set([len(features['full_observations']), len(features['full_labels']), len(features['resindex_permutations']), len(features['resnum_permutations'])])) != 1:
             raise utils.ConstructionError
@@ -61,6 +60,8 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         #write files to disk
         metal_resindex = core.select(f'name {name}') .getResindices()[0]
         filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resindices]) + '_' + name + str(metal_resindex)
+        features['source'] = os.path.join(output_dir, filename + '_core.pdb.gz')
+
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
             pickle.dump(features,f)
