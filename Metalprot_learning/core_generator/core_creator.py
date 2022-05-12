@@ -37,7 +37,7 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     completed = 0
     for core, name in zip(unique_cores, unique_names):
 
-        full_dist_mat, binding_core_resindices, binding_core_resnums, label, metal_coords = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
+        full_dist_mat, binding_core_identifiers, label, metal_coords = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
         if len(full_dist_mat) != max_resis * 4:
             raise utils.DistMatDimError
 
