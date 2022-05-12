@@ -75,10 +75,11 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
             resind_perm_unweighted = data['resindex_permutations']
             resnum_perm_unweighted = data['resnum_permutations']        
 
-            X, Y, permutations = sample(X_unweighted, Y_unweighted, permutations_unweighted, max_permutations, seed)
+            X, Y, resind_perms, resnum_perms = sample(X_unweighted, Y_unweighted, resind_perm_unweighted, resnum_perm_unweighted, max_permutations, seed)
             pointers = [data['source']] * len(X)
+            metal_coords = [data['metal_coords']] * len(X)
 
-            assert len(pointers) == len(permutations) == len(X)
+            assert len(pointers) == len(metal_coords) == len(resind_perms) == len(resnum_perms) == len(X) == len(Y)
 
         else:
             X_unweighted = data['full_observations']
@@ -87,21 +88,23 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
             resnum_perm_unweighted = data['resnum_permutations']
 
             try:
-                x_weighted, y_weighted, permutations_weighted = sample(X_unweighted, Y_unweighted, permutations_unweighted, max_permutations, seed)
+                x_weighted, y_weighted, resind_perm_weighted, resnum_perm_weighted = sample(X_unweighted, Y_unweighted, resind_perm_unweighted, resnum_perm_unweighted, max_permutations, seed)
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-                permutations += permutations_weighted
+                resind_perms += resind_perm_weighted
+                resnum_perms += resnum_perm_weighted
                 pointers += [data['source']] * len(x_weighted)
+                metal_coords += [data['metal_coords']] * len(x_weighted)
                 
-                assert len(pointers) == len(X) == len(permutations)
+                assert len(pointers) == len(metal_coords) == len(resind_perms) == len(resnum_perms) == len(X) == len(Y)
 
             except:
                 failed.append(file)
 
-    assert len(pointers) == len(permutations) == len(X) == len(Y)
-
     compiled_features['pointers'] = pointers
-    compiled_features['permutations'] = permutations
+    compiled_features['resindex_permutations'] = resind_perms
+    compiled_features['resnum_permutations'] = resnum_perms
+    compiled_features['metal_coords'] = metal_coords
     compiled_features['observations'] = X
     compiled_features['labels'] = Y
 
