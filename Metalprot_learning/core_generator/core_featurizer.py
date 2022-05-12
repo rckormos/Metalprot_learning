@@ -37,13 +37,14 @@ def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordina
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     label = buildDistMatrix(metal_sel, binding_core_backbone)
+    metal_coords = metal_sel.getCoords()[0]
     
     max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors))
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
     label = np.lib.pad(label, ((0,0),(0,padding)), 'constant', constant_values=0)
 
-    return full_dist_mat, binding_core_resindices, binding_core_resnums, label
+    return full_dist_mat, binding_core_resindices, binding_core_resnums, label, metal_coords
 
 def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
