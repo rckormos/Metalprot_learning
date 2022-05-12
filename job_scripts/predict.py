@@ -7,6 +7,7 @@ Given a set of input pdb files, this script will provide predictions of the meta
 """
 
 #imports
+from math import dist, perm
 from Metalprot_learning.trainer.models import SingleLayerNet
 from Metalprot_learning.predictor import *
 import os
@@ -16,7 +17,20 @@ import pickle
 import torch
 import numpy as np
 
-def load_data(features_file: str, weights_file: str, arch_file: str):
+def distribute_tasks(no_jobs: int, job_id: int, pointers: list, permutations: list, observations: np.ndarray, labels: np.ndarray):
+    row_indices = np.linspace(0, len(pointers), len(pointers))
+    task_rows = np.array_split(row_indices, no_jobs)[job_id]
+    start_ind = int(task_rows[0])
+    end_ind = int(task_rows[-1]) + 1
+
+    pointers = pointers[start_ind:end_ind]
+    permutations = permutations[start_ind:end_ind]
+    observations = observations[start_ind:end_ind]
+    labels = labels[start_ind:end_ind]
+
+    return pointers, permutations, observations, labels
+
+def load_data(features_file: str, arch_file: str):
     with open(arch_file, 'r') as f:
         arch = json.load(f)
 
@@ -44,7 +58,10 @@ if __name__ == '__main__':
     features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/compiled_features.pkl'
     arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/architecture.json'
     weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/model.pth'
-    arch, pointers, permutations, observations, labels = load_data(features_file, weights_file, arch_file)
+    arch, pointers, permutations, observations, labels = load_data(features_file, arch_file)
+    assert len(pointers) == len(permutations) == len(observations) == len(labels)
+
+    pointers, permutations, observations, labels = distribute_tasks(no_jobs, job_id, pointers, permutations, observations, labels)
 
     #load model
     model = SingleLayerNet(arch)
@@ -57,7 +74,17 @@ if __name__ == '__main__':
 
     if examples:
         deviation = evaluate_positives(predicted_metal_coordinates, pointers)
-        np.save(os.path.join(path2output, 'deviation'))
+        np.save(os.path.join(path2output, f'deviation{job_id}'), deviation)
 
-    np.save(os.path.join(path2output, 'coordinates'))
-    np.save(os.path.join(path2output, 'rmdsds'))
+    np.save(os.path.join(path2output, f'coordinates{job_id}'), predicted_metal_coordinates)
+    np.save(os.path.join(path2output, f'rmsds{job_id}'), rmsds)
+
+    failed_indices = np.argwhere(np.isnan(predicted_metal_coordinates))
+
+    if len(failed_indices) > 0:
+        failed = [pointers[int(i)] for i in failed_indices]
+        with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
+            f.write('\n'.join(failed) + '\n')
+
+
+
