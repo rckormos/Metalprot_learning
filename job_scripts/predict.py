@@ -16,22 +16,6 @@ import pickle
 import torch
 import numpy as np
 
-def distribute_tasks(path2pdbs: str, no_jobs: int, job_id: int):
-    """Distributes pdb files for core generation.
-
-    Args:
-        path2pdbs (str): Path to directory containing pdb files.
-        no_jobs (int): Total number of jobs.
-        job_id (int): The job id.
-
-    Returns:
-        tasks (list): list of pdb files assigned to particular job id.
-    """
-    pdbs = [os.path.join(path2pdbs, file) for file in os.listdir(path2pdbs) if '.pdb' in file]
-    tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
-
-    return tasks
-
 def load_data(features_file: str, weights_file: str, arch_file: str):
     with open(arch_file, 'r') as f:
         arch = json.load(f)
@@ -57,9 +41,9 @@ if __name__ == '__main__':
 
     #load data
     examples = True #true if data are positive examples
-    features_file = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/datasetV1/compiled_features.pkl'
-    arch_file = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/architecture.json'
-    weights_file = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/model.pth'
+    features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/compiled_features.pkl'
+    arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/architecture.json'
+    weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/model.pth'
     arch, pointers, permutations, observations, labels = load_data(features_file, weights_file, arch_file)
 
     #load model
@@ -73,7 +57,7 @@ if __name__ == '__main__':
 
     if examples:
         deviation = evaluate_positives(predicted_metal_coordinates, pointers)
-        np.sav(os.path.join(path2output, 'deviation'))
+        np.save(os.path.join(path2output, 'deviation'))
 
     np.save(os.path.join(path2output, 'coordinates'))
     np.save(os.path.join(path2output, 'rmdsds'))
