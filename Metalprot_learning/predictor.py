@@ -28,7 +28,7 @@ def triangulate(backbone_coords, distance_prediction):
 
     return solution, rmsd
 
-def extract_coordinates(source_file: str, resnum_permutation):
+def extract_coordinates(source_file: str, resindex_permutation):
     """_summary_
 
     Args:
@@ -37,8 +37,8 @@ def extract_coordinates(source_file: str, resnum_permutation):
     """
 
     core = parsePDB(source_file)
-    for iteration, resnum in enumerate(resnum_permutation):
-        residue = core.select(f'resnum {resnum}').select('name C CA N O').getCoords()
+    for iteration, resindex in enumerate(resindex_permutation):
+        residue = core.select(f'resindex {resindex}').select('name C CA N O').getCoords()
 
         if iteration == 0:
             coordinates = residue
@@ -47,12 +47,12 @@ def extract_coordinates(source_file: str, resnum_permutation):
 
     return coordinates
 
-def predict_coordinates(distance_predictions, pointers, resnum_permutations):
+def predict_coordinates(distance_predictions, pointers, resindex_permutations):
 
     predicted_metal_coordinates = None
     metal_rmsds = None
-    for distance_prediction, pointer, resnum_permutation in zip(distance_predictions, pointers, resnum_permutations):
-        source_coordinates = extract_coordinates(pointer, resnum_permutation)
+    for distance_prediction, pointer, resindex_permutation in zip(distance_predictions, pointers, resindex_permutations):
+        source_coordinates = extract_coordinates(pointer, resindex_permutation)
         solution, rmsd = triangulate(source_coordinates, distance_prediction)
 
         if not predicted_metal_coordinates:
@@ -65,7 +65,7 @@ def predict_coordinates(distance_predictions, pointers, resnum_permutations):
 
     return predicted_metal_coordinates, metal_rmsds
 
-def evaulate_positives(predicted_metal_coordinates, pointers):
+def evalate_positives(predicted_metal_coordinates, pointers):
     metal_coordinate_lookup = {}
     for file in pointers:
         core = parsePDB(file)
@@ -75,4 +75,3 @@ def evaulate_positives(predicted_metal_coordinates, pointers):
     deviation = np.sqrt(np.sum(np.square(source_metal_coordinates - predicted_metal_coordinates), axis=1))
     
     return deviation
-
