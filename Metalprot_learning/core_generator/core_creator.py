@@ -53,7 +53,6 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
-        features['metal_coords'] = metal_coords
         if len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) != 1:
             raise utils.ConstructionError
 
