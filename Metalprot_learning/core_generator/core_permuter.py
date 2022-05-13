@@ -25,7 +25,7 @@ def identify_fragments(binding_core_identifiers: list):
             if i == 0:
                 fragment = [temp[i]]
 
-            elif 1 in set([abs(temp[i][0] - j[0]) for j in fragment]):
+            elif set(temp[i][1]) == set([i[1] for i in fragment]) and 1 in set([abs(temp[i][0] - j[0]) for j in fragment]):
                 fragment.append(temp[i])
 
         fragment = list(set(fragment)) 
@@ -103,12 +103,11 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
                     permuted_label = np.append(permuted_label, label[int(atom)])
 
         permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
-
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
         full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
         full_labels.append(list(permuted_label))
 
     all_features['full_observations'] = np.array(full_observations)
     all_features['full_labels'] = np.array(full_labels)
-    all_features['binding_core_identifier_permutations'] = np.array(binding_core_identifier_permutations)
+    all_features['binding_core_identifier_permutations'] = binding_core_identifier_permutations
     return all_features
