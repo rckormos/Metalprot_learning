@@ -49,17 +49,18 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
             raise utils.EncodingDimError
 
         #permute distance matrices, labels, and encodings
-        features = core_permuter.permute_features(full_dist_mat, encoding, label, binding_core_resindices, binding_core_resnums)
+        features = core_permuter.permute_fragments(full_dist_mat, encoding, label, binding_core_identifiers)
         if len([key for key in features.keys() if type(key) == int]) > max_permutations:
             raise utils.PermutationError
 
         features['metal_coords'] = metal_coords
-        if len(set([len(features['full_observations']), len(features['full_labels']), len(features['resindex_permutations']), len(features['resnum_permutations'])])) != 1:
+        if len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) != 1:
             raise utils.ConstructionError
 
         #write files to disk
         metal_resindex = core.select(f'name {name}') .getResindices()[0]
-        filename = core.getTitle() + '_' + '_'.join([str(num) for num in binding_core_resindices]) + '_' + name + str(metal_resindex)
+        backone_resindex = core.select(f'protein').select('name N').getResindices()
+        filename = core.getTitle() + '_' + '_'.join([str(num) for num in backone_resindex]) + '_' + name + str(metal_resindex)
         features['source'] = os.path.join(output_dir, filename + '_core.pdb.gz')
 
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
