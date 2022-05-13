@@ -58,9 +58,9 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
             raise utils.ConstructionError
 
         #write files to disk
-        metal_resindex = core.select(f'name {name}') .getResindices()[0]
-        backone_resindex = core.select(f'protein').select('name N').getResindices()
-        filename = core.getTitle() + '_' + '_'.join([str(num) for num in backone_resindex]) + '_' + name + str(metal_resindex)
+        metal_chid = core.select(f'name {name}') .getChids()[0]
+        metal_resnum = core.select(f'name {name}').getResnums()[0]
+        filename = core.getTitle() + '_' + '_'.join([str(tup[0]) + tup[1] for tup in binding_core_identifiers]) + '_' + name + str(metal_resnum) + metal_chid
         features['source'] = os.path.join(output_dir, filename + '_core.pdb.gz')
 
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
