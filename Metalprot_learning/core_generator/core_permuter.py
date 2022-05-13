@@ -39,6 +39,7 @@ def get_contiguous_resindices(resindices: np.ndarray):
     
     return fragment_indices
 
+
 def permute_features(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, resindices: np.ndarray):
     """Computes fragment permutations for input features and labels. 
 

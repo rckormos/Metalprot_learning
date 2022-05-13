@@ -9,8 +9,8 @@ import os
 import numpy as np
 import json
 import torch
-from .trainer import datasets
-from .trainer import models
+from . import datasets
+from . import models
 
 def load_data(observation_file: str, label_file: str, index_file: str, partitions: tuple, batch_size: int, seed: int):
     """Loads data for model training.

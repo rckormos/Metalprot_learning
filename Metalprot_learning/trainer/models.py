@@ -25,12 +25,13 @@ class SingleLayerNet(torch.nn.Module):
             if activation:
                 layers.append((f'activation{ind}', activation))
 
-            dropout = torch.nn.Dropout(layer['dropout']) if layer['dropout'] else None
+            dropout = torch.nn.Dropout(layer['dropout']) if 'dropout' in layer.keys() else None
             if dropout:
-                layers.append(f'droupout{ind}', dropout)
+                layers.append((f'droupout{ind}', dropout))
 
         self.block1 = torch.nn.Sequential(OrderedDict(layers))
 
     def forward(self, x):
         y = self.block1(x.float())
         return y
+

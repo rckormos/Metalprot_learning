@@ -62,9 +62,9 @@ def split_data(observation_file: str, label_file: str, index_file: str, partitio
     test_index = {}
     val_index = {}
     for key in index.keys():
-        train_index[key] = index[key][training_indices]
-        test_index[key] = index[key][test_indices]
-        val_index[key] = index[key][val_indices]
+        train_index[key] = np.array(index[key])[training_indices]
+        test_index[key] = np.array(index[key])[test_indices]
+        val_index[key] = np.array(index[key])[val_indices]
 
     assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
 

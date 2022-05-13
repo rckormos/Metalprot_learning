@@ -9,9 +9,9 @@ import numpy as np
 from prody import writePDB
 import os
 import pickle
-from .core_generator import core_loader
-from .core_generator import core_featurizer
-from .core_generator import core_permuter
+from . import core_loader
+from . import core_featurizer
+from . import core_permuter
 from Metalprot_learning import utils
 
 def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):

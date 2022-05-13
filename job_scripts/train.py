@@ -63,10 +63,10 @@ if __name__ == '__main__':
     path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/labels.npy'
 
     #define architecture of neural network
-    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU'}, 
-            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU'},
-            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU'},
-            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
+    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU', 'dropout':0.2}, 
+            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU', 'dropout':0.2},
+            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU', 'dropout':0.2},
+            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU', 'dropout':0.2}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
     epochs = [1000, 1500, 2000]
