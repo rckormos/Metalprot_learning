@@ -100,6 +100,8 @@ def train_model(path2output: str, arch: dict, features_file: str, partitions: tu
     #expand hyperparamters and instantiate model
     epochs, batch_size, lr, loss_fn, optimizer = hyperparams
     model = models.SingleLayerNet(arch)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model.to(device)
 
     #instantiate dataloader objects for train and test sets
     train_dataloader, test_dataloader = load_data(features_file, partitions, batch_size, seed)
