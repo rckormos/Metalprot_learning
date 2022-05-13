@@ -9,7 +9,7 @@ import numpy as np
 import pickle
 import os
 
-def sample(core_observations: np.ndarray, core_labels: np.ndarray, resindex_permutations: np.ndarray, resnum_permutations: np.ndarray, max_permutations, seed):
+def sample(core_observations: np.ndarray, core_labels: np.ndarray, binding_core_identifier_permutations: np.ndarray, max_permutations, seed):
     """Addresses oversampling of cores with large permutation numbers.
 
     Args:
@@ -24,14 +24,12 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, resindex_perm
         weighted_permutations (list): List of numpy arrays containing resindex permutations for a given observation/label pair.
     """
 
-    resindex_perms = list(resindex_permutations)
-    resnum_perms = list(resnum_permutations)
+    identifier_perms = list(binding_core_identifier_permutations)
 
     if core_observations.shape[0] == max_permutations:
         weighted_observations = core_observations
         weighted_labels = core_labels
-        weighted_resnum_perms = resnum_perms
-        weighted_resindex_perms = resindex_perms
+        weighted_identifier_perms = identifier_perms
 
     else:
         rows = np.linspace(0, core_observations.shape[0] - 1, core_observations.shape[0])
@@ -41,17 +39,15 @@ def sample(core_observations: np.ndarray, core_labels: np.ndarray, resindex_perm
         
         weighted_observations = core_observations
         weighted_labels = core_labels
-        weighted_resnum_perms = resnum_perms
-        weighted_resindex_perms = resindex_perms
+        weighted_identifier_perms = identifier_perms
         for row_index in sampled_rows:
             weighted_observations = np.vstack([weighted_observations, core_observations[int(row_index)]])
             weighted_labels = np.vstack([weighted_labels, core_labels[int(row_index)]])
-            weighted_resindex_perms.append(resindex_perms[int(row_index)])
-            weighted_resnum_perms.append(resnum_perms[int(row_index)])
+            weighted_identifier_perms.append(binding_core_identifier_permutations[int(row_index)])
 
-        assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == len(weighted_resindex_perms) == len(weighted_resnum_perms)
+        assert weighted_labels.shape[0] == weighted_observations.shape[0] == max_permutations == len(weighted_identifier_perms)
 
-    return weighted_observations, weighted_labels, weighted_resindex_perms, weighted_resnum_perms
+    return weighted_observations, weighted_labels, weighted_identifier_perms
 
 def compile_data(path2features: str, job_id: int, feature_files, max_permutations=24, seed=42):
     """Reads in pickle files containing features for cores and writes them to a pickle file containing model-readable features with an index.
@@ -72,38 +68,33 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
         if iteration == 0:
             X_unweighted = data['full_observations']
             Y_unweighted = data['full_labels']
-            resind_perm_unweighted = data['resindex_permutations']
-            resnum_perm_unweighted = data['resnum_permutations']        
+            binding_core_identifier_permutations_unweighted = data['binding_core_identifier_permutations']     
 
-            X, Y, resind_perms, resnum_perms = sample(X_unweighted, Y_unweighted, resind_perm_unweighted, resnum_perm_unweighted, max_permutations, seed)
+            X, Y, binding_core_identifier_permutations = sample(X_unweighted, Y_unweighted, binding_core_identifier_permutations_unweighted, max_permutations, seed)
             pointers = [data['source']] * len(X)
             metal_coords = [data['metal_coords']] * len(X)
-
-            assert len(pointers) == len(metal_coords) == len(resind_perms) == len(resnum_perms) == len(X) == len(Y)
+            assert len(pointers) == len(metal_coords) == len(binding_core_identifier_permutations) == len(X) == len(Y)
 
         else:
             X_unweighted = data['full_observations']
             Y_unweighted = data['full_labels']
-            resind_perm_unweighted = data['resindex_permutations']
-            resnum_perm_unweighted = data['resnum_permutations']
+            binding_core_identifier_permutations_unweighted = data['binding_core_identifier_permutations'] 
 
             try:
-                x_weighted, y_weighted, resind_perm_weighted, resnum_perm_weighted = sample(X_unweighted, Y_unweighted, resind_perm_unweighted, resnum_perm_unweighted, max_permutations, seed)
+                x_weighted, y_weighted, binding_core_identifier_permutations_weighted = sample(X_unweighted, Y_unweighted, binding_core_identifier_permutations_unweighted, max_permutations, seed)
+
                 X = np.vstack([X, x_weighted])
                 Y = np.vstack([Y, y_weighted])
-                resind_perms += resind_perm_weighted
-                resnum_perms += resnum_perm_weighted
+                binding_core_identifier_permutations += binding_core_identifier_permutations_weighted
                 pointers += [data['source']] * len(x_weighted)
                 metal_coords += [data['metal_coords']] * len(x_weighted)
-                
-                assert len(pointers) == len(metal_coords) == len(resind_perms) == len(resnum_perms) == len(X) == len(Y)
+                assert len(pointers) == len(metal_coords) == len(binding_core_identifier_permutations) == len(X) == len(Y)
 
             except:
                 failed.append(file)
 
     compiled_features['pointers'] = pointers
-    compiled_features['resindex_permutations'] = resind_perms
-    compiled_features['resnum_permutations'] = resnum_perms
+    compiled_features['binding_core_identifiers'] = binding_core_identifier_permutations
     compiled_features['metal_coords'] = metal_coords
     compiled_features['observations'] = X
     compiled_features['labels'] = Y
