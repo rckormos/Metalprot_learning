@@ -5,6 +5,7 @@ This file contains functions for extracting binding core examples and writing th
 """
 
 #imports
+from enum import unique
 import numpy as np
 from prody import writePDB
 import os
@@ -13,6 +14,29 @@ from Metalprot_learning.core_generator import core_loader
 from Metalprot_learning.core_generator import core_featurizer
 from Metalprot_learning.core_generator import core_permuter
 from Metalprot_learning import utils
+
+def test_core_loader(unique_cores, unique_names):
+    dimensionality_test = len(unique_cores) == len(unique_names)
+    if len(unique_cores) == 0:
+        raise utils.NoCoresError
+
+    if dimensionality_test == False:
+        raise utils.CoreLoadingError
+
+def test_featurization(full_dist_mat, label, encoding, max_resis):
+    dist_mat_check = len(full_dist_mat) == max_resis * 4
+    label_check = label.shape[1] == max_resis * 4
+    encoding_check = encoding.shape[1] == max_resis * 20 + 1
+
+    if False in set(dist_mat_check, label_check, encoding_check):
+        raise utils.FeaturizationError
+
+def test_permutation(features, max_permutations):
+    dimensionality_test = len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) == 1
+    permutation_test = len(features['full_observations']) <= max_permutations
+    
+    if False in set(dimensionality_test, permutation_test):
+        raise utils.PermutationError
 
 def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
     """For a given pdb file, constructs a training example and extracts all features.
@@ -30,31 +54,19 @@ def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, c
     #find all the unique cores within a given pdb structure
     cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
     unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
-    if len(unique_cores) == 0:
-        raise utils.NoCoresError
+    test_core_loader(unique_cores, unique_names)
 
     #extract features for each unique core found
     completed = 0
     for core, name in zip(unique_cores, unique_names):
 
-        full_dist_mat, binding_core_identifiers, label, metal_coords = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
-        if len(full_dist_mat) != max_resis * 4:
-            raise utils.DistMatDimError
-
-        if label.shape[1] != max_resis * 4:
-            raise utils.LabelDimError
-
+        full_dist_mat, binding_core_identifiers, label = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
         encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis)
-        if encoding.shape[1] != max_resis * 20:
-            raise utils.EncodingDimError
+        test_featurization(full_dist_mat, label, encoding, max_resis)
 
         #permute distance matrices, labels, and encodings
         features = core_permuter.permute_fragments(full_dist_mat, encoding, label, binding_core_identifiers)
-        if len([key for key in features.keys() if type(key) == int]) > max_permutations:
-            raise utils.PermutationError
-
-        if len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) != 1:
-            raise utils.ConstructionError
+        test_permutation(features, max_permutations)
 
         #write files to disk
         metal_chid = core.select(f'name {name}') .getChids()[0]
