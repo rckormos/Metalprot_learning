@@ -8,20 +8,16 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass 
 
+class CoreLoadingError(Error):
+    """Raised when cores are not loaded successfully"""
+    pass
+
 class NoCoresError(Error):
     """Raised when no cores are found"""
     pass
 
-class DistMatDimError(Error):
-    """Raised when dimensions of distance matrix are incorrect"""
-    pass
-
-class LabelDimError(Error):
-    """Raised when dimensions of label are incorrect"""
-    pass
-
-class EncodingDimError(Error):
-    """Raised when dimensions of sequence encoding are incorrect"""
+class FeaturizationError(Error):
+    """Raised when featurization fails"""
     pass
 
 class EncodingError(Error):
@@ -31,7 +27,3 @@ class EncodingError(Error):
 class PermutationError(Error):
     """Raised when permutations are done incorrectly"""
     pass 
-
-class ConstructionError(Error):
-    """Raised when the number of permutations, observation rows, and label rows do not match"""
-    pass
