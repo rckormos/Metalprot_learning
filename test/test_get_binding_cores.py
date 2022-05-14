@@ -15,7 +15,7 @@ import numpy as np
 
 def load_data():
     "Helper function for loading structures"
-    data_path = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
+    data_path = '/wynton/home/rotation/jzhang1198/protein_des_mod/Metalprot_learning/data'
     pdbs = [os.path.join(data_path, file) for file in os.listdir(data_path) if '.pdb' in file]
     return pdbs 
 
@@ -172,7 +172,7 @@ def test_all():
 
         for core, name in zip(unique_cores, unique_names):
 
-            full_dist_mat, binding_core_identifiers, label, metal_coords = compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
+            full_dist_mat, binding_core_identifiers, label = compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
             compute_distance_matrices_test(full_dist_mat, binding_core_identifiers, core, no_neighbors, coordinating_resis)
             compute_labels_test(label, core, name, no_neighbors, coordinating_resis, binding_core_identifiers)
             
