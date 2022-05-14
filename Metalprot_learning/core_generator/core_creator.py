@@ -27,14 +27,14 @@ def test_featurization(full_dist_mat, label, encoding, max_resis):
     label_check = label.shape[1] == max_resis * 4
     encoding_check = encoding.shape[1] == max_resis * 20 + 1
 
-    if False in set(dist_mat_check, label_check, encoding_check):
+    if False in set({dist_mat_check, label_check, encoding_check}):
         raise utils.FeaturizationError
 
 def test_permutation(features, max_permutations):
     dimensionality_test = len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) == 1
     permutation_test = len(features['full_observations']) <= max_permutations
     
-    if False in set(dimensionality_test, permutation_test):
+    if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
 
 def construct_training_example(pdb_file: str, output_dir: str, no_neighbors=1, coordinating_resis=4):
