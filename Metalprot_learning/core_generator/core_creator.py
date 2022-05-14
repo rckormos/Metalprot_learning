@@ -5,7 +5,6 @@ This file contains functions for extracting binding core examples and writing th
 """
 
 #imports
-from enum import unique
 import numpy as np
 from prody import writePDB
 import os
