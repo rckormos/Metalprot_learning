@@ -35,7 +35,7 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int)
 
     return train_dataloader, test_dataloader
 
-def train_loop(model, train_dataloader, loss_fn, optimizer):
+def train_loop(model, train_dataloader, loss_fn, optimizer, device):
     """Runs a single epoch of model training.
 
     Args:
@@ -49,6 +49,7 @@ def train_loop(model, train_dataloader, loss_fn, optimizer):
     """
 
     for batch, (X, y) in enumerate(train_dataloader):
+        X, y = X.to(device), y.to(device)
         
         #make prediction
         prediction = model.forward(X) 
@@ -62,7 +63,7 @@ def train_loop(model, train_dataloader, loss_fn, optimizer):
     train_loss = loss.item()
     return train_loss
 
-def validation_loop(model, test_dataloader, loss_fn):
+def validation_loop(model, test_dataloader, loss_fn, device):
     """Computes a forward pass of the testing dataset through the network and the resulting testing loss.
 
     Args:
@@ -77,6 +78,7 @@ def validation_loop(model, test_dataloader, loss_fn):
     validation_loss = 0
     with torch.no_grad():
         for X,y in test_dataloader:
+            X, y = X.to(device), y.to(device)
             prediction = model(X)
             validation_loss += loss_fn(prediction,y).item()
 
@@ -117,8 +119,8 @@ def train_model(path2output: str, arch: dict, features_file: str, partitions: tu
     test_loss = []
     for epoch in range(0, epochs):
         print(f'Now on epoch {epoch}')
-        _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer)
-        _test_loss = validation_loop(model, test_dataloader, loss_fn)
+        _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
+        _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
 
         train_loss.append(_train_loss)
         test_loss.append(_test_loss)
