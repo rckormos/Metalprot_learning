@@ -30,7 +30,7 @@ def triangulate(backbone_coords, distance_prediction):
 
     return solution, rmsd
 
-def extract_coordinates(source_file: str, resindex_permutation):
+def extract_coordinates(source_file: str, resindex_permutation, example):
     """_summary_
 
     Args:
@@ -38,6 +38,7 @@ def extract_coordinates(source_file: str, resindex_permutation):
         positive (bool, optional): _description_. Defaults to False.
     """
 
+    metal_coords = np.nan
     core = parsePDB(source_file)
     for iteration, resindex in enumerate(resindex_permutation):
         residue = core.select(f'resindex {resindex}').select('name C CA N O').getCoords()
@@ -47,15 +48,21 @@ def extract_coordinates(source_file: str, resindex_permutation):
         else:
             coordinates = np.vstack([coordinates, residue])
 
-    return coordinates
+    if example:
+        metal_coords = core.select('hetero').getCoords()
+        assert len(metal_coords) == 1
+        metal_coords = metal_coords[0]
 
-def predict_coordinates(distance_predictions, pointers, resindex_permutations):
+    return coordinates, metal_coords
+
+def predict_coordinates(distance_predictions, pointers, resindex_permutations, example=False):
     predicted_metal_coordinates = None
     metal_rmsds = None
+    metal_coordinates = None
     completed = 0
     for distance_prediction, pointer, resindex_permutation in zip(distance_predictions, pointers, resindex_permutations):
         try:
-            source_coordinates = extract_coordinates(pointer, resindex_permutation)
+            source_coordinates, _metal_coordinates = extract_coordinates(pointer, resindex_permutation, example)
             solution, rmsd = triangulate(source_coordinates, distance_prediction)
             completed += 1
 
@@ -64,22 +71,17 @@ def predict_coordinates(distance_predictions, pointers, resindex_permutations):
 
         if type(predicted_metal_coordinates) != np.ndarray:
             predicted_metal_coordinates = solution
+            metal_coordinates = _metal_coordinates
             metal_rmsds = rmsd
 
         else:
             predicted_metal_coordinates = np.vstack([predicted_metal_coordinates, solution])
+            metal_coordinates = np.vstack([metal_coordinates, _metal_coordinates])
             metal_rmsds = np.append(metal_rmsds, rmsd)
 
     print(f'Coordinates and RMSDs computed for {completed} out of {len(distance_predictions)} observations.')
-    return predicted_metal_coordinates, metal_rmsds
+    return predicted_metal_coordinates, metal_coordinates, metal_rmsds
 
-def evaluate_positives(predicted_metal_coordinates, pointers):
-    metal_coordinate_lookup = {}
-    for file in pointers:
-        core = parsePDB(file)
-        metal_coordinate_lookup[file] = core.select('hetero').select('name NI MN ZN CO CU MG FE').getCoords()
-
-    source_metal_coordinates = np.array([metal_coordinate_lookup[i] for i in pointers])
-    deviation = np.sqrt(np.sum(np.square(source_metal_coordinates - predicted_metal_coordinates), axis=1))
-    
+def evaluate_positives(predicted_metal_coordinates, metal_coordinates):
+    deviation = np.sqrt(np.sum(np.square(metal_coordinates - predicted_metal_coordinates), axis=1))
     return deviation
