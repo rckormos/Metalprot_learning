@@ -38,7 +38,7 @@ def load_data(features_file: str, arch_file: str):
         features = pickle.load(f)
 
     pointers = features['pointers']
-    permutations = features['permutations']
+    permutations = features['binding_core_identifiers']
     observations = features['observations']
     labels = features['labels']
 
@@ -55,9 +55,9 @@ if __name__ == '__main__':
 
     #load data
     examples = True #true if data are positive examples
-    features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV1/compiled_features.pkl'
-    arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/architecture.json'
-    weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2001_1000_0.01_MAE_SGD/model.pth'
+    features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/architecture.json'
+    weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/model.pth'
     arch, pointers, permutations, observations, labels = load_data(features_file, arch_file)
     assert len(pointers) == len(permutations) == len(observations) == len(labels)
 
