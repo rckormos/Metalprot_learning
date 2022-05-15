@@ -85,6 +85,3 @@ if __name__ == '__main__':
         failed = [pointers[int(i)] for i in failed_indices]
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
             f.write('\n'.join(failed) + '\n')
-
-
-
