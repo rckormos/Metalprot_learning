@@ -25,7 +25,7 @@ def test_core_loader(unique_cores, unique_names):
 def test_featurization(full_dist_mat, label, encoding, max_resis):
     dist_mat_check = len(full_dist_mat) == max_resis * 4
     label_check = label.shape[1] == max_resis * 4
-    encoding_check = encoding.shape[1] == max_resis * 20 + 1
+    encoding_check = encoding.shape[1] == max_resis * 20
 
     if False in set({dist_mat_check, label_check, encoding_check}):
         raise utils.FeaturizationError
