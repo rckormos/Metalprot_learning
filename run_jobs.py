@@ -95,7 +95,7 @@ if __name__ == '__main__':
             run_SGE(job_name, num_jobs, path, job_script, time=arguments['--time'])
         
         else:
-            run_SGE(job_name, num_jobs, path, job_script)
+            run_SGE(job_name, num_jobs, path, job_script)#!/
 
     elif arguments['--job-distributor'] == 'sequential':
         path = arguments['<path>']
