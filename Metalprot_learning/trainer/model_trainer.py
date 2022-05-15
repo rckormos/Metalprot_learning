@@ -99,6 +99,8 @@ def train_model(path2output: str, arch: dict, features_file: str, partitions: tu
         hyperparams (tuple): Tuple containing hyperparameters for model training.
     """
 
+    print(f'Now training model specified in {path2output}')
+
     #expand hyperparamters and instantiate model
     epochs, batch_size, lr, loss_fn, optimizer = hyperparams
     model = models.SingleLayerNet(arch)

@@ -56,7 +56,6 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
     failed = []
     compiled_features = {}
     for file in feature_files:
-        print(file)
         with open(file, 'rb') as f:
             data = pickle.load(f)
 
@@ -80,6 +79,8 @@ def compile_data(path2features: str, job_id: int, feature_files, max_permutation
                 binding_core_identifier_permutations += binding_core_identifier_permutations_weighted
                 pointers += [data['source']] * len(x_weighted)
                 assert len(pointers) == len(binding_core_identifier_permutations) == len(X) == len(Y)
+
+            print(f'Successfully compiled {file}')
 
         except:
             failed.append(file)
