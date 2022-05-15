@@ -44,7 +44,7 @@ def split_data(features_file: str, partitions: tuple, seed: int):
 
     X = features['observations']
     y = features['labels']
-    binding_core_identifier_permutations = features['binding_core_identifier_permutations']
+    binding_core_identifier_permutations = features['binding_core_identifiers']
     sources = features['pointers']
 
     #define data partitions
