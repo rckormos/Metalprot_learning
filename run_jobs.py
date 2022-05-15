@@ -70,8 +70,16 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00
 
     subprocess.check_call(qsub_command)
 
-def run_sequential(job_script: str, path: str):
-    subprocess.check_call([job_script, path])
+def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_path=True):
+
+    job_output_path = os.path.join(path, "job_outputs")
+    if not keep_job_output_path and os.path.exists(job_output_path): 
+        shutil.rmtree(job_output_path)
+
+    if not os.path.exists(job_output_path):
+        os.mkdir(job_output_path)
+
+    subprocess.check_call(['nohup', job_script, path, '>', os.path.join(job_output_path, f'{job_name}.out'), '2>', os.path.join(job_output_path, f'{job_name}.err')])
 
 if __name__ == '__main__':
     
@@ -92,7 +100,8 @@ if __name__ == '__main__':
     elif arguments['--job-distributor'] == 'sequential':
         path = arguments['<path>']
         job_script = arguments['<job-script>']
-        run_sequential(job_script, path)
-        
+        job_name = arguments['<job-name>']
+        run_sequential(job_name, path, job_script)
+
     else:
         raise IOError('Unknown job distributor: {0}'.format(arguments['--job-distributor']))
