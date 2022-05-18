@@ -4,11 +4,10 @@ Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 This file contains functions for predicting metal coordinates.
 """
 
-#import
+#imports
 import numpy as np
 import scipy
 from prody import *
-from Metalprot_learning import utils
 
 def triangulate(backbone_coords, distance_prediction):
     distance_prediction = distance_prediction[0:len(backbone_coords)]
@@ -30,7 +29,7 @@ def triangulate(backbone_coords, distance_prediction):
 
     return solution, rmsd
 
-def extract_coordinates(source_file: str, resindex_permutation, example):
+def extract_coordinates(source_file: str, identifier_permutation, example):
     """_summary_
 
     Args:
@@ -38,15 +37,11 @@ def extract_coordinates(source_file: str, resindex_permutation, example):
         positive (bool, optional): _description_. Defaults to False.
     """
 
-    metal_coords = np.nan
+    metal_coords = np.array([np.nan, np.nan, np.nan])
     core = parsePDB(source_file)
-    for iteration, resindex in enumerate(resindex_permutation):
-        residue = core.select(f'resindex {resindex}').select('name C CA N O').getCoords()
-
-        if iteration == 0:
-            coordinates = residue
-        else:
-            coordinates = np.vstack([coordinates, residue])
+    for iteration, id in enumerate(identifier_permutation):
+        residue = core.select(f'chain {id[1]}').select(f'resnum {id[0]}').select('name C CA N O').getCoords()
+        coordinates = residue if iteration == 0 else np.vstack([coordinates, residue])
 
     if example:
         metal_coords = core.select('hetero').getCoords()
@@ -67,6 +62,7 @@ def predict_coordinates(distance_predictions, pointers, resindex_permutations, e
             completed += 1
 
         except:
+            _metal_coordinates = np.array([np.nan, np.nan, np.nan])
             solution, rmsd = np.array([np.nan, np.nan, np.nan]), np.nan
 
         if type(predicted_metal_coordinates) != np.ndarray:

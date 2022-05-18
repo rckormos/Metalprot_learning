@@ -28,6 +28,8 @@ def distribute_tasks(no_jobs: int, job_id: int, pointers: list, permutations: li
     observations = observations[start_ind:end_ind]
     labels = labels[start_ind:end_ind]
 
+    print(f'Predicting coordinates for indices {start_ind}:{end_ind}')
+
     return pointers, permutations, observations, labels
 
 def load_data(features_file: str, arch_file: str):
@@ -45,7 +47,7 @@ def load_data(features_file: str, arch_file: str):
     return arch, pointers, permutations, observations, labels
 
 if __name__ == '__main__':
-    path2output = sys.argv[1] #path to store outputs    
+    path2output = sys.argv[1] #path to store outputs  
     no_jobs = 1
     job_id = 0
 
@@ -54,7 +56,7 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #load data
-    examples = True #true if data are positive examples
+    example = True #true if data are positive examples
     features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
     arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/architecture.json'
     weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/model.pth'
@@ -65,22 +67,21 @@ if __name__ == '__main__':
 
     #load model
     model = SingleLayerNet(arch)
-    model.load_state_dict(torch.load(weights_file))
+    model.load_state_dict(torch.load(weights_file, map_location='cpu'))
     model.eval()
 
     #forward pass and evaulation of predictions
     predictions = model.forward(torch.from_numpy(observations)).cpu().detach().numpy()
-    predicted_metal_coordinates, rmsds = predict_coordinates(predictions, pointers, permutations)
+    predicted_metal_coordinates, metal_coordinates, rmsds = predict_coordinates(predictions, pointers, permutations, example=example)
 
-    if examples:
-        deviation = evaluate_positives(predicted_metal_coordinates, pointers)
+    if example:
+        deviation = evaluate_positives(predicted_metal_coordinates, metal_coordinates)
         np.save(os.path.join(path2output, f'deviation{job_id}'), deviation)
 
     np.save(os.path.join(path2output, f'coordinates{job_id}'), predicted_metal_coordinates)
     np.save(os.path.join(path2output, f'rmsds{job_id}'), rmsds)
 
     failed_indices = np.argwhere(np.isnan(predicted_metal_coordinates))
-
     if len(failed_indices) > 0:
         failed = [pointers[int(i)] for i in failed_indices]
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:

@@ -26,8 +26,11 @@ Options:
     --num-jobs=<NJ>, -n=<NJ>
         Number of jobs for parallel run.
 
-    --time=<T>, -t=<T>
+    --time=<T>, -t=<T>  [default: 05:00:00]
         Time to alot for each parallel run. For example, 05:00:00 will alot 5 hours.
+
+    --gpu=<GPU>, -g=<G>  [default: N]
+        Defines the type of processing unit to run job on. Y designates GPU usage.
 '''
 
 import docopt
@@ -35,7 +38,7 @@ import shutil
 import os
 import subprocess
 
-def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00:00', mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
+def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time: str, gpu: str, mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
 
     """Runs SGE job on UCSF Wynton cluster.
 
@@ -43,7 +46,8 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00
         num_jobs (int): Number of jobs.
         path (str): Path to output directory to store job logs and output files.
         job_script (str): Path to the script to be submitted.
-        time (str, optional): Time alloted for each task. Defaults to '5:00:00'.
+        time (str, optional): Time alloted for each task.
+        gpu (str): Defines the processing unit to run job on.
         mem_free_GB (int, optional): Defaults to 3.
         scratch_space_GB (int, optional): Defaults to 1.
         keep_job_output_path (bool, optional): Defaults to True.
@@ -68,6 +72,10 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time='5:00
                         path] \
                         + [num_jobs]
 
+    if gpu == 'Y':
+        append = ['-q', 'gpu.q', '-pe', 'smp', num_jobs]
+        qsub_command[1:1] = append
+
     subprocess.check_call(qsub_command)
 
 def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_path=True):
@@ -82,27 +90,20 @@ def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_pa
     subprocess.check_call(['nohup', job_script, path])
     shutil.move('nohup.out', os.path.join(job_output_path, f'{job_name}.out'))
 
-
 if __name__ == '__main__':
     
     arguments = docopt.docopt(__doc__)
+    path = arguments['<path>']
+    job_script = arguments['<job-script>']
+    job_name = arguments['<job-name>']
+    time = arguments['--time']
+    gpu = arguments['--gpu']
 
     if arguments['--job-distributor'] == 'SGE':
         num_jobs = arguments['--num-jobs'] if arguments['--num-jobs'] else '1'
-        path = arguments['<path>']
-        job_script = arguments['<job-script>']
-        job_name = arguments['<job-name>']
-
-        if arguments['--time']:
-            run_SGE(job_name, num_jobs, path, job_script, time=arguments['--time'])
-        
-        else:
-            run_SGE(job_name, num_jobs, path, job_script)#!/
+        run_SGE(job_name, num_jobs, path, job_script, time=time, gpu=gpu)
 
     elif arguments['--job-distributor'] == 'sequential':
-        path = arguments['<path>']
-        job_script = arguments['<job-script>']
-        job_name = arguments['<job-name>']
         run_sequential(job_name, path, job_script)
 
     else:
