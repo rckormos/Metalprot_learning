@@ -54,10 +54,9 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #define architecture of neural network
-    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU', 'dropout': None}, 
-            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU', 'dropout': None},
-            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU', 'dropout': None},
-            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU', 'dropout': None}]
+    arch = [{'input_dim': 2544, 'output_dim': 1000, 'activation': 'ReLU', 'dropout': None}, 
+            {'input_dim': 1000, 'output_dim': 500, 'activation': 'ReLU', 'dropout': None},
+            {'input_dim': 500, 'output_dim': 48, 'activation': 'ReLU', 'dropout': None}]
 
     #define hyperparameters. if you would like to implement a grid search, simply add more values to the lists
     epochs = [2003]

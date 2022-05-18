@@ -55,7 +55,7 @@ if __name__ == '__main__':
 
     #provide paths to observations and labels
     path2features = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    path2models = '/home/gpu/jzhang1198/data/models/dummy'
+    path2models = '/home/gpu/jzhang1198/data/models/MLP_mini'
 
     #distribute and run tasks
     tasks = distribute_tasks(no_jobs, job_id, path2models)
