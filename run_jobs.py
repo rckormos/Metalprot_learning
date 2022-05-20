@@ -29,7 +29,7 @@ Options:
     --time=<T>, -t=<T>  [default: 05:00:00]
         Time to alot for each parallel run. For example, 05:00:00 will alot 5 hours.
 
-    --gpu=<GPU>, -g=<G>  [default: N]
+    --processing-unit=<P>, -p=<P>  [default: cpu]
         Defines the type of processing unit to run job on. Y designates GPU usage.
 '''
 
@@ -38,7 +38,7 @@ import shutil
 import os
 import subprocess
 
-def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time: str, gpu: str, mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
+def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time: str, processing_unit: str, mem_free_GB=3, scratch_space_GB=1, keep_job_output_path=True):
 
     """Runs SGE job on UCSF Wynton cluster.
 
@@ -67,16 +67,16 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time: str,
                         '-l', 'h_rt={0}'.format(time),
                         '-o', job_output_path,
                         '-e', job_output_path,
-                        './activate_env.sh',
+                        './job_scripts/activate_env.sh',
                         job_script,
                         path] \
                         + [num_jobs]
 
-    if gpu == 'Y':
+    if processing_unit == 'gpu':
         append = ['-q', 'gpu.q', '-pe', 'smp', num_jobs]
         qsub_command[1:1] = append
 
-    subprocess.check_call(qsub_command)
+    subprocess.run(qsub_command)
 
 def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_path=True):
 
@@ -87,8 +87,10 @@ def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_pa
     if not os.path.exists(job_output_path):
         os.mkdir(job_output_path)
 
-    subprocess.check_call(['nohup', job_script, path])
-    shutil.move('nohup.out', os.path.join(job_output_path, f'{job_name}.out'))
+    command = ['nohup',job_script, path]
+
+    subprocess.run(command)
+    os.replace('./nohup.out', os.path.join(job_output_path, f'{job_name}.out'))
 
 if __name__ == '__main__':
     
@@ -96,12 +98,10 @@ if __name__ == '__main__':
     path = arguments['<path>']
     job_script = arguments['<job-script>']
     job_name = arguments['<job-name>']
-    time = arguments['--time']
-    gpu = arguments['--gpu']
 
     if arguments['--job-distributor'] == 'SGE':
         num_jobs = arguments['--num-jobs'] if arguments['--num-jobs'] else '1'
-        run_SGE(job_name, num_jobs, path, job_script, time=time, gpu=gpu)
+        run_SGE(job_name, num_jobs, path, job_script, arguments['--time'], arguments['--processing-unit'])
 
     elif arguments['--job-distributor'] == 'sequential':
         run_sequential(job_name, path, job_script)
