@@ -37,7 +37,7 @@ class SingleLayerNet(torch.nn.Module):
 
 class SingleLayerNetV2(torch.nn.Module):
     def __init__(self, input_dim: int, l1: int, l2: int, output_dim: int):
-        super(SingleLayerNet, self).__init__()
+        super(SingleLayerNetV2, self).__init__()
 
         self.block1 = torch.nn.Sequential(
             torch.nn.Linear(input_dim, l1),
@@ -54,7 +54,7 @@ class SingleLayerNetV2(torch.nn.Module):
 
 class DoubleLayerNet(torch.nn.Module):
     def __init__(self, input_dim: int, l1: int, l2: int, l3: int, output_dim: int):
-        super(SingleLayerNet, self).__init__()
+        super(DoubleLayerNet, self).__init__()
 
         self.block1 = torch.nn.Sequential(
             torch.nn.Linear(input_dim, l1),
