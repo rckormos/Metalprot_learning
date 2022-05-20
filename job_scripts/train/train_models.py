@@ -7,7 +7,8 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.trainer.model_trainer import train_model
+from Metalprot_learning.trainer.model_trainer import tune_model
+from ray import tune
 import sys
 import os
 import json
@@ -55,9 +56,16 @@ if __name__ == '__main__':
 
     #provide paths to observations and labels
     path2features = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    path2models = '/home/gpu/jzhang1198/data/models/MLP_mini'
+    coordinating_resis = 4
+    no_neighbors = 1
+    no_samples = 100
+    seed = 42
 
-    #distribute and run tasks
-    tasks = distribute_tasks(no_jobs, job_id, path2models)
-    for task in tasks:
-        run_train(task, path2features) 
+    config = {'l1': [],
+        'l2': [],
+        'batch_size': [],
+        'lr': [],
+        'epochs': []}
+
+    tune_model(path2output, seed, no_samples, config, coordinating_resis, no_neighbors, path2features)
+    
