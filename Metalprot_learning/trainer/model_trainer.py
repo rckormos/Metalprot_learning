@@ -5,10 +5,10 @@ This file contains functions for model training and hyperparameter optimization.
 """
 
 #imports
-import os
 import numpy as np
-import json
 import torch
+from ray import tune
+from functools import partial
 from Metalprot_learning.trainer import datasets
 from Metalprot_learning.trainer import models
 
@@ -85,7 +85,7 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_model(path2output: str, features_file: str, config: dict, arch: dict, partitions: tuple, seed: int):
+def train_full_model(config: dict, input=int, output=int, features_file=str, seed=int):
     """Runs model training.
 
     Args:
@@ -98,36 +98,37 @@ def train_model(path2output: str, features_file: str, config: dict, arch: dict, 
         seed (int): Random seed defined by user.
     """
 
-    print(f'Now training model specified in {path2output}')
+    torch.manual_seed(seed)
 
-    #expand hyperparamters and instantiate model
-    model = models.SingleLayerNet(arch)
+    #instantiate model
+    model = models.SingleLayerNetV2(input, config['l1'], config['l2'], output) if 'l3' not in config.keys() else models.DoubleLayerNet(input, config['l1'], config['l2'], config['l3'], output)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader = load_data(features_file, partitions, config['batch_size'], seed)
+    train_dataloader, test_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], seed)
 
     #define optimizer and loss function
-    optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=config['lr'])}
-    optimizer = optimizer_dict[optimizer]
-    loss_fn_dict = {'MAE': torch.nn.L1Loss(),
-                    'MSE': torch.nn.MSELoss()}
-    loss_fn = loss_fn_dict[loss_fn]
+    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
+    loss_fn = torch.nn.L1Loss()
 
-    train_loss =[]
-    test_loss = []
     for epoch in range(0, config['epochs']):
-        print(f'Now on epoch {epoch}')
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
 
-        train_loss.append(_train_loss)
-        test_loss.append(_test_loss)
+        tune.report(test_loss=_test_loss, train_loss=_train_loss)
 
-    #write output files
-    torch.save(model.state_dict(), os.path.join(path2output, "model" + '.pth'))
-    np.save(os.path.join(path2output, 'train_loss'), np.array(train_loss))
-    np.save(os.path.join(path2output, 'test_loss'), np.array(test_loss))
-    with open(os.path.join(path2output, 'architecture.json'), 'w') as f:
-        json.dump(arch, f)
+def tune_model(path2output: str, seed: int, no_samples: int, config: dict, coordinating_resis: int, no_neighbors: int, features_file: str, cpus=1, gpus=0, max_epochs=3000):
+    no_resis = coordinating_resis + (2*no_neighbors*coordinating_resis)
+    input_dim = (4*no_resis)**2 + (20*no_resis)
+    output_dim = 4*no_resis
+
+    scheduler = tune.schedulers.ASHAScheduler(metric='test_loss', mode='min', max_t=max_epochs, grace_period=1, reduction_factor=2)
+    result = tune.run(
+        partial(train_full_model, input=input_dim, output=output_dim, features_file=features_file, seed=seed),
+        resources_per_trial={'cpu': cpus, "gpu": gpus},
+        config=config,
+        num_samples=no_samples,
+        scheduler=scheduler,
+        local_dir=path2output)
+
