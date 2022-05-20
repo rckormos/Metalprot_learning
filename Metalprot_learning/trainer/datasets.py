@@ -69,4 +69,4 @@ def split_data(features_file: str, partitions: tuple, seed: int):
     val_index = {'pointers': val_sources, 'binding_core_identifier_permutations': val_identifier_permutations}
     training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
 
-    return training_data, testing_data, validation_data
+    return training_data, testing_data, validation_data, (training_indices, test_indices, val_indices)
