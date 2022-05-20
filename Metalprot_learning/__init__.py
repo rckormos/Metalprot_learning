@@ -4,7 +4,7 @@ DeGrado Lab 2021
 """
 
 from . import core_generator
-from . import trainer
+from . import train
 from . import predictor
 from . import processor
 from . import utils
