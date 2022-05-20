@@ -85,7 +85,7 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_full_model(config: dict, input=int, output=int, features_file=str, seed=int):
+def train_full_model(config: dict, features_file=str):
     """Runs model training.
 
     Args:
@@ -98,15 +98,15 @@ def train_full_model(config: dict, input=int, output=int, features_file=str, see
         seed (int): Random seed defined by user.
     """
 
-    torch.manual_seed(seed)
+    torch.manual_seed(config['seed'])
 
     #instantiate model
-    model = models.SingleLayerNetV2(input, config['l1'], config['l2'], output) if 'l3' not in config.keys() else models.DoubleLayerNet(input, config['l1'], config['l2'], config['l3'], output)
+    model = models.SingleLayerNetV2(config['input'], config['l1'], config['l2'], config['output']) if 'l3' not in config.keys() else models.DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'])
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], seed)
+    train_dataloader, test_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
@@ -118,14 +118,11 @@ def train_full_model(config: dict, input=int, output=int, features_file=str, see
 
         tune.report(test_loss=_test_loss, train_loss=_train_loss)
 
-def tune_model(path2output: str, seed: int, no_samples: int, config: dict, coordinating_resis: int, no_neighbors: int, features_file: str, cpus=1, gpus=0, max_epochs=3000):
-    no_resis = coordinating_resis + (2*no_neighbors*coordinating_resis)
-    input_dim = (4*no_resis)**2 + (20*no_resis)
-    output_dim = 4*no_resis
+def tune_model(path2output: str, no_samples: int, config: dict, features_file: str, cpus: int, gpus: int, max_epochs=3000):
 
     scheduler = tune.schedulers.ASHAScheduler(metric='test_loss', mode='min', max_t=max_epochs, grace_period=1, reduction_factor=2)
     result = tune.run(
-        partial(train_full_model, input=input_dim, output=output_dim, features_file=features_file, seed=seed),
+        partial(train_full_model, features_file=features_file),
         resources_per_trial={'cpu': cpus, "gpu": gpus},
         config=config,
         num_samples=no_samples,
