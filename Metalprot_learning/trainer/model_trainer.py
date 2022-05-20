@@ -25,7 +25,7 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int)
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
     """
-    training_data, testing_data, _ = datasets.split_data(features_file, partitions, seed)
+    training_data, testing_data, _, _ = datasets.split_data(features_file, partitions, seed)
 
     training_observations, training_labels, _ = training_data
     train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(training_observations, training_labels), batch_size=batch_size, shuffle=True)
