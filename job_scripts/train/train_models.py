@@ -67,7 +67,7 @@ if __name__ == '__main__':
         'output': tune.choice([48]),
         'lr': tune.uniform(0.001, 0.01),
         'batch_size': tune.randint(100,10000),
-        'epochs': tune.choice([2]),
+        'epochs': tune.choice([800]),
         'seed': tune.randint(0,1000)}
 
     tune_model(path2output, no_samples, config, path2features, cpus, gpus)
