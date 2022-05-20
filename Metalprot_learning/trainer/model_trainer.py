@@ -85,33 +85,31 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_model(path2output: str, arch: dict, features_file: str, partitions: tuple, seed: int, hyperparams: tuple):
+def train_model(path2output: str, features_file: str, config: dict, arch: dict, partitions: tuple, seed: int):
     """Runs model training.
 
     Args:
         path2output (str): Directory to dump output files.
         arch (dict): List of dictionaries defining architecture of the neural network.
-        observation_file (str): Path to observation matrix file.
-        label_file (str): Path to label matrix file.
+        features_file (str): Contains observations and labels.
+        config (dict): Defines configurable model hyperparameters.
+        arch (dict): Defines the architecture of the neural network with configurable parameters.
         partitions (tuple): Tuple containing percentages of the dataset partitioned into training, testing, and validation sets respectively.
-        index_file (str): Path to index file.
         seed (int): Random seed defined by user.
-        hyperparams (tuple): Tuple containing hyperparameters for model training.
     """
 
     print(f'Now training model specified in {path2output}')
 
     #expand hyperparamters and instantiate model
-    epochs, batch_size, lr, loss_fn, optimizer = hyperparams
     model = models.SingleLayerNet(arch)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader = load_data(features_file, partitions, batch_size, seed)
+    train_dataloader, test_dataloader = load_data(features_file, partitions, config['batch_size'], seed)
 
     #define optimizer and loss function
-    optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=lr)}
+    optimizer_dict = {'SGD': torch.optim.SGD(model.parameters(), lr=config['lr'])}
     optimizer = optimizer_dict[optimizer]
     loss_fn_dict = {'MAE': torch.nn.L1Loss(),
                     'MSE': torch.nn.MSELoss()}
@@ -119,7 +117,7 @@ def train_model(path2output: str, arch: dict, features_file: str, partitions: tu
 
     train_loss =[]
     test_loss = []
-    for epoch in range(0, epochs):
+    for epoch in range(0, config['epochs']):
         print(f'Now on epoch {epoch}')
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
