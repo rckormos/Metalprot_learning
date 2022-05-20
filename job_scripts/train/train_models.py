@@ -55,18 +55,20 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #provide paths to observations and labels
-    path2features = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    coordinating_resis = 4
-    no_neighbors = 1
+    path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    cpus = 0
+    gpus = 1
     no_samples = 100
-    seed = 42
 
-    config = {'l1': tune.randint(300,2500),
+    config = {'input': tune.choice([2544]),
+        'l1': tune.randint(300,2500),
         'l2': tune.randint(100,2000),
         'l3': tune.randint(50,800),
-        'lr': tune.uniform([0.001, 0.01]),
+        'output': tune.choice([48]),
+        'lr': tune.uniform(0.001, 0.01),
         'batch_size': tune.randint(100,10000),
-        'epochs': tune.choice([800])}
+        'epochs': tune.choice([2]),
+        'seed': tune.randint(0,1000)}
 
-    tune_model(path2output, seed, no_samples, config, coordinating_resis, no_neighbors, path2features)
+    tune_model(path2output, no_samples, config, path2features, cpus, gpus)
     
