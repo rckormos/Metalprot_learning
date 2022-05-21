@@ -41,6 +41,11 @@ if __name__ == '__main__':
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
+    #job_id and no_jobs not needed (code is not designed for parrallelization), but are here for the sake of convention
+    if len(sys.argv) > 3:
+        _no_jobs = int(sys.argv[2])
+        _job_id = int(sys.argv[3]) - 1
+
     #create output directory to hold data from experiment
     today = datetime.datetime.now()
     DIRNAME = os.path.join(path2output, '_'.join( str(i) for i in ['tune', today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond]))
