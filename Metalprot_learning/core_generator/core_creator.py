@@ -9,9 +9,7 @@ import numpy as np
 from prody import writePDB
 import os
 import pickle
-from Metalprot_learning.core_generator import core_loader
-from Metalprot_learning.core_generator import core_featurizer
-from Metalprot_learning.core_generator import core_permuter
+from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter
 from Metalprot_learning import utils
 
 def test_core_loader(unique_cores, unique_names):

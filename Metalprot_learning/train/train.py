@@ -9,8 +9,7 @@ import numpy as np
 import torch
 from ray import tune
 from functools import partial
-from Metalprot_learning.trainer import datasets
-from Metalprot_learning.trainer import models
+from Metalprot_learning.train import datasets, models
 
 def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int):
     """Loads data for model training.
