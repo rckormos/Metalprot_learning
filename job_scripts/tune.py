@@ -49,8 +49,8 @@ if __name__ == '__main__':
     #define objective function
     def objective(trial):
         seed = np.random.randint(0,1000)
-        batch_size = trial.suggest_int("batch_size", 50,1000)
-        lr = trial.suggest_float("lr", 1e-5, 1e-4, log=True)
+        batch_size = trial.suggest_int("batch_size", 50,1200)
+        lr = trial.suggest_float("lr", 1e-1, 1e-3, log=True)
         l1 = trial.suggest_int("l1", 300, 2500)
         l2 = trial.suggest_int("l2", 100, 2000)
         l3 = trial.suggest_int("l3", 50, 800)
@@ -82,5 +82,5 @@ if __name__ == '__main__':
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100, timeout=600)
+    study.optimize(objective, n_trials=100)
 
