@@ -7,7 +7,7 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.trainer.model_trainer import tune_model
+from Metalprot_learning.train.train import tune_model
 from ray import tune
 import sys
 import os

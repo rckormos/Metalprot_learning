@@ -8,7 +8,7 @@ Given a set of input pdb files, this script will provide predictions of the meta
 
 #imports
 from math import dist, perm
-from Metalprot_learning.trainer.models import SingleLayerNet
+from Metalprot_learning.train import models
 from Metalprot_learning.predictor import *
 import os
 import json
@@ -66,7 +66,7 @@ if __name__ == '__main__':
     pointers, permutations, observations, labels = distribute_tasks(no_jobs, job_id, pointers, permutations, observations, labels)
 
     #load model
-    model = SingleLayerNet(arch)
+    model = models.SingleLayerNet(arch)
     model.load_state_dict(torch.load(weights_file, map_location='cpu'))
     model.eval()
 
