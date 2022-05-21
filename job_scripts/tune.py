@@ -38,7 +38,7 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    FEATURES_FILE = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
     def objective(trial):
         seed = np.random.randint(0,1000)
         batch_size = trial.suggest_int("batch_size", 50,1200)
-        lr = trial.suggest_float("lr", 1e-1, 1e-3, log=True)
+        lr = trial.suggest_float("lr", 1e-3, 1e-1)
         l1 = trial.suggest_int("l1", 300, 2500)
         l2 = trial.suggest_int("l2", 100, 2000)
         l3 = trial.suggest_int("l3", 50, 800)
