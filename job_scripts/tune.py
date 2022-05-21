@@ -18,8 +18,9 @@ from Metalprot_learning.train import models, train
 
 def write_output_files(DIRNAME: str, params: tuple, model, train_loss: np.ndarray, test_loss: np.ndarray):
     subdir = os.path.join(DIRNAME, '_'.join([str(i) for i in params]))
-    np.save(os.path.join(subdir, 'train_loss.npy', train_loss))
-    np.save(os.path.join(subdir, 'train_loss.npy', train_loss))
+    os.mkdir(subdir)
+    np.save(os.path.join(subdir, 'train_loss.npy'), train_loss)
+    np.save(os.path.join(subdir, 'test_loss.npy'), test_loss)
 
     config = {'seed': params[0],
         'batch_size': params[1],
@@ -34,27 +35,21 @@ def write_output_files(DIRNAME: str, params: tuple, model, train_loss: np.ndarra
 
 if __name__ == '__main__':
     path2output = sys.argv[1]
-    no_jobs = 1
-    job_id = 0
-
-    if len(sys.argv) > 3:
-        no_jobs = int(sys.argv[2])
-        job_id = int(sys.argv[3]) - 1
 
     #user-defined variables
-    FEATURES_FILE = ''
+    FEATURES_FILE = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
     #create output directory to hold data from experiment
-    today = datetime.now()
+    today = datetime.datetime.now()
     DIRNAME = os.path.join(path2output, '_'.join( str(i) for i in ['tune', today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond]))
     os.mkdir(DIRNAME)
 
     #define objective function
     def objective(trial):
         seed = np.random.randint(0,1000)
-        batch_size = trial.suggest_int("batch_size", 50,1500)
+        batch_size = trial.suggest_int("batch_size", 50,1000)
         lr = trial.suggest_float("lr", 1e-5, 1e-4, log=True)
         l1 = trial.suggest_int("l1", 300, 2500)
         l2 = trial.suggest_int("l2", 100, 2000)
