@@ -37,7 +37,7 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    FEATURES_FILE = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
