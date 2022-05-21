@@ -10,6 +10,7 @@ This script runs model hyperparameter tuning.
 import os
 import sys
 import json
+import time
 import torch
 import optuna
 import datetime
@@ -85,7 +86,9 @@ if __name__ == '__main__':
 
         write_output_files(DIRNAME, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
         return _test_loss
-
+    
+    start = time.time()
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=10)
+    print(time.time() - start)
 
