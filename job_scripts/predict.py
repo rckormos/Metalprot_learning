@@ -7,7 +7,6 @@ Given a set of input pdb files, this script will provide predictions of the meta
 """
 
 #imports
-from math import dist, perm
 from Metalprot_learning.train import models
 from Metalprot_learning.predictor import *
 import os
@@ -34,7 +33,7 @@ def distribute_tasks(no_jobs: int, job_id: int, pointers: list, permutations: li
 
 def load_data(features_file: str, arch_file: str):
     with open(arch_file, 'r') as f:
-        arch = json.load(f)
+        config = json.load(f)
 
     with open(features_file, 'rb') as f:
         features = pickle.load(f)
@@ -44,7 +43,7 @@ def load_data(features_file: str, arch_file: str):
     observations = features['observations']
     labels = features['labels']
 
-    return arch, pointers, permutations, observations, labels
+    return config, pointers, permutations, observations, labels
 
 if __name__ == '__main__':
     path2output = sys.argv[1] #path to store outputs  
@@ -57,17 +56,17 @@ if __name__ == '__main__':
 
     #load data
     example = True #true if data are positive examples
-    features_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    arch_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/architecture.json'
-    weights_file = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/model.pth'
-    arch, pointers, permutations, observations, labels = load_data(features_file, arch_file)
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/architecture.json'
+    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/model.pth'
+    config, pointers, permutations, observations, labels = load_data(FEATURES_FILE, CONFIG_FILE)
     assert len(pointers) == len(permutations) == len(observations) == len(labels)
 
     pointers, permutations, observations, labels = distribute_tasks(no_jobs, job_id, pointers, permutations, observations, labels)
 
     #load model
-    model = models.SingleLayerNet(arch)
-    model.load_state_dict(torch.load(weights_file, map_location='cpu'))
+    model = models.DoubleLayerNet(config) if 'l3' in config.keys() else models.SingleLayerNetV2(config)
+    model.load_state_dict(torch.load(WEIGHTS_FILE, map_location='cpu'))
     model.eval()
 
     #forward pass and evaulation of predictions
