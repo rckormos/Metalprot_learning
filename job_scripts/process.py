@@ -36,6 +36,6 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2'
-    feature_files = distribute_tasks(path2features, no_jobs, job_id)
-    compile_data(path2features, job_id, feature_files)
+    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2'
+    feature_files = distribute_tasks(PATH2FEATURES, no_jobs, job_id)
+    compile_data(PATH2FEATURES, job_id, feature_files)

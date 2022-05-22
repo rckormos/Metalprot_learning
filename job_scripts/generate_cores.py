@@ -3,7 +3,7 @@
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
-Note that this script is meant to be called from within a SGE bash submission script. 
+Note that this script is meant to be called from within a SGE bash submission script. Variables that need to be defined by user are in all caps.
 """
 
 #imports 
@@ -71,11 +71,10 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-    #YOU WILL NEED TO EDIT THIS PATH HERE
-    path2examples = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
+    PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
 
     failed = []
-    tasks = distribute_tasks(path2examples, no_jobs, job_id)
+    tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
     for file in tasks:
         failed_file_line = run_construct_training_example(file, path2output)
         failed.append(failed_file_line)
