@@ -10,8 +10,7 @@ This script runs model training.
 from Metalprot_learning.train.train import train_model
 import sys
 import numpy as np
-import os
-import json
+import datetime
 
 def distribute_tasks(no_jobs: int, job_id: int, MODELS: list):
     """Distributes batch jobs accross mutliple cores.
@@ -50,7 +49,9 @@ if __name__ == '__main__':
     ]
 
     for model in MODELS:
-        train_model(path2output, model, PATH2FEATURES)
+        today = datetime.datetime.now()
+        dirname = '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']])
+        train_model(dirname, model, PATH2FEATURES)
 
 
 

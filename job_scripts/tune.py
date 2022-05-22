@@ -17,9 +17,7 @@ import datetime
 import numpy as np
 from Metalprot_learning.train import models, train
 
-def write_output_files(DIRNAME: str, params: tuple, model, train_loss: np.ndarray, test_loss: np.ndarray):
-    subdir = os.path.join(DIRNAME, '_'.join([str(i) for i in params]))
-    os.mkdir(subdir)
+def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray, test_loss: np.ndarray):
     np.save(os.path.join(subdir, 'train_loss.npy'), train_loss)
     np.save(os.path.join(subdir, 'test_loss.npy'), test_loss)
 
@@ -54,6 +52,9 @@ if __name__ == '__main__':
 
     #define objective function
     def objective(trial):
+        trial_dir = os.path.join(DIRNAME, trial.number)
+        os.mkdir(trial_dir)
+
         seed = np.random.randint(0,1000)
         batch_size = trial.suggest_int("batch_size", 50,1200)
         lr = trial.suggest_float("lr", 1e-3, 1e-1)
@@ -81,10 +82,10 @@ if __name__ == '__main__':
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                write_output_files(DIRNAME, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        write_output_files(DIRNAME, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
