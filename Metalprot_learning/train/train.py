@@ -5,10 +5,10 @@ This file contains functions for model training and hyperparameter optimization.
 """
 
 #imports
+import os
+import json
 import numpy as np
 import torch
-from ray import tune
-from functools import partial
 from Metalprot_learning.train import datasets, models
 
 def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int):
@@ -84,7 +84,7 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_full_model(config: dict, features_file=str):
+def train_model(path2output: str, config: dict, features_file: str):
     """Runs model training.
 
     Args:
@@ -111,20 +111,20 @@ def train_full_model(config: dict, features_file=str):
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
     loss_fn = torch.nn.L1Loss()
 
+    train_loss = np.array([])
+    test_loss = np.array([])
     for epoch in range(0, config['epochs']):
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
 
-        tune.report(test_loss=_test_loss, train_loss=_train_loss)
+        train_loss = np.append(train_loss, _train_loss)
+        test_loss = np.append(test_loss, _test_loss)
 
-def tune_model(path2output: str, no_samples: int, config: dict, features_file: str, cpus: int, gpus: int, max_epochs=3000):
+    np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
+    np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
+    torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
+    with open(os.path.join(path2output, 'config.json'), 'w') as f:
+        json.dump(config, f)
 
-    scheduler = tune.schedulers.ASHAScheduler(metric='test_loss', mode='min', max_t=max_epochs, grace_period=1, reduction_factor=2)
-    result = tune.run(
-        partial(train_full_model, features_file=features_file),
-        resources_per_trial={'cpu': cpus, "gpu": gpus},
-        config=config,
-        num_samples=no_samples,
-        scheduler=scheduler,
-        local_dir=path2output)
+    
 
