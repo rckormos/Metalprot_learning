@@ -72,7 +72,7 @@ if __name__ == '__main__':
 
         train_loss = np.array([])
         test_loss = np.array([])
-        for epoch in range(0, 50):
+        for epoch in range(0, 40):
             _train_loss = train.train_loop(model, train_dataloader, loss_fn, optimizer, device)
             _test_loss = train.validation_loop(model, test_dataloader, loss_fn, device)
 
@@ -86,9 +86,12 @@ if __name__ == '__main__':
 
         write_output_files(DIRNAME, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
         return _test_loss
-    
-    start = time.time()
+
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=10)
-    print(time.time() - start)
+    study.optimize(objective, n_trials=100)
+    importances = optuna.importance.get_param_importances(study)
+
+    with open(os.path.join(path2output, 'importances.json'), 'w') as f:
+        json.dump(importances, f)
+
 
