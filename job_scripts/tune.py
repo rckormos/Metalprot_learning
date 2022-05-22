@@ -10,7 +10,6 @@ This script runs model hyperparameter tuning.
 import os
 import sys
 import json
-import time
 import torch
 import optuna
 import datetime
@@ -52,7 +51,7 @@ if __name__ == '__main__':
 
     #define objective function
     def objective(trial):
-        trial_dir = os.path.join(DIRNAME, trial.number)
+        trial_dir = os.path.join(DIRNAME, str(trial.number))
         os.mkdir(trial_dir)
 
         seed = np.random.randint(0,1000)
