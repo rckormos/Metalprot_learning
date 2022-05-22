@@ -38,7 +38,7 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    FEATURES_FILE = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
@@ -88,7 +88,7 @@ if __name__ == '__main__':
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=50)
     importances = optuna.importance.get_param_importances(study)
 
     with open(os.path.join(path2output, 'importances.json'), 'w') as f:
