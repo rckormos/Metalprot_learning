@@ -77,7 +77,7 @@ if __name__ == '__main__':
             _test_loss = train.validation_loop(model, test_dataloader, loss_fn, device)
 
             train_loss = np.append(train_loss, _train_loss)
-            test_loss = np.append(test_loss, _train_loss)
+            test_loss = np.append(test_loss, _test_loss)
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
