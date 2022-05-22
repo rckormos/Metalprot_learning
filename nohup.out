@@ -1,0 +1,30 @@
+[32m[I 2022-05-21 18:05:07,652][0m A new study created in memory with name: no-name-3f6e1488-56a2-4895-8b2d-352596987bb4[0m
+[32m[I 2022-05-21 18:07:24,311][0m Trial 0 finished with value: 0.7278359211408175 and parameters: {'batch_size': 559, 'lr': 0.02613414198920894, 'l1': 642, 'l2': 536, 'l3': 595}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:09:23,279][0m Trial 1 finished with value: 3.7529339449746266 and parameters: {'batch_size': 1111, 'lr': 0.07626993690163979, 'l1': 531, 'l2': 1007, 'l3': 112}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:12:34,165][0m Trial 2 finished with value: 2.0605787336826324 and parameters: {'batch_size': 863, 'lr': 0.06990679928029667, 'l1': 967, 'l2': 1266, 'l3': 258}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:17:36,690][0m Trial 3 finished with value: 1.8438509305318196 and parameters: {'batch_size': 792, 'lr': 0.06956791277920667, 'l1': 1961, 'l2': 798, 'l3': 305}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:20:33,201][0m Trial 4 finished with value: 0.84525616621149 and parameters: {'batch_size': 236, 'lr': 0.05287074381779489, 'l1': 1070, 'l2': 150, 'l3': 172}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:20:37,481][0m Trial 5 pruned. [0m
+[32m[I 2022-05-21 18:23:18,773][0m Trial 6 finished with value: 1.4315331429243088 and parameters: {'batch_size': 940, 'lr': 0.01884813041741737, 'l1': 1014, 'l2': 736, 'l3': 105}. Best is trial 0 with value: 0.7278359211408175.[0m
+[32m[I 2022-05-21 18:23:40,879][0m Trial 7 pruned. [0m
+[32m[I 2022-05-21 18:23:47,242][0m Trial 8 pruned. [0m
+[32m[I 2022-05-21 18:23:53,613][0m Trial 9 pruned. [0m
+[32m[I 2022-05-21 18:41:05,707][0m Trial 10 finished with value: 0.3673683480948818 and parameters: {'batch_size': 69, 'lr': 0.017667240498527845, 'l1': 1839, 'l2': 1991, 'l3': 564}. Best is trial 10 with value: 0.3673683480948818.[0m
+[32m[I 2022-05-21 19:01:39,950][0m Trial 11 finished with value: 0.4337794395054088 and parameters: {'batch_size': 57, 'lr': 0.021355145738728796, 'l1': 1952, 'l2': 1966, 'l3': 548}. Best is trial 10 with value: 0.3673683480948818.[0m
+[32m[I 2022-05-21 19:21:28,248][0m Trial 12 finished with value: 0.5026186368334185 and parameters: {'batch_size': 62, 'lr': 0.008593947138780011, 'l1': 1973, 'l2': 1996, 'l3': 586}. Best is trial 10 with value: 0.3673683480948818.[0m
+[32m[I 2022-05-21 19:41:16,012][0m Trial 13 finished with value: 0.3915645956307992 and parameters: {'batch_size': 78, 'lr': 0.035455530337670675, 'l1': 2486, 'l2': 1934, 'l3': 455}. Best is trial 10 with value: 0.3673683480948818.[0m
+[32m[I 2022-05-21 19:51:16,515][0m Trial 14 finished with value: 0.6270356266586868 and parameters: {'batch_size': 256, 'lr': 0.03889020699912295, 'l1': 2468, 'l2': 1622, 'l3': 435}. Best is trial 10 with value: 0.3673683480948818.[0m
+[32m[I 2022-05-21 19:51:59,111][0m Trial 15 pruned. [0m
+[32m[I 2022-05-21 19:53:17,384][0m Trial 16 pruned. [0m
+[32m[I 2022-05-21 19:53:30,358][0m Trial 17 pruned. [0m
+[32m[I 2022-05-21 19:53:47,603][0m Trial 18 pruned. [0m
+[32m[I 2022-05-21 19:54:02,517][0m Trial 19 pruned. [0m
+[32m[I 2022-05-21 19:54:32,351][0m Trial 20 pruned. [0m
+[32m[I 2022-05-21 20:17:22,496][0m Trial 21 finished with value: 0.3585755128194304 and parameters: {'batch_size': 50, 'lr': 0.021160884429049957, 'l1': 1899, 'l2': 1831, 'l3': 554}. Best is trial 21 with value: 0.3585755128194304.[0m
+[32m[I 2022-05-21 20:17:58,320][0m Trial 22 pruned. [0m
+[32m[I 2022-05-21 20:18:11,811][0m Trial 23 pruned. [0m
+[32m[I 2022-05-21 20:19:27,855][0m Trial 24 pruned. [0m
+[32m[I 2022-05-21 20:19:44,952][0m Trial 25 pruned. [0m
+[32m[I 2022-05-21 20:20:02,019][0m Trial 26 pruned. [0m
+[32m[I 2022-05-21 20:20:09,136][0m Trial 27 pruned. [0m
+[32m[I 2022-05-21 20:21:55,381][0m Trial 28 pruned. [0m

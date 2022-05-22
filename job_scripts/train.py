@@ -7,13 +7,13 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.train.train import tune_model
-from ray import tune
+from Metalprot_learning.train.train import train_model
 import sys
+import numpy as np
 import os
 import json
 
-def distribute_tasks(no_jobs: int, job_id: int, path2models: str):
+def distribute_tasks(no_jobs: int, job_id: int, MODELS: list):
     """Distributes batch jobs accross mutliple cores.
 
     Args:
@@ -24,26 +24,8 @@ def distribute_tasks(no_jobs: int, job_id: int, path2models: str):
     Returns:
         tasks (list): List of models to be train by task.
     """
-
-    models = [os.path.join(path2models, i) for i in os.listdir(path2models)]
-    tasks = [models[i] for i in range(0,len(models)) if i % no_jobs == job_id]
+    tasks = [MODELS[i] for i in range(0,len(MODELS)) if i % no_jobs == job_id]
     return tasks
-
-def run_train(task: str, feature_file: str):
-
-    try:
-        with open(os.path.join(task, 'hyperparams.json'), 'r') as f:
-            hyperparams = json.load(f)
-
-    except:
-        print(f'No hyperparams.json file found in {task}')
-        return
-
-    arch = hyperparams['arch']
-    combination = (hyperparams['epochs'], hyperparams['batch_size'], hyperparams['lr'], hyperparams['loss_fn'], hyperparams['optimizer'])
-    partition = hyperparams['partition']
-    seed = hyperparams['seed']
-    train_model(task, arch, feature_file, partition, seed, combination)
 
 if __name__ == '__main__':
     path2output = sys.argv[1] #note that this is not actually where output files are written to. they are written to the model directories.
@@ -55,20 +37,23 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #provide paths to observations and labels
-    path2features = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    cpus = 0
-    gpus = 1
-    no_samples = 100
+    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    MODELS = [
+        {'input': 2544,
+        'l1': 2128,
+        'l2': 1780,
+        'l3': 476,
+        'output': 48,
+        'batch_size': 800,
+        'seed': np.random.randint(0,1000),
+        'epochs': 2000}
+    ]
 
-    config = {'input': tune.choice([2544]),
-        'l1': tune.randint(300,2500),
-        'l2': tune.randint(100,2000),
-        'l3': tune.randint(50,800),
-        'output': tune.choice([48]),
-        'lr': tune.uniform(0.001, 0.01),
-        'batch_size': tune.randint(100,10000),
-        'epochs': tune.choice([800]),
-        'seed': tune.randint(0,1000)}
+    for model in MODELS:
+        train_model(path2output, model, PATH2FEATURES)
 
-    tune_model(path2output, no_samples, config, path2features, cpus, gpus)
+
+
+
+    
     
