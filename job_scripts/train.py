@@ -37,21 +37,22 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #provide paths to observations and labels
-    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
     MODELS = [
         {'input': 2544,
-        'l1': 2128,
-        'l2': 1780,
-        'l3': 476,
+        'l1': 2458,
+        'l2': 1168,
+        'l3': 621,
         'output': 48,
-        'batch_size': 800,
+        'batch_size': 51,
+        'lr': 0.0346838274787568,
         'seed': np.random.randint(0,1000),
-        'epochs': 2000}
+        'epochs': 1}
     ]
 
     for model in MODELS:
         today = datetime.datetime.now()
-        dirname = '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']])
+        dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
         train_model(dirname, model, PATH2FEATURES)
 
