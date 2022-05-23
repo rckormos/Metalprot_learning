@@ -24,15 +24,18 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int)
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
     """
-    training_data, testing_data, _, _ = datasets.split_data(features_file, partitions, seed)
+    training_data, testing_data, validation_data, _ = datasets.split_data(features_file, partitions, seed)
 
     training_observations, training_labels, _ = training_data
     train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(training_observations, training_labels), batch_size=batch_size, shuffle=True)
     
     testing_observations, testing_labels, _ = testing_data
-    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(testing_observations, testing_labels), batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(testing_observations, testing_labels), batch_size=batch_size, shuffle=False)
 
-    return train_dataloader, test_dataloader
+    validation_observations, validation_labels, _ = validation_data
+    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(validation_observations, validation_labels), batch_size=batch_size, shuffle=False)
+
+    return train_dataloader, test_dataloader, validation_dataloader
 
 def train_loop(model, train_dataloader, loss_fn, optimizer, device):
     """Runs a single epoch of model training.
@@ -107,7 +110,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Training running on {device}')
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
+    train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
@@ -115,17 +118,23 @@ def train_model(path2output: str, config: dict, features_file: str):
 
     train_loss = np.array([])
     test_loss = np.array([])
+    validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
+        _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
+        assert len(set(_train_loss, _test_loss, _validation_loss)) == 1
 
         train_loss = np.append(train_loss, _train_loss)
         test_loss = np.append(test_loss, _test_loss)
+        validation_loss = np.append(validation_loss, _validation_loss)
 
         print(f'Completed Epoch {epoch}')
 
     np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
     np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
+    np.save(os.path.join(path2output, 'validation_loss.npy'), validation_loss)
+
     torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
     with open(os.path.join(path2output, 'config.json'), 'w') as f:
         json.dump(config, f)
