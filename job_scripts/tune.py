@@ -91,7 +91,7 @@ if __name__ == '__main__':
     study.optimize(objective, n_trials=50)
     importances = optuna.importance.get_param_importances(study)
 
-    with open(os.path.join(path2output, 'importances.json'), 'w') as f:
+    with open(os.path.join(DIRNAME, 'importances.json'), 'w') as f:
         json.dump(importances, f)
 
 
