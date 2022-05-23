@@ -104,6 +104,8 @@ def train_model(path2output: str, config: dict, features_file: str):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
+    print(f'Training running on {device}')
+
     #instantiate dataloader objects for train and test sets
     train_dataloader, test_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
 
