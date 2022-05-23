@@ -47,7 +47,7 @@ if __name__ == '__main__':
         'batch_size': 51,
         'lr': 0.0346838274787568,
         'seed': np.random.randint(0,1000),
-        'epochs': 1}
+        'epochs': 2000}
     ]
 
     for model in MODELS:
