@@ -107,7 +107,8 @@ def train_model(path2output: str, config: dict, features_file: str):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
-    print(f'Training running on {device}')
+    print(f'CUDA available? {torch.cuda.is_available()}')
+    print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
     train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
@@ -123,7 +124,7 @@ def train_model(path2output: str, config: dict, features_file: str):
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
         _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
-        assert len(set(_train_loss, _test_loss, _validation_loss)) == 1
+        assert len(set([_train_loss, _test_loss, _validation_loss])) != 1
 
         train_loss = np.append(train_loss, _train_loss)
         test_loss = np.append(test_loss, _test_loss)
