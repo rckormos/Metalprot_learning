@@ -87,10 +87,9 @@ def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_pa
     if not os.path.exists(job_output_path):
         os.mkdir(job_output_path)
 
-    command = ['nohup',job_script, path]
+    command = [job_script, path]
 
     subprocess.run(command)
-    os.replace('./nohup.out', os.path.join(job_output_path, f'{job_name}.out'))
 
 if __name__ == '__main__':
     
