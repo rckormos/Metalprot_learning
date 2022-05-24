@@ -5,12 +5,9 @@ This file contains functions for loading and splitting data for model training a
 """
 
 #imports
-import pandas as pd
 import numpy as np
 import torch
 import pickle
-
-from Metalprot_learning.processor import sample
 
 class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
