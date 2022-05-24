@@ -5,9 +5,12 @@ This file contains functions for loading and splitting data for model training a
 """
 
 #imports
+import pandas as pd
 import numpy as np
 import torch
 import pickle
+
+from Metalprot_learning.processor import sample
 
 class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
@@ -24,40 +27,19 @@ class DistanceData(torch.utils.data.Dataset):
         label = self.labels[index]
         return observation, label 
 
-def split_data(features_file: str, partitions: tuple, seed: int):
-    """Splits data into training and test sets.
-
-    Args:
-        features_file (str): Path to compiled_features.pkl file.
-        partitions (tuple): Tuple containing proportion to partition into training, testing, and validation sets respectively.
-        seed (int): The random seed for splitting.
-
-    Returns:
-        training_data (tuple): Tuple containing numpy arrays of training observations and labels as well as indices.
-        testing_data (tuple): Tuple containing numpy arrays testing data and labels as well as indices.
-        validation_data (tuple): Tuple containing numpy arrays validation data and labels as well as indices.
-    """
-
-    #load data
-    with open(features_file, 'rb') as f:
-        features = pickle.load(f)
-
-    X = features['observations']
-    y = features['labels']
-    binding_core_identifier_permutations = features['binding_core_identifiers']
-    sources = features['pointers']
+def random_sample(X: np.ndarray, y: np.ndarray, permutations: list, sources: list, partitions, seed: int):
 
     #define data partitions
     train_prop, test_prop, val_prop = partitions
     assert sum([train_prop, test_prop, val_prop]) == 1
-    training_size, testing_size, val_size = int(train_prop * X.shape[0]), int(test_prop * X.shape[0]), int(val_prop * X.shape[0])
+    training_size, testing_size = int(train_prop * X.shape[0]), int(test_prop * X.shape[0])
+    indices = np.random.RandomState(seed=seed).permutation(X.shape[0])
 
     #randomly assign examples to training sets
-    indices = np.random.RandomState(seed=seed).permutation(X.shape[0])
     training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     train_sources, test_sources, val_sources = [sources[int(i)] for i in training_indices], [sources[int(i)] for i in test_indices], [sources[int(i)] for i in val_indices]
-    train_identifier_permutations, test_identifier_permutations, val_identifier_permutations = [binding_core_identifier_permutations[int(i)] for i in training_indices], [binding_core_identifier_permutations[int(i)] for i in test_indices], [binding_core_identifier_permutations[int(i)] for i in val_indices]
+    train_identifier_permutations, test_identifier_permutations, val_identifier_permutations = [permutations[int(i)] for i in training_indices], [permutations[int(i)] for i in test_indices], [permutations[int(i)] for i in val_indices]
     
     assert len({X_train.shape[0], y_train.shape[0], len(train_sources), len(train_identifier_permutations)}) == 1
     assert len({X_test.shape[0], y_test.shape[0], len(test_sources), len(test_identifier_permutations)}) == 1
@@ -68,5 +50,72 @@ def split_data(features_file: str, partitions: tuple, seed: int):
     test_index = {'pointers': test_sources, 'binding_core_identifier_permutations': test_identifier_permutations}
     val_index = {'pointers': val_sources, 'binding_core_identifier_permutations': val_identifier_permutations}
     training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
+
+    return training_data, testing_data, validation_data, (training_indices, test_indices, val_indices) 
+
+def sample_by_pdb(X: np.ndarray, y: np.ndarray, permutations: list, sources: list, partitions, seed: int):
+
+    #get all pdb ids
+    ids = list(set([id.split('/')[-1].split('_')[0] for i in sources]))
+
+    #define data partitions
+    train_prop, test_prop, val_prop = partitions
+    assert sum([train_prop, test_prop, val_prop]) == 1
+    training_size, testing_size = int(train_prop * len(ids)), int(test_prop * len(ids))
+    indices = np.random.RandomState(seed=seed).permutation(len(ids))
+    training_indices, test_indices, val_indices = indices[:training_size], indices[training_size:(training_size+testing_size)], indices[(training_size + testing_size):] 
+
+    #randomly assign cores based on pdb id
+    train_ids, test_ids, val_ids = [ids[int(i)] for i in training_indices], [ids[int(i)] for i in test_indices], [ids[int(i)] for i in val_indices]
+
+    #get indices of train, test, and validation sets
+    training_indices, test_indices, val_indices = [index for index, element in enumerate(sources) if element in train_ids], [index for index, element in enumerate(sources) if element in test_ids], [index for index, element in enumerate(sources) if element in val_ids]
+    
+    #build datasets
+    X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
+    train_sources, test_sources, val_sources = [sources[int(i)] for i in training_indices], [sources[int(i)] for i in test_indices], [sources[int(i)] for i in val_indices]
+    train_identifier_permutations, test_identifier_permutations, val_identifier_permutations = [permutations[int(i)] for i in training_indices], [permutations[int(i)] for i in test_indices], [permutations[int(i)] for i in val_indices]
+    
+    assert len({X_train.shape[0], y_train.shape[0], len(train_sources), len(train_identifier_permutations)}) == 1
+    assert len({X_test.shape[0], y_test.shape[0], len(test_sources), len(test_identifier_permutations)}) == 1
+    assert len({X_val.shape[0], y_val.shape[0], len(val_sources), len(val_identifier_permutations)}) == 1
+    assert sum([i.shape[0] for i in [X_train, X_test, X_val]]) == sum([i.shape[0] for i in [y_train, y_test, y_val]]) == X.shape[0]
+
+    train_index = {'pointers': train_sources, 'binding_core_identifier_permutations': train_identifier_permutations}
+    test_index = {'pointers': test_sources, 'binding_core_identifier_permutations': test_identifier_permutations}
+    val_index = {'pointers': val_sources, 'binding_core_identifier_permutations': val_identifier_permutations}
+    training_data, testing_data, validation_data = (X_train, y_train, train_index), (X_test, y_test, test_index), (X_val, y_val, val_index)
+
+    return training_data, testing_data, validation_data, (training_indices, test_indices, val_indices) 
+
+def split_data(features_file: str, partitions: tuple, seed: int, random=True):
+    """Splits data into training and test sets.
+
+    Args:
+        features_file (str): Path to compiled_features.pkl file.
+        partitions (tuple): Tuple containing proportion to partition into training, testing, and validation sets respectively.
+        seed (int): The random seed for splitting.
+        random (bool, optional): Determines whether the dataset is split randomly or by pdb file.
+
+    Returns:
+        training_data (tuple): Tuple containing numpy arrays of training observations and labels as well as indices.
+        testing_data (tuple): Tuple containing numpy arrays testing data and labels as well as indices.
+        validation_data (tuple): Tuple containing numpy arrays validation data and labels as well as indices.
+    """
+
+    #load data
+    with open(features_file, 'rb') as f:
+        features = pickle.load(f)
+        
+    X = features['observations']
+    y = features['labels']
+    binding_core_identifier_permutations = features['binding_core_identifiers']
+    sources = features['pointers']
+
+    if random:
+        training_data, testing_data, validation_data, (training_indices, test_indices, val_indices) = random_sample(X, y, binding_core_identifier_permutations, sources, partitions, seed)
+
+    else:
+        training_data, testing_data, validation_data, (training_indices, test_indices, val_indices) = sample_by_pdb(X, y, binding_core_identifier_permutations, sources, partitions, seed)
 
     return training_data, testing_data, validation_data, (training_indices, test_indices, val_indices)
