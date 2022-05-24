@@ -59,11 +59,12 @@ if __name__ == '__main__':
         lr = trial.suggest_float("lr", 1e-3, 1e-1)
         l1 = trial.suggest_int("l1", 300, 2500)
         l2 = trial.suggest_int("l2", 100, 2000)
-        l3 = trial.suggest_int("l3", 50, 800)
 
-        model = models.DoubleLayerNet(INPUT_DIM, l1, l2, l3, OUTPUT_DIM)
+        model = models.SingleLayerNetV2(INPUT_DIM, l1, l2, OUTPUT_DIM)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model = model.to(device)
+
+        print(f'Training running on {device}')
 
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         loss_fn = torch.nn.L1Loss()
