@@ -130,7 +130,7 @@ def train_model(path2output: str, config: dict, features_file: str, random: bool
         test_loss = np.append(test_loss, _test_loss)
         validation_loss = np.append(validation_loss, _validation_loss)
 
-        print(f'Completed Epoch {epoch}')
+        print(f'Test Loss for Epoch {epoch}: {_test_loss}')
 
     np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
     np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
