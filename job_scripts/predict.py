@@ -55,25 +55,25 @@ if __name__ == '__main__':
         job_id = int(sys.argv[3]) - 1
 
     #load data
-    example = True #true if data are positive examples
+    EXAMPLE = True #true if data are positive examples
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/architecture.json'
-    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/2003_1000_0.01_MAE_SGD/model.pth'
+    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/23_5_2022_9_28_38_271008_741/config.json'
+    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/23_5_2022_9_28_38_271008_741/model.pth'
     config, pointers, permutations, observations, labels = load_data(FEATURES_FILE, CONFIG_FILE)
     assert len(pointers) == len(permutations) == len(observations) == len(labels)
 
     pointers, permutations, observations, labels = distribute_tasks(no_jobs, job_id, pointers, permutations, observations, labels)
 
     #load model
-    model = models.DoubleLayerNet(config) if 'l3' in config.keys() else models.SingleLayerNetV2(config)
+    model = models.DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'])
     model.load_state_dict(torch.load(WEIGHTS_FILE, map_location='cpu'))
     model.eval()
 
     #forward pass and evaulation of predictions
     predictions = model.forward(torch.from_numpy(observations)).cpu().detach().numpy()
-    predicted_metal_coordinates, metal_coordinates, rmsds = predict_coordinates(predictions, pointers, permutations, example=example)
+    predicted_metal_coordinates, metal_coordinates, rmsds = predict_coordinates(predictions, pointers, permutations, example=EXAMPLE)
 
-    if example:
+    if EXAMPLE:
         deviation = evaluate_positives(predicted_metal_coordinates, metal_coordinates)
         np.save(os.path.join(path2output, f'deviation{job_id}'), deviation)
 
