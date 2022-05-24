@@ -64,9 +64,11 @@ def sample_by_pdb(X: np.ndarray, y: np.ndarray, permutations: list, sources: lis
 
     #randomly assign cores based on pdb id
     train_ids, test_ids, val_ids = [ids[int(i)] for i in training_indices], [ids[int(i)] for i in test_indices], [ids[int(i)] for i in val_indices]
-    
+    assert set(train_ids).intersection(set(test_ids), set(val_ids)) == set(test_ids).intersection(set(train_ids), set(val_ids)) == set(val_ids).intersection(set(train_ids), set(test_ids)) == set()
+
     #get indices of train, test, and validation sets
     training_indices, test_indices, val_indices = np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in train_ids]), np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in test_ids]), np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in val_ids])
+    assert set(training_indices).intersection(set(test_indices), set(val_indices)) == set(test_indices).intersection(set(training_indices), set(val_indices)) == set(val_indices).intersection(set(training_indices), set(test_indices)) == set()
 
     #build datasets
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
