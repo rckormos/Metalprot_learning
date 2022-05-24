@@ -24,8 +24,8 @@ def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray
         'batch_size': params[1],
         'lr': params[2],
         'l1': params[3],
-        'l2': params[4],
-        'l3': params[5]}
+        'l2': params[4]}
+
     with open(os.path.join(subdir, 'config.json'), 'w') as f:
         json.dump(config, f)
 
@@ -82,14 +82,14 @@ if __name__ == '__main__':
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2), model, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2), model, train_loss, test_loss)
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=50)
+    study.optimize(objective, n_trials=100)
     importances = optuna.importance.get_param_importances(study)
 
     with open(os.path.join(DIRNAME, 'importances.json'), 'w') as f:
