@@ -85,7 +85,7 @@ def sample_by_pdb(X: np.ndarray, y: np.ndarray, permutations: list, sources: lis
 
     return training_data, testing_data, validation_data, (training_indices, test_indices, val_indices) 
 
-def split_data(features_file: str, partitions: tuple, seed: int, random=True):
+def split_data(features_file: str, partitions: tuple, seed: int, random: bool):
     """Splits data into training and test sets.
 
     Args:

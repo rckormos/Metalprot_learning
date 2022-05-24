@@ -38,6 +38,7 @@ if __name__ == '__main__':
 
     #provide paths to observations and labels
     PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    RANDOM = False
     MODELS = [
         {'input': 2544,
         'l1': 2458,
@@ -54,7 +55,7 @@ if __name__ == '__main__':
         today = datetime.datetime.now()
         dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
-        train_model(dirname, model, PATH2FEATURES)
+        train_model(dirname, model, PATH2FEATURES, RANDOM)
 
 
 
