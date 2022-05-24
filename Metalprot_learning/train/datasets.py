@@ -53,7 +53,7 @@ def random_sample(X: np.ndarray, y: np.ndarray, permutations: list, sources: lis
 def sample_by_pdb(X: np.ndarray, y: np.ndarray, permutations: list, sources: list, partitions, seed: int):
 
     #get all pdb ids
-    ids = list(set([id.split('/')[-1].split('_')[0] for i in sources]))
+    ids = list(set([id.split('/')[-1].split('_')[0] for id in sources]))
 
     #define data partitions
     train_prop, test_prop, val_prop = partitions
@@ -64,10 +64,10 @@ def sample_by_pdb(X: np.ndarray, y: np.ndarray, permutations: list, sources: lis
 
     #randomly assign cores based on pdb id
     train_ids, test_ids, val_ids = [ids[int(i)] for i in training_indices], [ids[int(i)] for i in test_indices], [ids[int(i)] for i in val_indices]
-
-    #get indices of train, test, and validation sets
-    training_indices, test_indices, val_indices = [index for index, element in enumerate(sources) if element in train_ids], [index for index, element in enumerate(sources) if element in test_ids], [index for index, element in enumerate(sources) if element in val_ids]
     
+    #get indices of train, test, and validation sets
+    training_indices, test_indices, val_indices = np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in train_ids]), np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in test_ids]), np.array([index for index, element in enumerate(sources) if element.split('/')[-1].split('_')[0] in val_ids])
+
     #build datasets
     X_train, y_train, X_test, y_test, X_val, y_val = X[training_indices], y[training_indices], X[test_indices], y[test_indices], X[val_indices], y[val_indices]
     train_sources, test_sources, val_sources = [sources[int(i)] for i in training_indices], [sources[int(i)] for i in test_indices], [sources[int(i)] for i in val_indices]
