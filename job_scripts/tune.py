@@ -69,7 +69,7 @@ if __name__ == '__main__':
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         loss_fn = torch.nn.L1Loss()
 
-        train_dataloader, test_dataloader = train.load_data(FEATURES_FILE, (0.8,0.1,0.1), batch_size, seed)
+        train_dataloader, test_dataloader = train.load_data(FEATURES_FILE, (0.8,0.1,0.1), batch_size, seed, False)
 
         train_loss = np.array([])
         test_loss = np.array([])
