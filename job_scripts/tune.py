@@ -24,7 +24,8 @@ def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray
         'batch_size': params[1],
         'lr': params[2],
         'l1': params[3],
-        'l2': params[4]}
+        'l2': params[4],
+        'l3': params[5]}
 
     with open(os.path.join(subdir, 'config.json'), 'w') as f:
         json.dump(config, f)
@@ -59,8 +60,9 @@ if __name__ == '__main__':
         lr = trial.suggest_float("lr", 1e-3, 1e-1)
         l1 = trial.suggest_int("l1", 300, 2500)
         l2 = trial.suggest_int("l2", 100, 2000)
+        l3 = trial.suggest_int("l3", 50,1000)
 
-        model = models.SingleLayerNetV2(INPUT_DIM, l1, l2, OUTPUT_DIM)
+        model = models.DoubleLayerNet(INPUT_DIM, l1, l2, l3, OUTPUT_DIM)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model = model.to(device)
 
@@ -69,7 +71,7 @@ if __name__ == '__main__':
         optimizer = torch.optim.SGD(model.parameters(), lr=lr)
         loss_fn = torch.nn.L1Loss()
 
-        train_dataloader, test_dataloader = train.load_data(FEATURES_FILE, (0.8,0.1,0.1), batch_size, seed, False)
+        train_dataloader, test_dataloader, validation_dataloader = train.load_data(FEATURES_FILE, (0.8,0.1,0.1), batch_size, seed, False)
 
         train_loss = np.array([])
         test_loss = np.array([])
@@ -82,10 +84,10 @@ if __name__ == '__main__':
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2), model, train_loss, test_loss)
+                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2), model, train_loss, test_loss)
+        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
