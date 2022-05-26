@@ -74,7 +74,7 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-    PATH2EXAMPLES = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src/edge_cases'
+    PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
