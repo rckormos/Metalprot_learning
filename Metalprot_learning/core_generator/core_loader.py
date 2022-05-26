@@ -12,6 +12,7 @@ of remove_degenerate_cores.
 #imports
 from prody import *
 import numpy as np
+from Metalprot_learning.utils import AlignmentError
 
 def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
     """Helper function for extract_cores. Finds neighbors of an input coordinating residue.
@@ -92,43 +93,59 @@ def remove_degenerate_cores(cores: list, metal_names: list):
         unique_names (list): List of all metal names indexed by unique binding core.
     """
 
-    #TODO Update method to do structural alignment. For some reason, ProDy was not doing this properly.
+    try:
+        if len(cores) > 1:
+            unique_cores = []
+            unique_names = []
+            while cores:
+                print(len(cores), cores)
+                current_core = cores.pop() #extract last element in cores
+                current_name = metal_names.pop()
+                current_total_atoms = current_core.select('protein').numAtoms()
+                current_resis = set(current_core.select('protein').select('name CA').getResnames())
+                current_length = len(current_resis)
 
-    if len(cores) > 1:
-        unique_cores = []
-        unique_names = []
-        while cores:
-            current_core = cores.pop() #extract last element in cores
-            current_name = metal_names.pop()
-            current_total_atoms = len(current_core.getResnums())
-            current_core.setChids('A')
+                pairwise_seqids = np.array([])
+                pairwise_overlap = np.array([])
+                for core in cores: #iterate through all cores 
+                    total_atoms = core.select('protein').numAtoms()
+                    resis = set(core.select('protein').select('name CA').getResnames())
+                    length = len(resis)
+
+                    if current_total_atoms == total_atoms and current_resis == resis and current_length == length: #if the current cores and core have the same number of atoms, compute RMSD    
+                        try:
+                            reference, target, seqid, overlap = matchChains(current_core.select('protein'), core.select('protein'))[0]
+                            pairwise_seqids = np.append(pairwise_seqids, seqid)
+                            pairwise_overlap = np.append(pairwise_overlap, overlap)
+
+                        except:
+                            pairwise_seqids = np.append(pairwise_seqids, 0)
+                            pairwise_overlap = np.append(pairwise_overlap, 0)
 
 
-            pairwise_seqids = np.array([])
-            pairwise_overlap = np.array([])
+                    else:
+                        pairwise_seqids = np.append(pairwise_seqids, 0)
+                        pairwise_overlap = np.append(pairwise_overlap, 0)
+                
+                print(pairwise_seqids)
+                print(pairwise_overlap)
+                degenerate_core_indices = list(set(np.where(pairwise_seqids == 100)[0]).intersection(set(np.where(pairwise_overlap == 100)[0]))) #find all cores that are essentially the same structure
+                print(degenerate_core_indices)
 
-            for core in cores: #iterate through all cores 
-                core.setChids('B')
-                if current_total_atoms == len(core.getResnums()): #if the current cores and core have the same number of atoms, compute RMSD    
-                    reference, target, seqid, overlap = matchChains(current_core.select('protein'), core.select('protein'))[0]
-                    pairwise_seqids = np.append(pairwise_seqids, seqid)
-                    pairwise_overlap = np.append(pairwise_overlap, overlap)
+                if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
+                    cores = [cores[i] for i in range(0,len(cores)) if i not in degenerate_core_indices]
+                    metal_names = [metal_names[i] for i in range(0,len(metal_names)) if i not in degenerate_core_indices]
+                    print(len(cores))
+                    print('')
 
-                else:
-                    continue
+                unique_cores.append(current_core) #add reference core 
+                unique_names.append(current_name)
 
-            degenerate_core_indices = list(set(np.where(pairwise_seqids == 100)[0]).intersection(set(np.where(pairwise_overlap == 100)[0]))) #find all cores that are essentially the same structure
+        else:
+            unique_cores = cores 
+            unique_names = metal_names
 
-            if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
-                for ind in degenerate_core_indices:
-                    del cores[ind]
-                    del metal_names[ind]
-
-            unique_cores.append(current_core) #add reference core 
-            unique_names.append(current_name)
-
-    else:
-        unique_cores = cores 
-        unique_names = metal_names
+    except:
+        raise AlignmentError
 
     return unique_cores, unique_names
