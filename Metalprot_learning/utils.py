@@ -8,6 +8,10 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass 
 
+class AlignmentError(Error):
+    """Raised when identification of unique cores fails"""
+    pass
+
 class CoreLoadingError(Error):
     """Raised when cores are not loaded successfully"""
     pass

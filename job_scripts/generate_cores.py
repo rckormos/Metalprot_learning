@@ -45,6 +45,9 @@ def run_construct_training_example(file: str, path2output: str):
     except utils.NoCoresError as e:
         failed_file_line = file + ' No cores identified'
 
+    except utils.AlignmentError as e:
+        failed_file_line = file + ' Error identifying unique cores'
+
     except utils.CoreLoadingError as e:
         failed_file_line = file + ' Error loading cores'
 

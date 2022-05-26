@@ -56,9 +56,9 @@ if __name__ == '__main__':
 
     #load data
     EXAMPLE = True #true if data are positive examples
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
-    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/23_5_2022_9_28_38_271008_741/config.json'
-    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/23_5_2022_9_28_38_271008_741/model.pth'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/test_datasetV2/compiled_features.pkl'
+    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/24_5_2022_13_53_46_727918_685/config.json'
+    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/24_5_2022_13_53_46_727918_685/model.pth'
     config, pointers, permutations, observations, labels = load_data(FEATURES_FILE, CONFIG_FILE)
     assert len(pointers) == len(permutations) == len(observations) == len(labels)
 

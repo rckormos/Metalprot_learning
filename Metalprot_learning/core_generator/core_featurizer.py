@@ -58,8 +58,9 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
         encoding (np.ndarray): Numpy array containing onehot encoding of core sequence.
     """
     seq = core.select('name CA').getResnames()
-    threelettercodes = ['ALA', 'ARG', 'ASN', 'ASP', 'CYS', 'GLU', 'GLN', 'GLY', 'HIS', 'ILE', 'LEU', 'LYS', \
-                        'MET','PHE', 'PRO', 'SER', 'THR', 'TRP', 'TYR', 'VAL']
+
+    threelettercodes = {'ALA': 0 , 'ARG': 1, 'ASN': 2, 'ASP': 3, 'CYS': 4, 'CSO': 4,'GLU': 5, 'GLN': 6, 'GLY': 7, 'HIS': 8, 'ILE': 9, 'LEU': 10,
+                        'LYS': 11, 'MET': 12, 'MSE': 12, 'PHE': 13, 'PRO': 14, 'SER': 15, 'SEP': 15, 'THR': 16, 'TPO': 16, 'TRP': 17, 'TYR': 18, 'VAL': 19}
 
     encoding = np.array([[]])
 
@@ -67,9 +68,9 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
         aa = str(seq[i])
 
         if aa not in threelettercodes:
-           raise EncodingError
+            raise EncodingError
 
-        idx = threelettercodes.index(aa)
+        idx = threelettercodes[aa]
         one_hot = np.zeros((1,20))
         one_hot[0,idx] = 1
         encoding = np.concatenate((encoding, one_hot), axis=1)
