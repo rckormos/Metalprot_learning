@@ -88,14 +88,14 @@ if __name__ == '__main__':
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3, input_dropout, hidden_dropout), model, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3, input_dropout, hidden_dropout), model, train_loss, test_loss)
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=50)
     importances = optuna.importance.get_param_importances(study)
 
     with open(os.path.join(DIRNAME, 'importances.json'), 'w') as f:
