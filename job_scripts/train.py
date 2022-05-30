@@ -41,17 +41,17 @@ if __name__ == '__main__':
     PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
     MODELS = [
         {'input': 2544,
-        'l1': 2458,
-        'l2': 1168,
-        'l3': 621,
+        'l1': 2000,
+        'l2': 1000,
+        'l3': 500,
         'input_dropout': 0.4,
         'hidden_dropout': 0.5,
-        'output': 48,
+        'output': 3,
         'batch_size': 51,
         'lr': 0.0346838274787568,
         'seed': np.random.randint(0,1000),
         'epochs': 2000,
-        'distance_space': True}
+        'distance_space': False}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
