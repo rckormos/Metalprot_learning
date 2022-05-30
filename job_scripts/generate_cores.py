@@ -27,7 +27,7 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
     return tasks
 
-def run_construct_training_example(file: str, path2output: str):
+def run_construct_training_example(file: str, path2output: str, permute: bool):
     """Calls main function from get_binding_cores.py to construct training example. For quality control and de-bugging purposes, there are multiple try/except statements.
 
     Args:
@@ -39,7 +39,7 @@ def run_construct_training_example(file: str, path2output: str):
     """
 
     try:
-        construct_training_example(file,path2output)
+        construct_training_example(file,path2output,permute)
         failed_file_line = None
 
     except utils.NoCoresError as e:
@@ -74,12 +74,13 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-    PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
+    PATH2EXAMPLES = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
+    PERMUTE = True
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
     for file in tasks:
-        failed_file_line = run_construct_training_example(file, path2output)
+        failed_file_line = run_construct_training_example(file, path2output, PERMUTE)
         failed.append(failed_file_line)
 
     failed = list(filter(None, failed))
