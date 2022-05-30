@@ -29,8 +29,8 @@ def test_featurization(full_dist_mat, label, encoding, max_resis):
         raise utils.FeaturizationError
 
 def test_permutation(features, max_permutations):
-    dimensionality_test = len(set([len(features['full_observations']), len(features['full_labels']), len(features['binding_core_identifier_permutations'])])) == 1
-    permutation_test = len(features['full_observations']) <= max_permutations
+    dimensionality_test = len(set([len(features[key]) for key in features.keys()])) == 1
+    permutation_test = len(features['observations']) <= max_permutations
     
     if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
@@ -67,14 +67,14 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
             test_permutation(features, max_permutations)
 
         else:
-            features = {'observations': full_dist_mat, 'labels': label, 'identifiers': binding_core_identifiers}
+            features = {'observations': [np.concatenate((full_dist_mat.flatten(), encoding.squeeze()))], 'labels': [label.squeeze()], 'identifiers': [binding_core_identifiers]}
 
         #write files to disk
         metal_chid = core.select(f'name {name}') .getChids()[0]
         metal_resnum = core.select(f'name {name}').getResnums()[0]
         filename = core.getTitle() + '_' + '_'.join([str(tup[0]) + tup[1] for tup in binding_core_identifiers]) + '_' + name + str(metal_resnum) + metal_chid
-        features['source'] = os.path.join(output_dir, filename + '_core.pdb.gz')
-        features['metal_coords'] = metal_coords
+        features['source'] = [os.path.join(output_dir, filename + '_core.pdb.gz')] * len(features['observations'])
+        features['metal_coords'] = [metal_coords] * len(features['observations'])
 
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:

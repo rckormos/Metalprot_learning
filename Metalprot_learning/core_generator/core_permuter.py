@@ -85,10 +85,10 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
 
         permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
-        full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
-        full_labels.append(list(permuted_label))
+        full_observations.append(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding)))
+        full_labels.append(permuted_label)
 
-    all_features['observations'] = np.array(full_observations)
-    all_features['labels'] = np.array(full_labels)
+    all_features['observations'] = full_observations
+    all_features['labels'] = full_labels
     all_features['identifiers'] = binding_core_identifier_permutations
     return all_features

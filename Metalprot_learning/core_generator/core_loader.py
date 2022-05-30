@@ -126,17 +126,12 @@ def remove_degenerate_cores(cores: list, metal_names: list):
                     else:
                         pairwise_seqids = np.append(pairwise_seqids, 0)
                         pairwise_overlap = np.append(pairwise_overlap, 0)
-                
-                print(pairwise_seqids)
-                print(pairwise_overlap)
+
                 degenerate_core_indices = list(set(np.where(pairwise_seqids == 100)[0]).intersection(set(np.where(pairwise_overlap == 100)[0]))) #find all cores that are essentially the same structure
-                print(degenerate_core_indices)
 
                 if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                     cores = [cores[i] for i in range(0,len(cores)) if i not in degenerate_core_indices]
                     metal_names = [metal_names[i] for i in range(0,len(metal_names)) if i not in degenerate_core_indices]
-                    print(len(cores))
-                    print('')
 
                 unique_cores.append(current_core) #add reference core 
                 unique_names.append(current_name)
