@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from Metalprot_learning.train import datasets, models
 
-def _load_data(features_file: str, partitions: tuple, batch_size: int, seed: int):
+def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, random: bool):
     """Loads data for model training.
 
     Args:
@@ -24,7 +24,7 @@ def _load_data(features_file: str, partitions: tuple, batch_size: int, seed: int
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
     """
-    training_data, testing_data, validation_data, _ = datasets.split_data(features_file, partitions, seed)
+    training_data, testing_data, validation_data, _ = datasets.split_data(features_file, partitions, seed, random)
 
     training_observations, training_labels, _ = training_data
     train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(training_observations, training_labels), batch_size=batch_size, shuffle=True)
@@ -37,7 +37,7 @@ def _load_data(features_file: str, partitions: tuple, batch_size: int, seed: int
 
     return train_dataloader, test_dataloader, validation_dataloader
 
-def _train_loop(model, train_dataloader, loss_fn, optimizer, device):
+def train_loop(model, train_dataloader, loss_fn, optimizer, device):
     """Runs a single epoch of model training.
 
     Args:
@@ -65,7 +65,7 @@ def _train_loop(model, train_dataloader, loss_fn, optimizer, device):
     train_loss = loss.item()
     return train_loss
 
-def _validation_loop(model, test_dataloader, loss_fn, device):
+def validation_loop(model, test_dataloader, loss_fn, device):
     """Computes a forward pass of the testing dataset through the network and the resulting testing loss.
 
     Args:
@@ -81,15 +81,13 @@ def _validation_loop(model, test_dataloader, loss_fn, device):
     with torch.no_grad():
         for X,y in test_dataloader:
             X, y = X.to(device), y.to(device)
-
-            model.eval()
             prediction = model(X)
             validation_loss += loss_fn(prediction,y).item()
 
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_model(path2output: str, config: dict, features_file: str):
+def train_model(path2output: str, config: dict, features_file: str, random: bool):
     """Runs model training.
 
     Args:
@@ -113,7 +111,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader, validation_dataloader = _load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'])
+    train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], random)
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
@@ -123,9 +121,9 @@ def train_model(path2output: str, config: dict, features_file: str):
     test_loss = np.array([])
     validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
-        _train_loss = _train_loop(model, train_dataloader, loss_fn, optimizer, device)
-        _test_loss = _validation_loop(model, test_dataloader, loss_fn, device)
-        _validation_loss = _validation_loop(model, validation_dataloader, loss_fn, device)
+        _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
+        _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
+        _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
         assert len(set([_train_loss, _test_loss, _validation_loss])) != 1
 
         train_loss = np.append(train_loss, _train_loss)
