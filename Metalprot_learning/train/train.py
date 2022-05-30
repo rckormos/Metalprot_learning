@@ -116,7 +116,7 @@ def train_model(path2output: str, config: dict, features_file: str):
 
     np.random.seed(config['seed'])
     torch.manual_seed(config['seed'])
-    torch.cuda.manual_seed(config['seed'])
+    # torch.cuda.manual_seed(config['seed'])
 
     #instantiate model
     model = configure_model(config)
