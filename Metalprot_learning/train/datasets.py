@@ -21,7 +21,7 @@ class DistanceData(torch.utils.data.Dataset):
         return len(self.labels)
 
     def __getitem__(self, index):
-        observation = self.observations[index]
+        observation = self.obsevations[index]
         label = self.labels[index]
         return observation, label 
 
