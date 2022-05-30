@@ -148,6 +148,7 @@ def train_model(path2output: str, config: dict, features_file: str):
         print(f'Train Loss for Epoch {epoch}: {_train_loss}')
         print(f'Test Loss for Epoch {epoch}: {_test_loss}')
         print(f'Val Loss for Epoch {epoch}: {_validation_loss}')
+        print('')
 
     np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
     np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
