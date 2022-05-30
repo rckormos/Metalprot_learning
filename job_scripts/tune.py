@@ -25,7 +25,9 @@ def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray
         'lr': params[2],
         'l1': params[3],
         'l2': params[4],
-        'l3': params[5]}
+        'l3': params[5],
+        'input_dropout': params[6],
+        'hidden_dropout': params[7]}
 
     with open(os.path.join(subdir, 'config.json'), 'w') as f:
         json.dump(config, f)
@@ -36,7 +38,8 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV2/compiled_features.pkl'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
+    search_space = {''}
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
@@ -56,13 +59,15 @@ if __name__ == '__main__':
         os.mkdir(trial_dir)
 
         seed = np.random.randint(0,1000)
-        batch_size = trial.suggest_int("batch_size", 50,1200)
-        lr = trial.suggest_float("lr", 1e-3, 1e-1)
-        l1 = trial.suggest_int("l1", 300, 2500)
-        l2 = trial.suggest_int("l2", 100, 2000)
-        l3 = trial.suggest_int("l3", 50,1000)
+        batch_size = 51
+        lr = 0.0346838274787568
+        l1 = trial.suggest_int("l1", 2400, 2500)
+        l2 = trial.suggest_int("l2", 1100, 1200)
+        l3 = trial.suggest_int("l3", 600,700)
+        input_dropout = trial.suggest_float("input_dropout",0.1, 0.99)
+        hidden_dropout = trial.suggest_float("hidden_dropout", 0.1, 0.99)
 
-        model = models.DoubleLayerNet(INPUT_DIM, l1, l2, l3, OUTPUT_DIM)
+        model = models.DoubleLayerNet(INPUT_DIM, l1, l2, l3, OUTPUT_DIM, input_dropout, hidden_dropout)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
         model = model.to(device)
 
@@ -84,14 +89,14 @@ if __name__ == '__main__':
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+                write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3, input_dropout, hidden_dropout), model, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3), model, train_loss, test_loss)
+        write_output_files(trial_dir, (seed, batch_size, lr, l1, l2, l3, input_dropout, hidden_dropout), model, train_loss, test_loss)
         return _test_loss
 
     study = optuna.create_study(direction="minimize")
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=50)
     importances = optuna.importance.get_param_importances(study)
 
     with open(os.path.join(DIRNAME, 'importances.json'), 'w') as f:

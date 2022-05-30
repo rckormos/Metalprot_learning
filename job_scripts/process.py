@@ -36,6 +36,8 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3'
+    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4'
+    PERMUTED = True
+
     feature_files = distribute_tasks(PATH2FEATURES, no_jobs, job_id)
-    compile_data(PATH2FEATURES, job_id, feature_files)
+    compile_data(PATH2FEATURES, job_id, feature_files, PERMUTED)

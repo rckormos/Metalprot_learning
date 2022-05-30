@@ -35,25 +35,6 @@ def identify_fragments(binding_core_identifiers: list):
 
         for item in fragment:
             temp.remove(item)
-
-    # numbers = list(numbers)
-    # temp = numbers[:]
-    # fragment_indices = []
-    # while len(temp) != 0:
-    #     for i in range(0,len(temp)):
-    #         if i == 0:
-    #             fragment = [temp[i]]
-
-    #         elif 1 in set([abs(temp[i] - j) for j in fragment]):
-    #             fragment.append(temp[i])
-
-    #     fragment = list(set(fragment))
-    #     fragment.sort()
-    #     one_fragment_indices = [numbers.index(i) for i in fragment]
-    #     fragment_indices.append(one_fragment_indices)
-
-    #     for index in fragment:
-    #         temp.remove(index)
     
     return fragments
 
@@ -104,10 +85,10 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
 
         permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
-        full_observations.append(list(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding))))
-        full_labels.append(list(permuted_label))
+        full_observations.append(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding)))
+        full_labels.append(permuted_label)
 
-    all_features['full_observations'] = np.array(full_observations)
-    all_features['full_labels'] = np.array(full_labels)
-    all_features['binding_core_identifier_permutations'] = binding_core_identifier_permutations
+    all_features['observations'] = full_observations
+    all_features['labels'] = full_labels
+    all_features['identifiers'] = binding_core_identifier_permutations
     return all_features

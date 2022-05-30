@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from Metalprot_learning.train import datasets, models
 
-def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, random: bool):
+def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, distance_space: bool):
     """Loads data for model training.
 
     Args:
@@ -24,18 +24,25 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int,
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
     """
-    training_data, testing_data, validation_data, _ = datasets.split_data(features_file, partitions, seed, random)
+    train_set, test_set, val_set = datasets.split_data(features_file, partitions, seed)
 
-    training_observations, training_labels, _ = training_data
-    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(training_observations, training_labels), batch_size=batch_size, shuffle=True)
-    
-    testing_observations, testing_labels, _ = testing_data
-    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(testing_observations, testing_labels), batch_size=batch_size, shuffle=False)
-
-    validation_observations, validation_labels, _ = validation_data
-    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(validation_observations, validation_labels), batch_size=batch_size, shuffle=False)
+    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, distance_space), batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, distance_space), batch_size=batch_size, shuffle=False)
+    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, distance_space), batch_size=batch_size, shuffle=False)
 
     return train_dataloader, test_dataloader, validation_dataloader
+
+def configure_model(config: dict):
+    assert type(config['distance_space']) == bool
+    assert set([type('input'), type(config['l1']), type(config['l2']), type(config['output']), type(config['seed']), type(config['batch_size']), type(config['epochs'])]) == set(int)
+    assert set([type(config['lr']), type(config['input_dropout']), type(config['hidden_dropout'])]) == float
+
+    if 'l3' not in config.keys():
+        model = models.SingleLayerNet(config['input'], config['l1'], config['l2'], config['output'], config['input_dropout'], config['hidden_dropout']) 
+    else:
+        model = models.DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'], config['input_dropout'], config['hidden_dropout'])
+
+    return model
 
 def train_loop(model, train_dataloader, loss_fn, optimizer, device):
     """Runs a single epoch of model training.
@@ -87,7 +94,7 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     validation_loss /= len(test_dataloader)
     return validation_loss
 
-def train_model(path2output: str, config: dict, features_file: str, random: bool):
+def train_model(path2output: str, config: dict, features_file: str):
     """Runs model training.
 
     Args:
@@ -103,7 +110,7 @@ def train_model(path2output: str, config: dict, features_file: str, random: bool
     torch.manual_seed(config['seed'])
 
     #instantiate model
-    model = models.SingleLayerNetV2(config['input'], config['l1'], config['l2'], config['output']) if 'l3' not in config.keys() else models.DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'])
+    model = configure_model(config)
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
     model = model.to(device)
 
@@ -111,7 +118,7 @@ def train_model(path2output: str, config: dict, features_file: str, random: bool
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], random)
+    train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['distance_space'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
@@ -124,7 +131,6 @@ def train_model(path2output: str, config: dict, features_file: str, random: bool
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
         _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
-        assert len(set([_train_loss, _test_loss, _validation_loss])) != 1
 
         train_loss = np.append(train_loss, _train_loss)
         test_loss = np.append(test_loss, _test_loss)
