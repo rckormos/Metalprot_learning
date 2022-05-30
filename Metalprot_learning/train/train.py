@@ -57,6 +57,9 @@ def train_loop(model, train_dataloader, loss_fn, optimizer, device):
         train_loss: The average training loss across batches.
     """
 
+    #set model to train mode
+    model.train()
+    running_loss = 0
     for batch, (X, y) in enumerate(train_dataloader):
         X, y = X.to(device), y.to(device)
         
@@ -69,8 +72,10 @@ def train_loop(model, train_dataloader, loss_fn, optimizer, device):
         loss.backward()
         optimizer.step()
 
-    train_loss = loss.item()
-    return train_loss
+        running_loss += loss.item()
+
+    running_loss / len(train_dataloader)
+    return running_loss
 
 def validation_loop(model, test_dataloader, loss_fn, device):
     """Computes a forward pass of the testing dataset through the network and the resulting testing loss.
@@ -84,15 +89,18 @@ def validation_loop(model, test_dataloader, loss_fn, device):
         validation_loss: The average validation loss across batches.
     """
 
-    validation_loss = 0
+    #set model to evaluation mode
+    model.eval()
+
+    vloss = 0
     with torch.no_grad():
         for X,y in test_dataloader:
             X, y = X.to(device), y.to(device)
             prediction = model(X)
-            validation_loss += loss_fn(prediction,y).item()
-
-    validation_loss /= len(test_dataloader)
-    return validation_loss
+            _vloss = loss_fn(prediction,y)
+            vloss += _vloss
+    vloss /= len(test_dataloader)
+    return vloss
 
 def train_model(path2output: str, config: dict, features_file: str):
     """Runs model training.
@@ -107,7 +115,9 @@ def train_model(path2output: str, config: dict, features_file: str):
         seed (int): Random seed defined by user.
     """
 
+    np.random.seed(config['seed'])
     torch.manual_seed(config['seed'])
+    torch.cuda.maunual_seed(config['seed'])
 
     #instantiate model
     model = configure_model(config)
