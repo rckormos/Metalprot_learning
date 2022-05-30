@@ -39,6 +39,7 @@ if __name__ == '__main__':
 
     #user-defined variables
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
+    search_space = {''}
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
