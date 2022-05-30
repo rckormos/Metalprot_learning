@@ -52,7 +52,8 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
         all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as a list of permutations indexed by observation matrix row.
     """
     all_features = {}
-    full_observations = []
+    distance_matrices = []
+    encodings = []
     full_labels = []
     binding_core_identifier_permutations = []
 
@@ -85,10 +86,13 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
 
         permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
-        full_observations.append(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding)))
+        # full_observations.append(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding)))
+        distance_matrices.append(permuted_dist_mat.flatten().squeeze())
+        encodings.append(permuted_encoding.squeeze())
         full_labels.append(permuted_label)
 
-    all_features['observations'] = full_observations
+    all_features['distance_matrices'] = distance_matrices
+    all_features['encodings'] = encodings
     all_features['labels'] = full_labels
     all_features['identifiers'] = binding_core_identifier_permutations
     return all_features
