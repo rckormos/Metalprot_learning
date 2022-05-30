@@ -13,15 +13,21 @@ import pickle
 class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
 
-    def __init__(self, set: pd.DataFrame, distance_space: bool):
-        self.obsevations = np.vstack([array for array in set['observations']])
-        self.labels = np.vstack([array for array in set['labels']]) if distance_space else np.vstack([array for array in set['metal_coords']])
+    def __init__(self, set: pd.DataFrame, encodings: bool):
+
+        if encodings:
+            self.observations = np.hstack([np.vstack([array for array in set['distance_matrices']]), np.vstack([array for array in set['encodings']])])
+
+        else:
+            self.observations = np.vstack([array for array in set['distance_matrices']])
+
+        self.labels = np.vstack([array for array in set['labels']])
 
     def __len__(self):
         return len(self.labels)
 
     def __getitem__(self, index):
-        observation = self.obsevations[index]
+        observation = self.observations[index]
         label = self.labels[index]
         return observation, label 
 
