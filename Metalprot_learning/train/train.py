@@ -34,8 +34,8 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int,
 
 def configure_model(config: dict):
     assert type(config['distance_space']) == bool
-    assert set([type('input'), type(config['l1']), type(config['l2']), type(config['output']), type(config['seed']), type(config['batch_size']), type(config['epochs'])]) == set(int)
-    assert set([type(config['lr']), type(config['input_dropout']), type(config['hidden_dropout'])]) == float
+    assert type('input'), type(config['l1']) == type(config['l2']) == type(config['output']) == type(config['seed']) == type(config['batch_size']) == type(config['epochs']) == set(int)
+    assert type(config['lr']) == type(config['input_dropout']) == type(config['hidden_dropout']) == float
 
     if 'l3' not in config.keys():
         model = models.SingleLayerNet(config['input'], config['l1'], config['l2'], config['output'], config['input_dropout'], config['hidden_dropout']) 
@@ -74,7 +74,7 @@ def train_loop(model, train_dataloader, loss_fn, optimizer, device):
 
         running_loss += loss.item()
 
-    running_loss / len(train_dataloader)
+    running_loss /= len(train_dataloader)
     return running_loss
 
 def validation_loop(model, test_dataloader, loss_fn, device):
@@ -97,8 +97,7 @@ def validation_loop(model, test_dataloader, loss_fn, device):
         for X,y in test_dataloader:
             X, y = X.to(device), y.to(device)
             prediction = model(X)
-            _vloss = loss_fn(prediction,y)
-            vloss += _vloss
+            vloss += loss_fn(prediction,y).item()
     vloss /= len(test_dataloader)
     return vloss
 
@@ -117,7 +116,7 @@ def train_model(path2output: str, config: dict, features_file: str):
 
     np.random.seed(config['seed'])
     torch.manual_seed(config['seed'])
-    torch.cuda.maunual_seed(config['seed'])
+    torch.cuda.manual_seed(config['seed'])
 
     #instantiate model
     model = configure_model(config)
@@ -138,6 +137,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     test_loss = np.array([])
     validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
+        print(f'Epoch {epoch}')
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
         _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
@@ -146,7 +146,9 @@ def train_model(path2output: str, config: dict, features_file: str):
         test_loss = np.append(test_loss, _test_loss)
         validation_loss = np.append(validation_loss, _validation_loss)
 
+        print(f'Train Loss for Epoch {epoch}: {_train_loss}')
         print(f'Test Loss for Epoch {epoch}: {_test_loss}')
+        print(f'Val Loss for Epoch {epoch}: {_validation_loss}')
 
     np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
     np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
@@ -155,6 +157,3 @@ def train_model(path2output: str, config: dict, features_file: str):
     torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
     with open(os.path.join(path2output, 'config.json'), 'w') as f:
         json.dump(config, f)
-
-    
-
