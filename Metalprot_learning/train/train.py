@@ -127,19 +127,19 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_dataloader, test_dataloader, validation_dataloader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
+    train_loader, test_loader, val_loader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
-    loss_fn = torch.nn.L1Loss()
+    criterion = torch.nn.L1Loss()
 
     train_loss = np.array([])
     test_loss = np.array([])
     validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
-        _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
-        _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
-        _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
+        _train_loss = train_loop(model, train_loader, criterion, optimizer, device)
+        _test_loss = validation_loop(model, test_loader, criterion, device)
+        _validation_loss = validation_loop(model, val_loader, criterion, device)
 
         train_loss = np.append(train_loss, _train_loss)
         test_loss = np.append(test_loss, _test_loss)
