@@ -137,7 +137,6 @@ def train_model(path2output: str, config: dict, features_file: str):
     test_loss = np.array([])
     validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
-        print(f'Epoch {epoch}')
         _train_loss = train_loop(model, train_dataloader, loss_fn, optimizer, device)
         _test_loss = validation_loop(model, test_dataloader, loss_fn, device)
         _validation_loss = validation_loop(model, validation_dataloader, loss_fn, device)
