@@ -16,6 +16,15 @@ import datetime
 import numpy as np
 from Metalprot_learning.train import models, train
 
+def distribute_tasks():
+    path2output = sys.argv[1]
+
+    today = datetime.datetime.now()
+    path2output = os.path.join(path2output, '_'.join( str(i) for i in ['tune', today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond]))
+    os.mkdir(path2output)
+    
+    return path2output
+
 def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray, test_loss: np.ndarray):
     np.save(os.path.join(subdir, 'train_loss.npy'), train_loss)
     np.save(os.path.join(subdir, 'test_loss.npy'), test_loss)
@@ -35,26 +44,16 @@ def write_output_files(subdir: str, params: tuple, model, train_loss: np.ndarray
     torch.save(model.state_dict, os.path.join(subdir, 'model.pth'))
 
 if __name__ == '__main__':
-    path2output = sys.argv[1]
 
-    #user-defined variables
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
     INPUT_DIM = 2544
     OUTPUT_DIM = 48
 
-    #job_id and no_jobs not needed (code is not designed for parrallelization), but are here for the sake of convention
-    if len(sys.argv) > 3:
-        _no_jobs = int(sys.argv[2])
-        _job_id = int(sys.argv[3]) - 1
-
-    #create output directory to hold data from experiment
-    today = datetime.datetime.now()
-    DIRNAME = os.path.join(path2output, '_'.join( str(i) for i in ['tune', today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond]))
-    os.mkdir(DIRNAME)
+    path2output = distribute_tasks()
 
     #define objective function
     def objective(trial):
-        trial_dir = os.path.join(DIRNAME, str(trial.number))
+        trial_dir = os.path.join(path2output, str(trial.number))
         os.mkdir(trial_dir)
 
         seed = np.random.randint(0,1000)
@@ -98,7 +97,7 @@ if __name__ == '__main__':
     study.optimize(objective, n_trials=50)
     importances = optuna.importance.get_param_importances(study)
 
-    with open(os.path.join(DIRNAME, 'importances.json'), 'w') as f:
+    with open(os.path.join(path2output, 'importances.json'), 'w') as f:
         json.dump(importances, f)
 
 

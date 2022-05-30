@@ -13,7 +13,7 @@ import sys
 import numpy as np
 import datetime
 
-def distribute_tasks(no_jobs: int, job_id: int, MODELS: list):
+def distribute_tasks(MODELS: list):
     """Distributes batch jobs accross mutliple cores.
 
     Args:
@@ -24,11 +24,8 @@ def distribute_tasks(no_jobs: int, job_id: int, MODELS: list):
     Returns:
         tasks (list): List of models to be train by task.
     """
-    tasks = [MODELS[i] for i in range(0,len(MODELS)) if i % no_jobs == job_id]
-    return tasks
 
-if __name__ == '__main__':
-    path2output = sys.argv[1] #note that this is not actually where output files are written to. they are written to the model directories.
+    path2output = sys.argv[1] 
     no_jobs = 1
     job_id = 0
 
@@ -36,7 +33,11 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    #provide paths to observations and labels
+    tasks = [MODELS[i] for i in range(0,len(MODELS)) if i % no_jobs == job_id]
+    return path2output, tasks
+
+if __name__ == '__main__':
+
     PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV2/compiled_features.pkl'
     RANDOM = False
     MODELS = [
@@ -51,14 +52,9 @@ if __name__ == '__main__':
         'epochs': 2000}
     ]
 
-    for model in MODELS:
+    path2output, tasks = distribute_tasks(MODELS)
+    for model in tasks:
         today = datetime.datetime.now()
         dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
         train_model(dirname, model, PATH2FEATURES, RANDOM)
-
-
-
-
-    
-    

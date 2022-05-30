@@ -9,11 +9,12 @@ the core sequence.
 """
 
 #imports
+import pandas as pd
 import numpy as np
 from prody import *
 from Metalprot_learning.utils import EncodingError
 
-def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordination_number: int):
+def _compute_distance_matrices(core: AtomGroup, metal_name: str, no_neighbors: int, coordination_number: int):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -31,22 +32,25 @@ def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordina
 
     binding_core_resnums = core.select('protein').select('name N').getResnums()
     binding_core_chids = core.select('protein').select('name N').getChids()
-    binding_core_identifiers = [(binding_core_resnums[i], binding_core_chids[i]) for i in range(0,len(binding_core_resnums))]
 
     binding_core_backbone = core.select('protein').select('name CA O C N')
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
-
     metal_sel = core.select('hetero').select(f'name {metal_name}')
+    metal_coords = metal_sel.getCoords()[0]
     label = buildDistMatrix(metal_sel, binding_core_backbone)
-    
+
     max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors))
-    padding = max_atoms - full_dist_mat.shape[0]
-    full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
-    label = np.lib.pad(label, ((0,0),(0,padding)), 'constant', constant_values=0)
+    mat_padding = max_atoms - full_dist_mat.shape[0]
+    id_padding = coordination_number + (2*coordination_number*no_neighbors) - binding_core_resnums.shape[0]
 
-    return full_dist_mat, binding_core_identifiers, label
+    full_dist_mat = np.lib.pad(full_dist_mat, ((0,mat_padding), (0,mat_padding)), 'constant', constant_values=0)
+    label = np.lib.pad(label, ((0,0),(0,mat_padding)), 'constant', constant_values=0)
+    binding_core_resnums = np.append(binding_core_resnums, np.array([np.nan]*id_padding))
+    binding_core_chids = np.append(binding_core_chids, np.array(['']*id_padding))
 
-def onehotencode(core, no_neighbors: int, coordinating_resis: int):
+    return full_dist_mat, label, binding_core_resnums, binding_core_chids, metal_coords
+
+def _onehotencode(core: AtomGroup, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
 
     Args:
@@ -68,7 +72,7 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
         aa = str(seq[i])
 
         if aa not in threelettercodes:
-            raise EncodingError
+            print('deezma')
 
         idx = threelettercodes[aa]
         one_hot = np.zeros((1,20))
@@ -80,3 +84,10 @@ def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     encoding = np.concatenate((encoding, np.zeros((1,padding))), axis=1)
 
     return encoding
+
+def featurize(core: AtomGroup, noised_core: AtomGroup, metal_name: str, no_neighbors: int, coordination_number: int):
+    dist_mat, label, binding_core_resnums, binding_core_chids, metal_coords = _compute_distance_matrices(core, metal_name, no_neighbors, coordination_number)
+    noised_dist_mat, noised_label, _, _, _ = _compute_distance_matrices(noised_core, metal_name, no_neighbors, coordination_number)
+    encoding = _onehotencode(core, no_neighbors, coordination_number)
+
+    return dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_resnums, binding_core_chids, metal_coords
