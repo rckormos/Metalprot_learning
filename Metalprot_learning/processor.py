@@ -5,6 +5,7 @@ This file contains functions for processing data into a model-readable form.
 """
 
 #imports 
+import numpy as np
 import pandas as pd
 import pickle
 import os
@@ -19,14 +20,21 @@ def compile_data(path2features: str, job_id: int, feature_files, permuted: bool,
     """
     
     failed = []
+    start = 0
     for file in feature_files:
         with open(file, 'rb') as f:
             data = pickle.load(f)
 
         try:
             _features = pd.DataFrame(data)
+            _features['barcode'] = np.linspace(start, start+len(_features), len(_features))
+
             upsample = max_permutations - len(_features)
-            _features = pd.concat([_features, _features.sample(n=upsample, replace=True, random_state=seed)]) if permuted else _features
+            sampled_rows = _features.sample(n=upsample, replace=True, random_state=seed)
+            sum = len(_features) + len(sampled_rows)
+
+            _features = pd.concat([_features, sampled_rows]) if permuted else _features
+            assert len(_features) == sum
 
             features = pd.concat([features, _features]) if 'features' in locals() else _features
             print(f'Successfully compiled {file}')
