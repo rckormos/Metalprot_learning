@@ -39,10 +39,13 @@ def sample_by_pdb(d: dict, partitions: tuple, seed: int):
     train_size, testing_size = int(train_prop * len(ids)), int(test_prop * len(ids))
     indices = np.random.RandomState(seed=seed).permutation(len(ids))
     train_indices, test_indices, val_indices = indices[:train_size], indices[train_size:(train_size+testing_size)], indices[(train_size + testing_size):]
+    assert set(train_indices).intersection(set(test_indices), set(val_indices)) == set()
 
     train_set, test_set, val_set = pd.concat([d[ids[ind]] for ind in train_indices]), pd.concat([d[ids[ind]] for ind in test_indices]), pd.concat([d[ids[ind]] for ind in val_indices])
+    barcodes = pd.concat([train_set['barcodes'], test_set['barcodes'], val_set['barcodes']])
+    barcodes = barcodes.rename({'barcodes': 'train', 'barcodes': 'test', 'barcodes': 'val'})
 
-    return train_set, test_set, val_set, (train_indices, test_indices, val_indices)
+    return train_set, test_set, val_set, barcodes
 
 def split_data(features_file: str, partitions: tuple, seed: int):
     """Splits data into training and test sets.
@@ -68,6 +71,6 @@ def split_data(features_file: str, partitions: tuple, seed: int):
     for id in ids:
         d[id] = features[features['source'].str.contains(id)]
    
-    train_set, test_set, val_set, indices = sample_by_pdb(d, partitions, seed)
+    train_set, test_set, val_set, barcodes = sample_by_pdb(d, partitions, seed)
 
-    return train_set, test_set, val_set, indices
+    return train_set, test_set, val_set, barcodes
