@@ -50,9 +50,9 @@ if __name__ == '__main__':
     #load data
     EXAMPLE = True #true if data are positive examples
     ENCODINGS = False
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
-    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/26_5_2022_16_48_44_229677_286/config.json'
-    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/26_5_2022_16_48_44_229677_286/model.pth'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/compiled_features.pkl'
+    CONFIG_FILE = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/models/MLP_v2/30_5_2022_14_58_0_515271_449/config.json'
+    WEIGHTS_FILE = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/models/MLP_v2/30_5_2022_14_58_0_515271_449/model.pth'
 
     config, features = load_data(FEATURES_FILE, CONFIG_FILE)
     path2output, job_id, tasks = distribute_tasks(features)
