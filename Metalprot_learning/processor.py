@@ -27,17 +27,20 @@ def compile_data(path2features: str, job_id: int, feature_files, permuted: bool,
 
         try:
             _features = pd.DataFrame(data)
-            _features['barcode'] = np.linspace(start, start+len(_features), len(_features))
+            _features['barcode'] = np.linspace(start, start+len(_features)-1, len(_features))
+            unique = len(_features)
 
             upsample = max_permutations - len(_features)
             sampled_rows = _features.sample(n=upsample, replace=True, random_state=seed)
-            sum = len(_features) + len(sampled_rows)
+            sum = unique + len(sampled_rows)
 
             _features = pd.concat([_features, sampled_rows]) if permuted else _features
-            assert len(_features) == sum
+            assert len(_features) == sum == max_permutations
 
             features = pd.concat([features, _features]) if 'features' in locals() else _features
             print(f'Successfully compiled {file}')
+
+            start += unique
 
         except:
             failed.append(file)
