@@ -5,11 +5,26 @@ This file contains functions for predicting metal coordinates.
 """
 
 #imports
+import os
+from Metalprot_learning.train.models import SingleLayerNet, DoubleLayerNet
+import pandas as pd
+import torch
 import numpy as np
 import scipy
 from prody import *
 
-def triangulate(backbone_coords, distance_prediction):
+def _load_model(config: dict, WEIGHTS_FILE: str):
+
+    if 'l3' not in config.keys():
+        model = SingleLayerNet(config['input'], config['l1'], config['l2'], config['output'], config['input_dropout'], config['hidden_dropout']) 
+    else:
+        model = DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'], config['input_dropout'], config['hidden_dropout'])
+
+    model.load_state_dict(torch.load(WEIGHTS_FILE, map_location='cpu'))
+    model.eval()
+    return model
+
+def _triangulate(backbone_coords, distance_prediction):
     distance_prediction = distance_prediction[0:len(backbone_coords)]
 
     guess = backbone_coords[0]
@@ -29,7 +44,7 @@ def triangulate(backbone_coords, distance_prediction):
 
     return solution, rmsd
 
-def extract_coordinates(source_file: str, identifier_permutation, example):
+def _extract_coordinates(source_file: str, identifier_permutation):
     """_summary_
 
     Args:
@@ -37,47 +52,53 @@ def extract_coordinates(source_file: str, identifier_permutation, example):
         positive (bool, optional): _description_. Defaults to False.
     """
 
-    metal_coords = np.array([np.nan, np.nan, np.nan])
     core = parsePDB(source_file)
     for iteration, id in enumerate(identifier_permutation):
         residue = core.select(f'chain {id[1]}').select(f'resnum {id[0]}').select('name C CA N O').getCoords()
         coordinates = residue if iteration == 0 else np.vstack([coordinates, residue])
 
-    if example:
-        metal_coords = core.select('hetero').getCoords()
-        assert len(metal_coords) == 1
-        metal_coords = metal_coords[0]
+    return coordinates
 
-    return coordinates, metal_coords
+def predict_coordinates(path2output: str, job_id: int, features: pd.DataFrame, config: dict, weights_file: str, example: bool, encodings: bool):
 
-def predict_coordinates(distance_predictions, pointers, resindex_permutations, example=False):
-    predicted_metal_coordinates = None
-    metal_rmsds = None
-    metal_coordinates = None
+    model = _load_model(config, weights_file)
+    X = np.hstack([np.vstack([array for array in features['distance_matrices']]), np.vstack([array for array in features['encodings']])]) if encodings else np.vstack([array for array in features['distance_matrices']])
+    prediction = model.forward(torch.from_numpy(X)).cpu().detach().numpy()
+
+    deviation = np.array([np.nan] * len(prediction))
     completed = 0
-    for distance_prediction, pointer, resindex_permutation in zip(distance_predictions, pointers, resindex_permutations):
+    for distance_prediction, pointer, resindex_permutation in zip(prediction, list(features['source']), list(features['identifiers'])):
         try:
-            source_coordinates, _metal_coordinates = extract_coordinates(pointer, resindex_permutation, example)
-            solution, rmsd = triangulate(source_coordinates, distance_prediction)
+            source_coordinates = _extract_coordinates(pointer, resindex_permutation)
+            solution, rmsd = _triangulate(source_coordinates, distance_prediction)
             completed += 1
 
         except:
-            _metal_coordinates = np.array([np.nan, np.nan, np.nan])
             solution, rmsd = np.array([np.nan, np.nan, np.nan]), np.nan
 
-        if type(predicted_metal_coordinates) != np.ndarray:
-            predicted_metal_coordinates = solution
-            metal_coordinates = _metal_coordinates
-            metal_rmsds = rmsd
+        if 'solutions' not in locals():
+            solutions = solution
+            rmsds = rmsd
 
         else:
-            predicted_metal_coordinates = np.vstack([predicted_metal_coordinates, solution])
-            metal_coordinates = np.vstack([metal_coordinates, _metal_coordinates])
-            metal_rmsds = np.append(metal_rmsds, rmsd)
+            solutions = np.vstack([solutions, solution])
+            rmsds = np.append(rmsds, rmsd)
 
-    print(f'Coordinates and RMSDs computed for {completed} out of {len(distance_predictions)} observations.')
-    return predicted_metal_coordinates, metal_coordinates, metal_rmsds
+        if example:
+            ground_truth = np.vstack(list(features['metal_coords']))
+            deviation = np.sqrt(np.sum(np.square(ground_truth - prediction), axis=1))
 
-def evaluate_positives(predicted_metal_coordinates, metal_coordinates):
-    deviation = np.sqrt(np.sum(np.square(metal_coordinates - predicted_metal_coordinates), axis=1))
-    return deviation
+    predictions = pd.DataFrame({'predicted_distances': list(prediction),
+        'predicted_coordinates': solutions,
+        'confidence': rmsds,
+        'deviation': deviation})
+
+    predictions.to_pickle(os.path.join(path2output, f'predictions{job_id}.pkl'))
+
+    failed_indices = np.argwhere(np.isnan(solutions))[0]
+    if len(failed_indices) > 0:
+        failed = [list(features['source'])[int(i)] for i in failed_indices]
+        with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
+            f.write('\n'.join(failed) + '\n')
+
+    print(f'Coordinates and RMSDs computed for {completed} out of {len(prediction)} observations.')
