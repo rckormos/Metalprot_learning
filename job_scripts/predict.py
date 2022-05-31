@@ -30,6 +30,7 @@ def distribute_tasks(features: pd.DataFrame):
     end_ind = int(task_rows[-1]) + 1
 
     tasks = features[start_ind:end_ind]
+    assert len(tasks) == end_ind - start_ind - 1
 
     print(f'Predicting coordinates for indices {start_ind}:{end_ind}')
 
