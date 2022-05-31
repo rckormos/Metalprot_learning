@@ -42,7 +42,7 @@ def sample_by_pdb(d: dict, partitions: tuple, seed: int):
 
     train_set, test_set, val_set = pd.concat([d[ids[ind]] for ind in train_indices]), pd.concat([d[ids[ind]] for ind in test_indices]), pd.concat([d[ids[ind]] for ind in val_indices])
 
-    return train_set, test_set, val_set
+    return train_set, test_set, val_set, (train_indices, test_indices, val_indices)
 
 def split_data(features_file: str, partitions: tuple, seed: int):
     """Splits data into training and test sets.
@@ -68,6 +68,6 @@ def split_data(features_file: str, partitions: tuple, seed: int):
     for id in ids:
         d[id] = features[features['source'].str.contains(id)]
    
-    train_set, test_set, val_set = sample_by_pdb(d, partitions, seed)
+    train_set, test_set, val_set, indices = sample_by_pdb(d, partitions, seed)
 
-    return train_set, test_set, val_set
+    return train_set, test_set, val_set, indices
