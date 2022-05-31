@@ -84,18 +84,18 @@ def predict_coordinates(path2output: str, job_id: int, features: pd.DataFrame, c
             solutions = np.vstack([solutions, solution])
             rmsds = np.append(rmsds, rmsd)
 
-        if example:
-            ground_truth = np.vstack(list(features['metal_coords']))
-            deviation = np.sqrt(np.sum(np.square(ground_truth - prediction), axis=1))
+    if example:
+        ground_truth = np.vstack(list(features['metal_coords']))
+        deviation = np.sqrt(np.sum(np.square(ground_truth - solutions), axis=1))
 
     predictions = pd.DataFrame({'predicted_distances': list(prediction),
-        'predicted_coordinates': solutions,
+        'predicted_coordinates': list(solutions),
         'confidence': rmsds,
         'deviation': deviation})
 
     predictions.to_pickle(os.path.join(path2output, f'predictions{job_id}.pkl'))
 
-    failed_indices = np.argwhere(np.isnan(solutions))[0]
+    failed_indices = np.argwhere(np.isnan(solutions)).squeeze()
     if len(failed_indices) > 0:
         failed = [list(features['source'])[int(i)] for i in failed_indices]
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:

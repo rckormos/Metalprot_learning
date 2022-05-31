@@ -24,7 +24,7 @@ def distribute_tasks(features: pd.DataFrame):
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    row_indices = np.linspace(0, len(pointers), len(pointers))
+    row_indices = np.linspace(0, len(features), len(features))
     task_rows = np.array_split(row_indices, no_jobs)[job_id]
     start_ind = int(task_rows[0])
     end_ind = int(task_rows[-1]) + 1
@@ -36,7 +36,7 @@ def distribute_tasks(features: pd.DataFrame):
     return path2output, job_id, tasks
 
 def load_data(features_file: str, config_file: str):
-    with open(config, 'r') as f:
+    with open(config_file, 'r') as f:
         config = json.load(f)
 
     with open(features_file, 'rb') as f:
