@@ -24,14 +24,15 @@ def distribute_tasks(features: pd.DataFrame):
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    row_indices = np.linspace(0, len(features), len(features))
+    row_indices = np.linspace(0, len(features)-1, len(features))
     task_rows = np.array_split(row_indices, no_jobs)[job_id]
+    print(task_rows[0:10])
     start_ind = int(task_rows[0])
     end_ind = int(task_rows[-1]) + 1
 
-    tasks = features[start_ind:end_ind]
-    assert len(tasks) == end_ind - start_ind - 1
+    print(start_ind, end_ind)
 
+    tasks = features[start_ind:end_ind]
     print(f'Predicting coordinates for indices {start_ind}:{end_ind}')
 
     return path2output, job_id, tasks
@@ -51,11 +52,11 @@ if __name__ == '__main__':
     #load data
     EXAMPLE = True #true if data are positive examples
     ENCODINGS = False
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/compiled_features.pkl'
+    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v2/30_5_2022_14_58_0_515271_449/config.json'
     WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v2/30_5_2022_14_58_0_515271_449/model.pth'
 
     config, features = load_data(FEATURES_FILE, CONFIG_FILE)
     path2output, job_id, tasks = distribute_tasks(features)
 
-    predict_coordinates(path2output, job_id, features, config, WEIGHTS_FILE, EXAMPLE, ENCODINGS)
+    predict_coordinates(path2output, job_id, tasks, config, WEIGHTS_FILE, EXAMPLE, ENCODINGS)
