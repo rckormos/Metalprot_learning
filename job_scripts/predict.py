@@ -26,12 +26,8 @@ def distribute_tasks(features: pd.DataFrame):
 
     row_indices = np.linspace(0, len(features)-1, len(features))
     task_rows = np.array_split(row_indices, no_jobs)[job_id]
-    print(task_rows[0:10])
     start_ind = int(task_rows[0])
     end_ind = int(task_rows[-1]) + 1
-
-    print(start_ind, end_ind)
-
     tasks = features[start_ind:end_ind]
     print(f'Predicting coordinates for indices {start_ind}:{end_ind}')
 
