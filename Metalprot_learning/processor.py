@@ -35,7 +35,6 @@ def compile_data(path2features: str, job_id: int, feature_files, permuted: bool,
             sum = unique + len(sampled_rows)
 
             _features = pd.concat([_features, sampled_rows]) if permuted else _features
-            assert len(_features) == sum == max_permutations
 
             features = pd.concat([features, _features]) if 'features' in locals() else _features
             print(f'Successfully compiled {file}')
