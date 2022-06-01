@@ -24,13 +24,13 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int,
         train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
         test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
     """
-    train_set, test_set, val_set, _ = datasets.split_data(features_file, partitions, seed)
+    train_set, test_set, val_set, barcodes = datasets.split_data(features_file, partitions, seed)
 
     train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings), batch_size=batch_size, shuffle=True)
     test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings), batch_size=batch_size, shuffle=False)
     validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings), batch_size=batch_size, shuffle=False)
 
-    return train_dataloader, test_dataloader, validation_dataloader
+    return train_dataloader, test_dataloader, validation_dataloader, barcodes
 
 def configure_model(config: dict):
     assert type(config['encodings']) == bool
@@ -127,7 +127,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_loader, test_loader, val_loader = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
+    train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
