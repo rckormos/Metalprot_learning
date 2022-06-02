@@ -38,20 +38,20 @@ def distribute_tasks(MODELS: list):
 
 if __name__ == '__main__':
 
-    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/compiled_features.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     MODELS = [
-        {'input': 2304,
-        'l1': 2000,
-        'l2': 1000,
-        'l3': 500,
+        {'input': 2544,
+        'l1': 2458,
+        'l2': 1168,
+        'l3': 621,
         'input_dropout': 0.0,
         'hidden_dropout': 0.0,
         'output': 48,
         'batch_size': 51,
         'lr': 0.0346838274787568,
-        'seed': np.random.randint(0,1000),
+        'seed': 685,
         'epochs': 1000,
-        'encodings': False}
+        'encodings': True}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
