@@ -92,7 +92,9 @@ def predict_coordinates(path2output: str, job_id: int, features: pd.DataFrame, c
         'predicted_coordinates': list(solutions),
         'confidence': rmsds,
         'deviation': deviation,
-        'barcode': features['barcode'].to_numpy()})
+        'barcodes': features['barcode'].to_numpy(),
+        'sources': list(features['source']),
+        'identifiers': list(features['identifiers'])})
 
     predictions.to_pickle(os.path.join(path2output, f'predictions{job_id}.pkl'))
 
