@@ -68,13 +68,13 @@ def predict_coordinates(path2output: str, job_id: int, features: pd.DataFrame, c
     deviation = np.array([np.nan] * len(prediction))
     completed = 0
     for distance_prediction, pointer, resindex_permutation in zip(prediction, list(features['source']), list(features['identifiers'])):
-        try:
-            source_coordinates = _extract_coordinates(pointer, resindex_permutation)
-            solution, rmsd = _triangulate(source_coordinates, distance_prediction)
-            completed += 1
+        # try:
+        source_coordinates = _extract_coordinates(pointer, resindex_permutation)
+        solution, rmsd = _triangulate(source_coordinates, distance_prediction)
+        completed += 1
 
-        except:
-            solution, rmsd = np.array([np.nan, np.nan, np.nan]), np.nan
+        # except:
+        #     solution, rmsd = np.array([np.nan, np.nan, np.nan]), np.nan
 
         if 'solutions' not in locals():
             solutions = solution
