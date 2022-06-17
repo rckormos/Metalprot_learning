@@ -36,7 +36,7 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/test'
+    PATH2FEATURES = '/Users/jonathanzhang/Documents/ucsf/degrado/data/bundle_construct/bill_bundles'
     PERMUTED = False
 
     feature_files = distribute_tasks(PATH2FEATURES, no_jobs, job_id)
