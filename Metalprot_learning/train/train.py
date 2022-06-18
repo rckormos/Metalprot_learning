@@ -160,3 +160,77 @@ def train_model(path2output: str, config: dict, features_file: str):
 
     with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
         json.dump(barcodes, f)
+
+
+
+
+def load_data_control(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool):
+    train_set, test_set, val_set, barcodes = datasets.split_data(features_file, partitions, seed)
+
+    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings), batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings), batch_size=batch_size, shuffle=False)
+    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings), batch_size=batch_size, shuffle=False)
+
+    return train_dataloader, test_dataloader, validation_dataloader, train_set, test_set, val_set, barcodes
+
+def save_data_control(path2output, train, test, val, bar):
+    train.to_pickle(os.path.join(path2output, 'train_set.pkl'))
+    test.to_pickle(os.path.join(path2output, 'test_set.pkl'))
+    val.to_pickle(os.path.join(path2output, 'val_set.pkl'))
+    
+    with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
+        json.dump(bar, f)
+
+def train_model_control(path2output: str, config: dict, features_file: str):
+
+    e = config['seed']
+    print(f'Seed going into seeding: {e}')
+    np.random.seed(config['seed'])
+    torch.manual_seed(config['seed'])
+    # torch.cuda.manual_seed(config['seed'])
+
+    #instantiate model
+    model = configure_model(config)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model.to(device)
+
+    print(f'CUDA available? {torch.cuda.is_available()}')
+    print(f'Model on GPU? {next(model.parameters()).is_cuda}')
+
+    #instantiate dataloader objects for train and test sets
+    f = config['seed']
+    print(f'Seed going into spitting: {f}')
+    train_loader, test_loader, val_loader, train_set, test_set, val_set, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
+    save_data_control(train_set, test_set, val_set, barcodes)
+
+    g = config['seed']
+    print(f'Final seed: {g}')
+
+    #define optimizer and loss function
+    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
+    criterion = torch.nn.L1Loss()
+
+    train_loss = np.array([])
+    test_loss = np.array([])
+    validation_loss = np.array([])
+    for epoch in range(0, config['epochs']):
+        _train_loss = train_loop(model, train_loader, criterion, optimizer, device)
+        _test_loss = validation_loop(model, test_loader, criterion, device)
+        _validation_loss = validation_loop(model, val_loader, criterion, device)
+
+        train_loss = np.append(train_loss, _train_loss)
+        test_loss = np.append(test_loss, _test_loss)
+        validation_loss = np.append(validation_loss, _validation_loss)
+
+        print(f'Train Loss for Epoch {epoch}: {_train_loss}')
+        print(f'Test Loss for Epoch {epoch}: {_test_loss}')
+        print(f'Val Loss for Epoch {epoch}: {_validation_loss}')
+        print('')
+
+    np.save(os.path.join(path2output, 'train_loss.npy'), train_loss)
+    np.save(os.path.join(path2output, 'test_loss.npy'), test_loss)
+    np.save(os.path.join(path2output, 'validation_loss.npy'), validation_loss)
+
+    torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
+    with open(os.path.join(path2output, 'config.json'), 'w') as f:
+        json.dump(config, f)
