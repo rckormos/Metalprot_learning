@@ -200,8 +200,8 @@ def train_model_control(path2output: str, config: dict, features_file: str):
     #instantiate dataloader objects for train and test sets
     f = config['seed']
     print(f'Seed going into spitting: {f}')
-    train_loader, test_loader, val_loader, train_set, test_set, val_set, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
-    save_data_control(train_set, test_set, val_set, barcodes)
+    train_loader, test_loader, val_loader, train_set, test_set, val_set, barcodes = load_data_control(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
+    save_data_control(path2output, train_set, test_set, val_set, barcodes)
 
     g = config['seed']
     print(f'Final seed: {g}')
