@@ -42,9 +42,9 @@ def sample_by_pdb(d: dict, partitions: tuple, seed: int):
     assert set(train_indices).intersection(set(test_indices), set(val_indices)) == set()
 
     train_set, test_set, val_set = pd.concat([d[ids[ind]] for ind in train_indices]), pd.concat([d[ids[ind]] for ind in test_indices]), pd.concat([d[ids[ind]] for ind in val_indices])
-    barcodes = {'train': train_set['barcode'].to_numpy(), 
-                            'test': test_set['barcode'].to_numpy(), 
-                            'val': val_set['barcode'].to_numpy()}
+    barcodes = {'train': list(train_set['barcode']), 
+                            'test': list(test_set['barcode']), 
+                            'val': list(val_set['barcode'])}
 
     return train_set, test_set, val_set, barcodes
 
