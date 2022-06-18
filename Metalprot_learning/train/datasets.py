@@ -33,6 +33,7 @@ class DistanceData(torch.utils.data.Dataset):
 
 def sample_by_pdb(d: dict, partitions: tuple, seed: int):
     ids = list(d.keys())
+    ids.sort()
 
     train_prop, test_prop, val_prop = partitions
     assert sum([train_prop, test_prop, val_prop]) == 1
