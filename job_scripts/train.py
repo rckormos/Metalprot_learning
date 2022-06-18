@@ -49,7 +49,7 @@ if __name__ == '__main__':
         'output': 48,
         'batch_size': 51,
         'lr': 0.0346838274787568,
-        'seed': 685,
+        'seed': np.random.randint(1000),
         'epochs': 1000,
         'encodings': True}
     ]
@@ -57,6 +57,9 @@ if __name__ == '__main__':
     path2output, tasks = distribute_tasks(MODELS)
 
     for model in tasks:
+
+        d = model['seed']
+        print(f'Model seed before run: {d}')
         today = datetime.datetime.now()
         dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
