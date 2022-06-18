@@ -38,7 +38,7 @@ def distribute_tasks(MODELS: list):
 
 if __name__ == '__main__':
 
-    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
+    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     MODELS = [
         {'input': 2544,
         'l1': 2458,
