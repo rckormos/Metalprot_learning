@@ -7,7 +7,7 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.train.train import train_model
+from Metalprot_learning.train.train import train_model, train_model_control
 import os
 import sys
 import numpy as np
@@ -63,4 +63,4 @@ if __name__ == '__main__':
         today = datetime.datetime.now()
         dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
-        train_model(dirname, model, PATH2FEATURES)
+        train_model_control(dirname, model, PATH2FEATURES)
