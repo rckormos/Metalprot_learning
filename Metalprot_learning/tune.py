@@ -24,7 +24,7 @@ def _write_output_files(subdir: str, selected: dict, model, train_loss: np.ndarr
 
 def define_objective(path2output: str, features_file: str, config: dict, encodings: bool):
 
-    input_dim = 2544 if encodings else 1
+    input_dim = 2544 if encodings else 2304
     output_dim = 48
 
     def objective(trial):
