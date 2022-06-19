@@ -33,6 +33,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
 
         seed = np.random.randint(0,1000)
         batch_size = trial.suggest_int("batch_size", config['batch_size'][0], config['batch_size'][1]) if len(config['batch_size']) == 2 else config['batch_size']
+        epochs = trial.suggest_int("epochs", config['epochs'][0], config['epochs'][1]) if len(config['epochs']) == 2 else config['epochs']
         lr = trial.suggest_float('lr', config['lr'][0], config['lr'][1]) if len(config['lr']) == 2 else config['lr']
         input_dropout = trial.suggest_float('input_dropout', config['input_dropout'][0], config['input_dropout'][1]) if len(config['input_dropout']) == 2 else config['input_dropout']
         hidden_dropout = trial.suggest_float('hidden_dropout', config['hidden_dropout'][0], config['hidden_dropout'][1]) if len(config['hidden_dropout']) == 2 else config['hidden_dropout']
@@ -60,7 +61,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
 
         train_loss = np.array([])
         test_loss = np.array([])
-        for epoch in range(0, 40):
+        for epoch in range(0, epochs):
             _train_loss = train.train_loop(model, train_dataloader, loss_fn, optimizer, device)
             _test_loss = train.validation_loop(model, test_dataloader, loss_fn, device)
 
