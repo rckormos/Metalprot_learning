@@ -20,7 +20,7 @@ if __name__ == '__main__':
 
     #user-defined variables
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
-    CONFIG = {'seed': np.randint(0,1000),
+    CONFIG = {'seed': np.random.randint(0,1000),
         'batch_size': 51,
         'lr': 0.0346838274787568,
         'l1': 2458,
@@ -29,7 +29,11 @@ if __name__ == '__main__':
         'input_dropout': (0.1, 1),
         'hidden_dropout': (0.1, 1),
         'epochs': 80,
-        'weight_decay': (0, 1e-3)
+        'weight_decay': (1e-6, 1e-3),
+        'optimizer_key': 1,
+        'b1': (.00001, .9999), 
+        'b2': (.00001, .9999), 
+        'loss_fn_key': 0
         }
     ENCODINGS = True
 
