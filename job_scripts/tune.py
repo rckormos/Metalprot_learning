@@ -23,10 +23,15 @@ if __name__ == '__main__':
     CONFIG = {'seed': np.randint(0,1000),
         'batch_size': 51,
         'lr': 0.0346838274787568,
-        'l1': (2400, 2500),
-        'l2': (1100, 1200),
+        'l1': 2458,
+        'l2': 1168,
+        'l3': 621,
+        'input_dropout': (0.1, 1),
+        'hidden_dropout': (0.1, 1),
+        'epochs': 80,
+        'weight_decay': (0, 1e-3)
         }
-    ENCODINGS = False
+    ENCODINGS = True
 
     #create output directory to hold data from experiment
     today = datetime.datetime.now()
