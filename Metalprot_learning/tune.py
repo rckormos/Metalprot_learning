@@ -62,7 +62,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
         if optimizer_key == 1:
             b1 = trial.suggest_float('b1', config['b1'][0], config['b1'][1]) if type(config['b1']) == tuple else config['b1']
             b2 = trial.suggest_float('b2', config['b2'][0], config['b2'][1]) if type(config['b2']) == tuple else config['b2']
-            optimizer = torch.optim.Adam(model.parameters(), lr=lr, beta=(b1, b2), weight_decay=weight_decay)
+            optimizer = torch.optim.Adam(model.parameters(), lr=lr, betas=(b1, b2), weight_decay=weight_decay)
 
         else:
             b1, b2 = None, None
