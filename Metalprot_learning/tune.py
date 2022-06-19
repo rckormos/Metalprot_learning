@@ -13,19 +13,9 @@ import numpy as np
 from Metalprot_learning.train import models
 from Metalprot_learning.train import train
 
-def _write_output_files(subdir: str, config: dict, model, train_loss: np.ndarray, test_loss: np.ndarray):
+def _write_output_files(subdir: str, train_loss: np.ndarray, test_loss: np.ndarray):
     np.save(os.path.join(subdir, 'train_loss.npy'), train_loss)
     np.save(os.path.join(subdir, 'test_loss.npy'), test_loss)
-
-    selected = {}
-    for key in config.keys():
-        if key in locals():
-            selected[key] = globals()[key]
-
-    with open(os.path.join(subdir, 'config.json'), 'w') as f:
-        json.dump(selected, f)
-
-    torch.save(model.state_dict, os.path.join(subdir, 'model.pth'))
 
 def define_objective(path2output: str, features_file: str, config: dict, encodings: bool):
 
@@ -36,7 +26,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
         trial_dir = os.path.join(path2output, str(trial.number))
         os.mkdir(trial_dir)
 
-        seed = np.random.randint(0,1000)
+        seed = config['seed']
         batch_size = trial.suggest_int("batch_size", config['batch_size'][0], config['batch_size'][1]) if type(config['batch_size']) == tuple else config['batch_size']
         epochs = trial.suggest_int("epochs", config['epochs'][0], config['epochs'][1]) if type(config['epochs']) == tuple else config['epochs']
         lr = trial.suggest_float('lr', config['lr'][0], config['lr'][1]) if type(config['lr']) == tuple else config['lr']
@@ -70,6 +60,18 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
 
         loss_fn = torch.nn.L1Loss() if loss_fn_key == 0 else torch.nn.MSELoss()
 
+        for i in config.keys():
+            if i in locals():
+                print(f'{i}: {locals()[i]}')
+
+        selected = {}
+        for key in config.keys():
+            if key in locals():
+                selected[key] = locals()[key]
+
+        with open(os.path.join(trial_dir, 'config.json'), 'w') as f:
+            json.dump(selected, f)
+
         train_dataloader, test_dataloader, _, _ = train.load_data(features_file, (0.8,0.1,0.1), batch_size, seed, encodings)
 
         train_loss = np.array([])
@@ -83,10 +85,10 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
             trial.report(_test_loss, epoch)
 
             if trial.should_prune():
-                _write_output_files(trial_dir, config, model, train_loss, test_loss)
+                _write_output_files(trial_dir, train_loss, test_loss)
                 raise optuna.exceptions.TrialPruned()
 
-        _write_output_files(trial_dir, config, model, train_loss, test_loss)
+        _write_output_files(trial_dir, train_loss, test_loss)
         return _test_loss
 
     return objective
