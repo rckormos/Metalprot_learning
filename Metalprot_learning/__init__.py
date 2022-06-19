@@ -7,6 +7,7 @@ from . import core_generator
 from . import train
 from . import predictor
 from . import processor
+from . import tune
 from . import utils
 
 __version__ = '0.1.0'
