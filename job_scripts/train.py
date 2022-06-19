@@ -38,29 +38,26 @@ def distribute_tasks(MODELS: list):
 
 if __name__ == '__main__':
 
-    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     MODELS = [
         {'input': 2544,
         'l1': 2458,
         'l2': 1168,
         'l3': 621,
-        'input_dropout': 0.0,
-        'hidden_dropout': 0.0,
+        'input_dropout': 0.2,
+        'hidden_dropout': 0.5,
         'output': 48,
         'batch_size': 51,
         'lr': 0.0346838274787568,
         'seed': np.random.randint(1000),
-        'epochs': 1000,
+        'epochs': 2000,
         'encodings': True}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
 
     for model in tasks:
-
-        d = model['seed']
-        print(f'Model seed before run: {d}')
         today = datetime.datetime.now()
         dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
         os.mkdir(dirname)
-        train_model_control(dirname, model, PATH2FEATURES)
+        train_model(dirname, model, PATH2FEATURES)
