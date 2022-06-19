@@ -19,7 +19,7 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV3/compiled_features.pkl'
+    FEATURES_FILE = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     CONFIG = {'seed': np.random.randint(0,1000),
         'batch_size': 51,
         'lr': 0.0346838274787568,
