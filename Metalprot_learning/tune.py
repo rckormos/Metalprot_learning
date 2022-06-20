@@ -23,10 +23,14 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
     output_dim = 48
 
     def objective(trial):
+
         trial_dir = os.path.join(path2output, str(trial.number))
         os.mkdir(trial_dir)
 
-        seed = config['seed']
+        seed = np.random.randint(0,1000)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+
         batch_size = trial.suggest_int("batch_size", config['batch_size'][0], config['batch_size'][1]) if type(config['batch_size']) == tuple else config['batch_size']
         epochs = trial.suggest_int("epochs", config['epochs'][0], config['epochs'][1]) if type(config['epochs']) == tuple else config['epochs']
         lr = trial.suggest_float('lr', config['lr'][0], config['lr'][1]) if type(config['lr']) == tuple else config['lr']
@@ -60,14 +64,12 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
 
         loss_fn = torch.nn.L1Loss() if loss_fn_key == 0 else torch.nn.MSELoss()
 
-        for i in config.keys():
-            if i in locals():
-                print(f'{i}: {locals()[i]}')
-
         selected = {}
         for key in config.keys():
             if key in locals():
                 selected[key] = locals()[key]
+
+        print(selected)
 
         with open(os.path.join(trial_dir, 'config.json'), 'w') as f:
             json.dump(selected, f)
@@ -79,6 +81,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
         for epoch in range(0, epochs):
             _train_loss = train.train_loop(model, train_dataloader, loss_fn, optimizer, device)
             _test_loss = train.validation_loop(model, test_dataloader, loss_fn, device)
+            print(_train_loss, _test_loss)
 
             train_loss = np.append(train_loss, _train_loss)
             test_loss = np.append(test_loss, _test_loss)
