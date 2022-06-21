@@ -27,7 +27,7 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
     return tasks
 
-def run_construct_training_example(file: str, path2output: str, permute: bool, stringent: bool, remove_degen: bool):
+def run_construct_training_example(file: str, path2output: str, permute: bool):
     """Calls main function from get_binding_cores.py to construct training example. For quality control and de-bugging purposes, there are multiple try/except statements.
 
     Args:
@@ -39,7 +39,7 @@ def run_construct_training_example(file: str, path2output: str, permute: bool, s
     """
 
     try:
-        construct_training_example(file,path2output,permute, stringent, remove_degen)
+        construct_training_example(file,path2output,permute)
         failed_file_line = None
 
     except utils.NoCoresError as e:
