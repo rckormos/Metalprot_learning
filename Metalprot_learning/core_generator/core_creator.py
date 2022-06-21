@@ -63,7 +63,7 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
     test_core_loader(unique_cores, unique_names)
 
     #add coordinate noise to cores
-    noised_cores = [core_noiser.apply_noise_gaussian(cores[i]) for i in range(len(unique_cores))]
+    noised_cores = [core_noiser.apply_noise_gaussian(unique_cores[i]) for i in range(0,len(unique_cores))]
     test_noiser(noised_cores, unique_cores)
 
     #extract features for each unique core found
