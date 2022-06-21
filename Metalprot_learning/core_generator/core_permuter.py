@@ -38,7 +38,7 @@ def identify_fragments(binding_core_identifiers: list):
     
     return fragments
 
-def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndarray, binding_core_identifiers: list):
+def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: np.ndarray, noised_label: np.ndarray, encoding: np.ndarray, binding_core_identifiers: list):
     """Computes fragment permutations for input features and labels. 
 
     Args:
@@ -51,24 +51,21 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
     Returns:
         all_features (dict): Dictionary containing compiled observation and label matrices for a training example as well as a list of permutations indexed by observation matrix row.
     """
-    all_features = {}
-    distance_matrices = []
-    encodings = []
-    full_labels = []
-    binding_core_identifier_permutations = []
+    distance_matrices, full_labels, noised_distance_matrices, noised_labels, encodings, binding_core_identifier_permutations = [], [], [], [], [], []
 
     fragment_indices = identify_fragments(binding_core_identifiers)
     fragment_permutations = itertools.permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
-    atom_indices = np.split(np.linspace(0, len(binding_core_identifiers)*4-1, len(binding_core_identifiers)*4), len(binding_core_identifiers)) #for each residue in the binding core, get indices of backbone atoms
+    atom_indices = np.split(np.linspace(0, len(binding_core_identifiers)*5-1, len(binding_core_identifiers)*5), len(binding_core_identifiers)) #for each residue in the binding core, get indices of backbone atoms
     label = label.squeeze()
     for index, permutation in enumerate(fragment_permutations):
         fragment_index_permutation = sum([fragment_indices[i] for i in permutation], []) #get the fragment permutation defined by fragment_index_permutation
         atom_index_permutation = sum([list(atom_indices[i]) for i in fragment_index_permutation], []) 
 
-        permuted_dist_mat = np.zeros(dist_mat.shape) 
+        permuted_dist_mat, permuted_noised_dist_mat = np.zeros(dist_mat.shape), np.zeros(dist_mat.shape) 
         for i, atom_indi in enumerate(atom_index_permutation):
             for j, atom_indj in enumerate(atom_index_permutation):
                 permuted_dist_mat[i,j] = dist_mat[int(atom_indi), int(atom_indj)]
+                permuted_noised_dist_mat = noised_dist_mat[int(atom_indi), int(atom_indj)]
 
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in permutation], []), []) #permute the encoding by fragment
@@ -76,23 +73,25 @@ def permute_fragments(dist_mat: np.ndarray, encoding: np.ndarray, label: np.ndar
         permuted_encoding = np.concatenate((_permuted_encoding, zeros)) #pad encoding with zeroes to standardize shape
         assert len(permuted_encoding) == len(encoding.squeeze())
 
-        permuted_label = np.array([])
+        permuted_label, permuted_noised_label = np.array([]), np.array([])
         for i in permutation:
             frag = fragment_indices[i]
             for j in frag:
                 atoms = atom_indices[j]
                 for atom in atoms:
                     permuted_label = np.append(permuted_label, label[int(atom)])
+                    permuted_noised_label = np.append(permuted_noised_label, noised_label[int(atom)])
 
         permuted_label = np.append(permuted_label, np.zeros(len(label) - len(permuted_label)))
+        permuted_noised_label = np.append(permuted_noised_label, np.zeros(len(label) - len(permuted_noised_label)))
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
-        # full_observations.append(np.concatenate((permuted_dist_mat.flatten(), permuted_encoding)))
         distance_matrices.append(permuted_dist_mat.flatten().squeeze())
+        noised_distance_matrices.append(permuted_noised_dist_mat.flatten().squeeze())
         encodings.append(permuted_encoding.squeeze())
         full_labels.append(permuted_label)
+        noised_labels.append(permuted_noised_label)
 
-    all_features['distance_matrices'] = distance_matrices
-    all_features['encodings'] = encodings
-    all_features['labels'] = full_labels
-    all_features['identifiers'] = binding_core_identifier_permutations
+    all_features = {'distance_matrices': distance_matrices, 'noised_distance_matrices': noised_distance_matrices, 'labels': full_labels, 
+                    'noised_labels': noised_labels, 'encodings': encodings, 'identifiers': binding_core_identifier_permutations}
+
     return all_features
