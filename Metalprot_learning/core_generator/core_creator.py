@@ -9,7 +9,7 @@ import numpy as np
 from prody import writePDB
 import os
 import pickle
-from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter
+from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter, core_noiser
 from Metalprot_learning import utils
 
 def test_core_loader(unique_cores, unique_names):
@@ -20,13 +20,22 @@ def test_core_loader(unique_cores, unique_names):
     if dimensionality_test == False:
         raise utils.CoreLoadingError
 
-def test_featurization(full_dist_mat, label, encoding, max_resis):
-    dist_mat_check = len(full_dist_mat) == max_resis * 4
-    label_check = label.shape[1] == max_resis * 4
+def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis):
+    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_resis * 4
+    label_check = label.shape[1] ==  noised_label.shape[1] == max_resis * 4
     encoding_check = encoding.shape[1] == max_resis * 20
 
     if False in set({dist_mat_check, label_check, encoding_check}):
         raise utils.FeaturizationError
+
+def test_noiser(noised_cores, unique_cores):
+    for n, c in zip(noised_cores, unique_cores):
+        resnum_check = set([bool(i==j) for i,j in zip(n.getResnums(), c.select('protein and name CA N C O').getResnums())])
+        resname_check = set([bool(i==j) for i,j in zip(n.getResnames(), c.select('protein and name CA N C O').getResnames())])
+        name_check = set([bool(i==j) for i,j in zip(n.getNames(), c.select('protein and name CA N C O').getNames())])
+
+        if False in resnum_check or False in name_check or False in resname_check:
+            raise utils.NoisingError
 
 def test_permutation(features, max_permutations):
     dimensionality_test = len(set([len(features[key]) for key in features.keys()])) == 1
@@ -50,17 +59,20 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
 
     #find all the unique cores within a given pdb structure
     cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
-
     unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
     test_core_loader(unique_cores, unique_names)
 
+    #add coordinate noise to cores
+    noised_cores = [core_noiser.apply_noise_gaussian(cores[i]) for i in range(len(unique_cores))]
+    test_noiser(noised_cores, unique_cores)
+
     #extract features for each unique core found
     completed = 0
-    for core, name in zip(unique_cores, unique_names):
+    for core, noised_core, name in zip(unique_cores, noised_cores, unique_names):
 
-        full_dist_mat, binding_core_identifiers, label, metal_coords = core_featurizer.compute_distance_matrices(core, name, no_neighbors, coordinating_resis)
+        full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis)
         encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis)
-        test_featurization(full_dist_mat, label, encoding, max_resis)
+        test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis)
 
         #permute distance matrices, labels, and encodings
         if permute:
@@ -68,7 +80,8 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
             test_permutation(features, max_permutations)
 
         else:
-            features = {'distance_matrices': [full_dist_mat.flatten().squeeze()], 'labels': [label.squeeze()], 'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze()]}
+            features = {'distance_matrices': [full_dist_mat.flatten().squeeze()], 'noised_distance_matrices': [noised_dist_mat.flatten().squeeze()],'labels': [label.squeeze()], 
+            'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze()]}
 
         #write files to disk
         metal_chid = core.select(f'name {name}') .getChids()[0]
