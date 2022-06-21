@@ -21,8 +21,8 @@ def test_core_loader(unique_cores, unique_names):
         raise utils.CoreLoadingError
 
 def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis):
-    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_resis * 4
-    label_check = label.shape[1] ==  noised_label.shape[1] == max_resis * 4
+    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_resis * 5
+    label_check = label.shape[1] ==  noised_label.shape[1] == max_resis * 5
     encoding_check = encoding.shape[1] == max_resis * 20
 
     if False in set({dist_mat_check, label_check, encoding_check}):
@@ -30,9 +30,9 @@ def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, enco
 
 def test_noiser(noised_cores, unique_cores):
     for n, c in zip(noised_cores, unique_cores):
-        resnum_check = set([bool(i==j) for i,j in zip(n.getResnums(), c.select('protein and name CA N C O').getResnums())])
-        resname_check = set([bool(i==j) for i,j in zip(n.getResnames(), c.select('protein and name CA N C O').getResnames())])
-        name_check = set([bool(i==j) for i,j in zip(n.getNames(), c.select('protein and name CA N C O').getNames())])
+        resnum_check = set([bool(i==j) for i,j in zip(n.getResnums(), c.select('protein and name CA N C O CB').getResnums())])
+        resname_check = set([bool(i==j) for i,j in zip(n.getResnames(), c.select('protein and name CA N C O CB').getResnames())])
+        name_check = set([bool(i==j) for i,j in zip(n.getNames(), c.select('protein and name CA N C O CB').getNames())])
 
         if False in resnum_check or False in name_check or False in resname_check:
             raise utils.NoisingError
@@ -76,7 +76,7 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
 
         #permute distance matrices, labels, and encodings
         if permute:
-            features = core_permuter.permute_fragments(full_dist_mat, encoding, label, binding_core_identifiers)
+            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers)
             test_permutation(features, max_permutations)
 
         else:
