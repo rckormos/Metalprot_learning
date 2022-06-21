@@ -49,8 +49,8 @@ if __name__ == '__main__':
     EXAMPLE = True #true if data are positive examples
     ENCODINGS = True
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
-    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/17_6_2022_22_31_35_870721_231/config.json'
-    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/17_6_2022_22_31_35_870721_231/model.pth'
+    CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/18_6_2022_14_52_17_695857_83/config.json'
+    WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/18_6_2022_14_52_17_695857_83/model.pth'
 
     config, features = load_data(FEATURES_FILE, CONFIG_FILE)
     path2output, job_id, tasks = distribute_tasks(features)
