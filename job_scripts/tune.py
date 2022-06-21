@@ -36,7 +36,7 @@ if __name__ == '__main__':
         'input_dropout': (0.1, 0.6),
         'hidden_dropout': (0.1, 0.8),
         'epochs': 60,
-        'weight_decay': 0,
+        'weight_decay': (0.001, 0.1),
         'optimizer_key': 0,
         'loss_fn_key': 0
         }
