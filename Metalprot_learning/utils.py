@@ -20,6 +20,10 @@ class NoCoresError(Error):
     """Raised when no cores are found"""
     pass
 
+class NoisingError(Error):
+    """Raised when core noising was done improperly"""
+    pass
+
 class FeaturizationError(Error):
     """Raised when featurization fails"""
     pass
