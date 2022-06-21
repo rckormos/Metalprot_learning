@@ -67,7 +67,7 @@ def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number
         except:
             continue
         
-        if len(coordinating_resindices) <= coordination_number and len(coordinating_resindices) >= 2:
+        if len(coordinating_resindices) <= coordination_number and len(coordinating_resindices) > 2:
             binding_core_resindices = []
             for ind in coordinating_resindices:
                 core_fragment = get_neighbors(structure, ind, no_neighbors)
