@@ -35,7 +35,7 @@ def test_permutation(features, max_permutations):
     if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
 
-def construct_training_example(pdb_file: str, output_dir: str, permute: bool, stringent: bool, remove_degen: bool, no_neighbors=1, coordinating_resis=4):
+def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no_neighbors=1, coordinating_resis=4):
     """For a given pdb file, constructs a training example and extracts all features.
 
     Args:
@@ -49,14 +49,10 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, st
     max_permutations = int(np.prod(np.linspace(1,coordinating_resis,coordinating_resis)))
 
     #find all the unique cores within a given pdb structure
-    cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis, stringent)
+    cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
 
-    if remove_degen:
-        unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
-        test_core_loader(unique_cores, unique_names)
-
-    else:
-        unique_cores, unique_names = cores, names
+    unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
+    test_core_loader(unique_cores, unique_names)
 
     #extract features for each unique core found
     completed = 0
