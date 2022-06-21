@@ -57,6 +57,7 @@ def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: 
     fragment_permutations = itertools.permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
     atom_indices = np.split(np.linspace(0, len(binding_core_identifiers)*5-1, len(binding_core_identifiers)*5), len(binding_core_identifiers)) #for each residue in the binding core, get indices of backbone atoms
     label = label.squeeze()
+    noised_label = noised_label.squeeze()
     for index, permutation in enumerate(fragment_permutations):
         fragment_index_permutation = sum([fragment_indices[i] for i in permutation], []) #get the fragment permutation defined by fragment_index_permutation
         atom_index_permutation = sum([list(atom_indices[i]) for i in fragment_index_permutation], []) 
@@ -65,7 +66,7 @@ def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: 
         for i, atom_indi in enumerate(atom_index_permutation):
             for j, atom_indj in enumerate(atom_index_permutation):
                 permuted_dist_mat[i,j] = dist_mat[int(atom_indi), int(atom_indj)]
-                permuted_noised_dist_mat = noised_dist_mat[int(atom_indi), int(atom_indj)]
+                permuted_noised_dist_mat[i, j] = noised_dist_mat[int(atom_indi), int(atom_indj)]
 
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in permutation], []), []) #permute the encoding by fragment
