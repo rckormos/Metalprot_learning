@@ -130,7 +130,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
 
     #define optimizer and loss function
-    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'])
+    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
     criterion = torch.nn.L1Loss()
 
     train_loss = np.array([])
