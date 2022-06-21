@@ -76,13 +76,11 @@ if __name__ == '__main__':
     
     PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
     PERMUTE = True
-    STRINGENT = True
-    REMOVE_DEGEN = True
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
     for file in tasks:
-        failed_file_line = run_construct_training_example(file, path2output, PERMUTE, STRINGENT, REMOVE_DEGEN)
+        failed_file_line = run_construct_training_example(file, path2output, PERMUTE)
         failed.append(failed_file_line)
 
     failed = list(filter(None, failed))
