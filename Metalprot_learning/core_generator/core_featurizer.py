@@ -13,7 +13,7 @@ import numpy as np
 from prody import *
 from Metalprot_learning.utils import EncodingError
 
-def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordination_number: int):
+def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -33,19 +33,24 @@ def compute_distance_matrices(core, metal_name: str, no_neighbors: int, coordina
     binding_core_chids = core.select('protein').select('name N').getChids()
     binding_core_identifiers = [(binding_core_resnums[i], binding_core_chids[i]) for i in range(0,len(binding_core_resnums))]
 
-    binding_core_backbone = core.select('protein').select('name CA O C N')
-    full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
-
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     metal_coords = metal_sel.getCoords()[0]
-    label = buildDistMatrix(metal_sel, binding_core_backbone)
-    
     max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors))
     padding = max_atoms - full_dist_mat.shape[0]
+
+    binding_core_backbone = core.select('protein').select('name CA O C N CB')
+    full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
+    label = buildDistMatrix(metal_sel, binding_core_backbone)
     label = np.lib.pad(label, ((0,0),(0,padding)), 'constant', constant_values=0)
 
-    return full_dist_mat, binding_core_identifiers, label, metal_coords
+    noised_core_backbone = noised_core.select('protein').select('name CA O C N CB')
+    noised_dist_mat = buildDistMatrix(noised_core_backbone, noised_core_backbone)
+    noised_dist_mat = np.lib.pad(noised_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
+    noised_label = buildDistMatrix(metal_sel, noised_core_backbone)
+    noised_label = np.lib.pad(noised_label, ((0,0),(0,padding)), 'constant', constant_values=0)
+
+    return full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers
 
 def onehotencode(core, no_neighbors: int, coordinating_resis: int):
     """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
