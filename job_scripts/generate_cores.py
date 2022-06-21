@@ -51,6 +51,9 @@ def run_construct_training_example(file: str, path2output: str, permute: bool):
     except utils.CoreLoadingError as e:
         failed_file_line = file + ' Error loading cores'
 
+    except utils.NoisingError as e:
+        failed_file_line = file + ' Error noising cores'
+
     except utils.FeaturizationError as e:
         failed_file_line = file + ' Error featurizing cores'
 
