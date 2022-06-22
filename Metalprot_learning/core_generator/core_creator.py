@@ -44,7 +44,7 @@ def test_permutation(features, max_permutations):
     if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
 
-def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no_neighbors=1, coordinating_resis=4):
+def construct_training_example(pdb_file: str, output_dir: str, permute: bool, coordinating_resis: tuple, no_neighbors=1):
     """For a given pdb file, constructs a training example and extracts all features.
 
     Args:
@@ -54,8 +54,8 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
         coordinating_resis (int, optional): Sets  a threshold for maximum number of metal coordinating residues. Defaults to 4.
     """
 
-    max_resis = (2*coordinating_resis*no_neighbors) + coordinating_resis
-    max_permutations = int(np.prod(np.linspace(1,coordinating_resis,coordinating_resis)))
+    max_resis = (2*coordinating_resis[1]*no_neighbors) + coordinating_resis[1]
+    max_permutations = int(np.prod(np.linspace(1,coordinating_resis[1],coordinating_resis[1])))
 
     #find all the unique cores within a given pdb structure
     cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
@@ -70,8 +70,8 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, no
     completed = 0
     for core, noised_core, name in zip(unique_cores, noised_cores, unique_names):
 
-        full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis)
-        encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis)
+        full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis[1])
+        encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis[1])
         test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis)
 
         #permute distance matrices, labels, and encodings

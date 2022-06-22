@@ -37,7 +37,7 @@ def get_neighbors(structure, coordinating_resind: int, no_neighbors: int):
 
     return core_fragment
 
-def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number: int):
+def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number: tuple):
     """Finds all putative metal binding cores in an input protein structure.
 
     Args:
@@ -67,7 +67,7 @@ def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number
         except:
             continue
         
-        if len(coordinating_resindices) <= coordination_number and len(coordinating_resindices) > 2:
+        if len(coordinating_resindices) <= coordination_number[1] and len(coordinating_resindices) >= coordination_number[0]:
             binding_core_resindices = []
             for ind in coordinating_resindices:
                 core_fragment = get_neighbors(structure, ind, no_neighbors)
