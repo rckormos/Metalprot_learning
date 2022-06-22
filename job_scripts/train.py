@@ -52,7 +52,8 @@ if __name__ == '__main__':
         'lr': 0.0346838274787568,
         'seed': np.random.randint(1000),
         'epochs': 2000,
-        'encodings': True}
+        'encodings': True,
+        'noise': True}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)

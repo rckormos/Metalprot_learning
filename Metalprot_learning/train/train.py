@@ -127,7 +127,7 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
+    train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'], config['noise'])
 
     #define optimizer and loss function
     optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
