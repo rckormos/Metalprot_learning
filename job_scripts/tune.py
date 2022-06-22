@@ -41,6 +41,7 @@ if __name__ == '__main__':
         'loss_fn_key': 0
         }
     encodings = True
+    
 
     #create output directory to hold data from experiment
     today = datetime.datetime.now()
