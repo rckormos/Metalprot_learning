@@ -29,7 +29,7 @@ if __name__ == '__main__':
     features_file = '/home/gpu/jzhang1198/data/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     config = {'seed': np.random.randint(0,1000),
         'batch_size': 51,
-        'lr': 0.0346838274787568,
+        'lr': (0.0001, 0.01),
         'l1': 2458,
         'l2': 1168,
         'l3': 621,
