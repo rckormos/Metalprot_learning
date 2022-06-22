@@ -13,15 +13,18 @@ import pickle
 class DistanceData(torch.utils.data.Dataset):
     "Custom dataset class"
 
-    def __init__(self, set: pd.DataFrame, encodings: bool):
-
-        if encodings:
-            self.observations = np.hstack([np.vstack([array for array in set['distance_matrices']]), np.vstack([array for array in set['encodings']])])
-
-        else:
-            self.observations = np.vstack([array for array in set['distance_matrices']])
+    def __init__(self, set: pd.DataFrame, encodings: bool, noise: bool):
 
         self.labels = np.vstack([array for array in set['labels']])
+        observations = np.hstack([np.vstack([array for array in set['distance_matrices']]), np.vstack([array for array in set['encodings']])]) if encodings else np.vstack([array for array in set['distance_matrices']])
+
+        if noise:
+            noised_observations = np.hstack([np.vstack([array for array in set['noised_distance_matrices']]), np.vstack([array for array in set['encodings']])]) if encodings else np.vstack([array for array in set['noised_distance_matrices']])
+            assert len(noised_observations) == len(observations)
+            self.observations = np.vstack([observations, noised_observations])
+
+        else:
+            self.observations = observations
 
     def __len__(self):
         return len(self.labels)

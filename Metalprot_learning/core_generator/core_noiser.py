@@ -8,8 +8,24 @@ This file contains functions for applying coordinate noise to input cores.
 from prody import ANM, AtomGroup
 import numpy as np
 
-def apply_noise(structure, core):
-    backbone = structure.select('protein and name CA N C O')
+def apply_noise_gaussian(structure):
+    backbone = structure.select('protein and name CA N C O CB')
+    coords = backbone.getCoords()
+
+    sample = np.random.normal(loc=0, scale=0.08, size=(backbone.numAtoms() * 3)).reshape((backbone.numAtoms(), 3))
+    noised_coords = coords + sample
+    
+    noised_backbone = AtomGroup('protein')
+    noised_backbone.setCoords(noised_coords)
+    noised_backbone.setResnums(backbone.getResnums())
+    noised_backbone.setResnames(backbone.getResnames())
+    noised_backbone.setNames(backbone.getNames())
+    noised_backbone.setChids(backbone.getChids())
+
+    return noised_backbone
+
+def apply_noise_ANM(structure):
+    backbone = structure.select('protein and name CA N C O CB')
     coords = backbone.getCoords()
 
     anm = ANM('structure ANM analysis')
