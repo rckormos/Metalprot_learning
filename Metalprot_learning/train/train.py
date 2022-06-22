@@ -11,7 +11,7 @@ import numpy as np
 import torch
 from Metalprot_learning.train import datasets, models
 
-def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool):
+def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool, noise: bool):
     """Loads data for model training.
 
     Args:
@@ -26,9 +26,9 @@ def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int,
     """
     train_set, test_set, val_set, barcodes = datasets.split_data(features_file, partitions, seed)
 
-    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings), batch_size=batch_size, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings), batch_size=batch_size, shuffle=False)
-    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings), batch_size=batch_size, shuffle=False)
+    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings, noise), batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings, False), batch_size=batch_size, shuffle=False)
+    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings, False), batch_size=batch_size, shuffle=False)
 
     return train_dataloader, test_dataloader, validation_dataloader, barcodes
 
