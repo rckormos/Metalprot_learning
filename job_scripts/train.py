@@ -73,7 +73,8 @@ if __name__ == '__main__':
         'batch_size': 51,
         'lr': 0.003853602505520586,
         'seed': np.random.randint(1000),
-        'epochs': 2000}
+        'epochs': 2000,
+        'loss_fn': 'MAE'}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)

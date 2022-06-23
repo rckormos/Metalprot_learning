@@ -130,8 +130,8 @@ def train_model(path2output: str, config: dict, features_file: str):
     train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'], config['noise'])
 
     #define optimizer and loss function
-    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'])
-    criterion = torch.nn.L1Loss()
+    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay']) if 'b1' not in config.keys() else torch.optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'], betas=(config['b1'], config['b2']))
+    criterion = torch.nn.L1Loss() if config['loss_fn'] == 'MAE' else torch.nn.MSELoss()
 
     train_loss = np.array([])
     test_loss = np.array([])
