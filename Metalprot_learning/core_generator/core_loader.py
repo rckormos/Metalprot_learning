@@ -53,8 +53,7 @@ def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number
     metal_sel = f'name NI MN ZN CO CU MG FE'
     structure = parsePDB(pdb_file) #load structure
 
-    cores = []
-    names = []
+    cores, names, core_coordinating_redindices = [], [], []
 
     metal_resindices = structure.select('hetero').select(metal_sel).getResindices() 
     metal_names = structure.select('hetero').select(metal_sel).getNames()
@@ -77,12 +76,13 @@ def extract_positive_cores(pdb_file: str, no_neighbors: int, coordination_number
             binding_core = structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
             cores.append(binding_core)
             names.append(name)
+            core_coordinating_redindices.append(tuple(coordinating_resindices))
 
         else:
             continue
-    return cores, names
+    return cores, names, core_coordinating_redindices
 
-def remove_degenerate_cores(cores: list, metal_names: list):
+def remove_degenerate_cores(cores: list, metal_names: list, coordination_numbers: list):
     """Function to remove cores that are the same. For example, if the input structure is a homotetramer, this function will only return one of the binding cores.
 
     Args:
@@ -95,12 +95,12 @@ def remove_degenerate_cores(cores: list, metal_names: list):
 
     try:
         if len(cores) > 1:
-            unique_cores = []
-            unique_names = []
+            unique_cores, unique_names, unique_coordination_numbers = [], [], []
             while cores:
-                print(len(cores), cores)
                 current_core = cores.pop() #extract last element in cores
                 current_name = metal_names.pop()
+                current_number = coordination_numbers.pop()
+
                 current_total_atoms = current_core.select('protein').numAtoms()
                 current_resis = set(current_core.select('protein').select('name CA').getResnames())
                 current_length = len(current_resis)
@@ -122,7 +122,6 @@ def remove_degenerate_cores(cores: list, metal_names: list):
                             pairwise_seqids = np.append(pairwise_seqids, 0)
                             pairwise_overlap = np.append(pairwise_overlap, 0)
 
-
                     else:
                         pairwise_seqids = np.append(pairwise_seqids, 0)
                         pairwise_overlap = np.append(pairwise_overlap, 0)
@@ -132,15 +131,18 @@ def remove_degenerate_cores(cores: list, metal_names: list):
                 if len(degenerate_core_indices) > 0: #remove all degenerate cores from cores list
                     cores = [cores[i] for i in range(0,len(cores)) if i not in degenerate_core_indices]
                     metal_names = [metal_names[i] for i in range(0,len(metal_names)) if i not in degenerate_core_indices]
+                    coordination_numbers = [coordination_numbers[i] for i in range(0,len(coordination_numbers)) if i not in degenerate_core_indices]
 
                 unique_cores.append(current_core) #add reference core 
                 unique_names.append(current_name)
+                unique_coordination_numbers.append(current_number)
 
         else:
             unique_cores = cores 
             unique_names = metal_names
+            unique_coordination_numbers = coordination_numbers
 
     except:
         raise AlignmentError
 
-    return unique_cores, unique_names
+    return unique_cores, unique_names, unique_coordination_numbers
