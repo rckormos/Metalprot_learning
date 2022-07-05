@@ -13,6 +13,14 @@ import numpy as np
 from prody import *
 from Metalprot_learning.utils import EncodingError
 
+def _trim(dist_mat: np.ndarray):
+    trimmed = []
+    for row_ind, indexer in zip(range(0, len(dist_mat)-1), range(1, len(dist_mat))):
+        trimmed.append(dist_mat[row_ind][indexer:])
+
+    trimmed = np.concatenate(trimmed)
+    return trimmed
+
 def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int, c_beta: bool):
     """Generates binding core backbone distances and label files.
 
