@@ -77,7 +77,7 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_
 
         #permute distance matrices, labels, and encodings
         if permute:
-            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers, coordinate_label)
+            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers, coordinate_label, c_beta)
             test_permutation(features, max_permutations)
 
         else:
