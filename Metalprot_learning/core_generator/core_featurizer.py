@@ -93,5 +93,5 @@ def compute_coordinate_label(core, coordinating_resindices: tuple, no_neighbors:
     residues = core.select('name CA').getResindices()
     coordinate_label = np.array([1 if residue in coordinating_resindices else 0 for residue in residues])
     padding = ((coordinating_resis * no_neighbors * 2) + coordinating_resis) - len(coordinate_label)
-    coordinate_label = np.lib.pad(coordinate_label, ((0,0),(0,padding)), 'constant', constant_values=0).squeeze()
+    coordinate_label = np.concatenate((coordinate_label, np.zeros(padding)))
     return coordinate_label
