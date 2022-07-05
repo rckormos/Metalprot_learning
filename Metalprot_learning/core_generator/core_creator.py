@@ -12,8 +12,8 @@ import pickle
 from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter, core_noiser
 from Metalprot_learning import utils
 
-def test_core_loader(unique_cores, unique_names):
-    dimensionality_test = len(unique_cores) == len(unique_names)
+def test_core_loader(unique_cores, unique_names, unique_numbers):
+    dimensionality_test = len(unique_cores) == len(unique_names) == len(unique_numbers)
     if len(unique_cores) == 0:
         raise utils.NoCoresError
 
@@ -44,7 +44,7 @@ def test_permutation(features, max_permutations):
     if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
 
-def construct_training_example(pdb_file: str, output_dir: str, permute: bool, coordinating_resis: tuple, no_neighbors=1):
+def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_beta: bool, coordinating_resis: tuple, no_neighbors=1):
     """For a given pdb file, constructs a training example and extracts all features.
 
     Args:
@@ -58,9 +58,9 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, co
     max_permutations = int(np.prod(np.linspace(1,coordinating_resis[1],coordinating_resis[1])))
 
     #find all the unique cores within a given pdb structure
-    cores, names = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
-    unique_cores, unique_names = core_loader.remove_degenerate_cores(cores, names)
-    test_core_loader(unique_cores, unique_names)
+    cores, names, coordinating_redindices = core_loader.extract_positive_cores(pdb_file, no_neighbors, coordinating_resis)
+    unique_cores, unique_names, unique_coordinating_resindices = core_loader.remove_degenerate_cores(cores, names, coordinating_redindices)
+    test_core_loader(unique_cores, unique_names, unique_coordinating_resindices)
 
     #add coordinate noise to cores
     noised_cores = [core_noiser.apply_noise_gaussian(unique_cores[i]) for i in range(0,len(unique_cores))]
@@ -68,20 +68,21 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, co
 
     #extract features for each unique core found
     completed = 0
-    for core, noised_core, name in zip(unique_cores, noised_cores, unique_names):
+    for core, noised_core, name, number in zip(unique_cores, noised_cores, unique_names, unique_coordinating_resindices):
 
-        full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis[1])
+        full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis[1], c_beta)
         encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis[1])
+        coordinate_label = core_featurizer.compute_coordinate_label(core, number, no_neighbors, coordinating_resis[1])
         test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis)
 
         #permute distance matrices, labels, and encodings
         if permute:
-            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers)
+            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers, coordinate_label)
             test_permutation(features, max_permutations)
 
         else:
             features = {'distance_matrices': [full_dist_mat.flatten().squeeze()], 'noised_distance_matrices': [noised_dist_mat.flatten().squeeze()],'labels': [label.squeeze()], 
-            'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze()]}
+            'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze(), 'coordinate_labels': [coordinate_label]]}
 
         #write files to disk
         metal_chid = core.select(f'name {name}') .getChids()[0]
@@ -89,6 +90,8 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, co
         filename = core.getTitle() + '_' + '_'.join([str(tup[0]) + tup[1] for tup in binding_core_identifiers]) + '_' + name + str(metal_resnum) + metal_chid
         features['source'] = [os.path.join(output_dir, filename + '_core.pdb.gz')] * len(features['distance_matrices'])
         features['metal_coords'] = [metal_coords] * len(features['distance_matrices'])
+        features['metal_name'] = [name] * len(features['distance_matrices'])
+        features['coordination_number'] = [len(number)] * len(features['distance_matrices'])
 
         writePDB(os.path.join(output_dir, filename + '_core.pdb.gz'), core)
         with open(os.path.join(output_dir, filename + '_features.pkl'), 'wb') as f:
