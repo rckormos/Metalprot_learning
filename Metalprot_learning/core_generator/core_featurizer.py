@@ -45,7 +45,7 @@ def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: 
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     metal_coords = metal_sel.getCoords()[0]
-    max_atoms = 5 * (coordination_number + (2*coordination_number*no_neighbors))
+    max_atoms = 5 * (coordination_number + (2*coordination_number*no_neighbors)) if c_beta else 4 * (coordination_number + (2*coordination_number*no_neighbors))
 
     binding_core_backbone = core.select('protein').select(selstr)
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
