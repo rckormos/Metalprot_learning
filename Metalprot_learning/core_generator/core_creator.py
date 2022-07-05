@@ -82,7 +82,7 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_
 
         else:
             features = {'distance_matrices': [full_dist_mat.flatten().squeeze()], 'noised_distance_matrices': [noised_dist_mat.flatten().squeeze()],'labels': [label.squeeze()], 
-            'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze(), 'coordinate_labels': [coordinate_label]]}
+            'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze()], 'coordinate_labels': [coordinate_label]}
 
         #write files to disk
         metal_chid = core.select(f'name {name}') .getChids()[0]
