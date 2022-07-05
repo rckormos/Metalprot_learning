@@ -20,9 +20,10 @@ def test_core_loader(unique_cores, unique_names, unique_numbers):
     if dimensionality_test == False:
         raise utils.CoreLoadingError
 
-def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis):
-    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_resis * 5
-    label_check = label.shape[1] ==  noised_label.shape[1] == max_resis * 5
+def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis, c_beta):
+    max_atoms = max_resis * 5 if c_beta else max_resis * 4
+    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_atoms
+    label_check = label.shape[1] ==  noised_label.shape[1] == max_atoms
     encoding_check = encoding.shape[1] == max_resis * 20
 
     if False in set({dist_mat_check, label_check, encoding_check}):
@@ -73,7 +74,7 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_
         full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers = core_featurizer.compute_distance_matrices(core, noised_core,  name, no_neighbors, coordinating_resis[1], c_beta)
         encoding = core_featurizer.onehotencode(core, no_neighbors, coordinating_resis[1])
         coordinate_label = core_featurizer.compute_coordinate_label(core, number, no_neighbors, coordinating_resis[1])
-        test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis)
+        test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis, c_beta)
 
         #permute distance matrices, labels, and encodings
         if permute:
