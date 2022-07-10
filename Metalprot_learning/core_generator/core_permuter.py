@@ -8,6 +8,14 @@ import numpy as np
 from prody import *
 import itertools
 
+def _trim(dist_mat: np.ndarray):
+    trimmed = []
+    for row_ind, indexer in zip(range(0, len(dist_mat)-1), range(1, len(dist_mat))):
+        trimmed.append(dist_mat[row_ind][indexer:])
+
+    trimmed = np.concatenate(trimmed)
+    return trimmed
+
 def identify_fragments(binding_core_identifiers: list):
     """Helper function for permute_features. Given a list of numbers, finds all contiguous stretches and outputs a list of lists.
 
@@ -70,7 +78,7 @@ def _permute_labels(label: np.ndarray, noised_label: np.ndarray, permutation, fr
     permuted_noised_label = np.append(permuted_noised_label, np.zeros(len(label) - len(permuted_noised_label)))
     return permuted_label, permuted_noised_label
 
-def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: np.ndarray, noised_label: np.ndarray, encoding: np.ndarray, binding_core_identifiers: list, coordinate_label: np.ndarray, c_beta: bool):
+def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: np.ndarray, noised_label: np.ndarray, encoding: np.ndarray, binding_core_identifiers: list, coordinate_label: np.ndarray, c_beta: bool, trim: bool):
     """Computes fragment permutations for input features and labels. 
 
     Args:
@@ -95,14 +103,15 @@ def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: 
         fragment_index_permutation = sum([fragment_indices[i] for i in permutation], []) #get the fragment permutation defined by fragment_index_permutation
         atom_index_permutation = sum([list(atom_indices[i]) for i in fragment_index_permutation], []) 
 
-        permuted_dist_mat, permuted_noised_dist_mat = _permute_matrices(dist_mat, noised_dist_mat, atom_index_permutation)
+        _permuted_dist_mat, _permuted_noised_dist_mat = _permute_matrices(dist_mat, noised_dist_mat, atom_index_permutation)
         permuted_encoding = _permute_encodings(encoding, fragment_indices, permutation, binding_core_identifiers)
         permuted_label, permuted_noised_label = _permute_labels(label, noised_label, permutation, fragment_indices, atom_indices)
+        permuted_dist_mat, permuted_noised_dist_mat = _trim(_permuted_dist_mat), _trim(_permuted_noised_dist_mat) if trim else _permuted_dist_mat.flatten().squeeze(), _permuted_noised_dist_mat.flatten().squeeze()
 
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
         coordinate_labels.append(np.array([coordinate_label[i] for i in fragment_index_permutation]))
-        distance_matrices.append(permuted_dist_mat.flatten().squeeze())
-        noised_distance_matrices.append(permuted_noised_dist_mat.flatten().squeeze())
+        distance_matrices.append(permuted_dist_mat)
+        noised_distance_matrices.append(permuted_noised_dist_mat)
         encodings.append(permuted_encoding.squeeze())
         full_labels.append(permuted_label)
         noised_labels.append(permuted_noised_label)
