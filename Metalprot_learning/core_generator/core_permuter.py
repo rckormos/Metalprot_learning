@@ -106,7 +106,7 @@ def permute_fragments(dist_mat: np.ndarray, label: np.ndarray, noised_dist_mat: 
         _permuted_dist_mat, _permuted_noised_dist_mat = _permute_matrices(dist_mat, noised_dist_mat, atom_index_permutation)
         permuted_encoding = _permute_encodings(encoding, fragment_indices, permutation, binding_core_identifiers)
         permuted_label, permuted_noised_label = _permute_labels(label, noised_label, permutation, fragment_indices, atom_indices)
-        permuted_dist_mat, permuted_noised_dist_mat = _trim(_permuted_dist_mat), _trim(_permuted_noised_dist_mat) if trim else _permuted_dist_mat.flatten().squeeze(), _permuted_noised_dist_mat.flatten().squeeze()
+        permuted_dist_mat, permuted_noised_dist_mat = (_trim(_permuted_dist_mat), _trim(_permuted_noised_dist_mat)) if trim else (_permuted_dist_mat.flatten().squeeze(), _permuted_noised_dist_mat.flatten().squeeze())
 
         binding_core_identifier_permutations.append([binding_core_identifiers[i] for i in fragment_index_permutation])
         coordinate_labels.append(np.array([coordinate_label[i] for i in fragment_index_permutation]))
