@@ -13,6 +13,54 @@ import numpy as np
 from prody import *
 from Metalprot_learning.utils import EncodingError
 
+def _compute_ca_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
+    """Computes imaginary alpha carbon - beta carbon bond vectors given N, CA, and C coordinates for all residues in a vectorized fashion.
+
+    Args:
+        n (np.ndarray): nx3 array containing N atom coordinates for all residues.
+        ca (np.ndarray): nx3 array containing CA atom coordinates for all residues.
+        c (np.ndarray): nx3 array containing C atom coordinates for all residues.
+
+    Returns:
+        ca_cb: nx3 array containing imaginary alpha carbon - beta carbon bond vectors.
+    """
+
+    #compute ca-n and ca-c bond vectors
+    ca_n = np.vstack([(1 / np.linalg.norm(n - ca, axis=1))]*3).T * (n - ca)
+    ca_c = np.vstack([(1 / np.linalg.norm(c - ca, axis=1))]*3).T * (c - ca)
+
+    #using trigonometry, we can compute an imaginary ca-cb vector
+    n1 = (ca_n + ca_c) * -1
+    n2 = np.cross(ca_n, ca_c, axis=1)
+    n1 = np.vstack([(1 / np.linalg.norm(n1, axis=1))]*3).T * n1
+    n2 = np.vstack([(1 / np.linalg.norm(n2, axis=1))]*3).T * n2
+    d = (1.54*np.sin(np.deg2rad(54.75))) * n2
+    v = (1.54*np.cos(np.deg2rad(54.75))) * n1
+    ca_cb = d+v
+
+    return ca_cb
+
+def _impute_cb(core):
+    unique_sele = core.select('name N')
+    full_sele = core.select('protein').select('name N CA C O')
+    n, ca, c = core.select('name N').getCoords(), core.select('name CA').getCoords(), core.select('name C').getCoords()
+    ca_cb = _compute_ca_cb(n, ca, c)
+
+    _names, names = np.full((len(n), 1), 'CB'), full_sele.getNames()
+    _resnums, resnums = unique_sele.getResnums(), full_sele.getResnums()
+    _resnames, resnames = unique_sele.getResnames(), full_sele.getResnames()
+    _chids, chids = unique_sele.getChids(), full_sele.getChids()
+    _coords, coords = ca + ca_cb, full_sele.getCoords()
+
+    imputed_core = AtomGroup('protein')
+    imputed_core.setCoords(np.hstack((coords.reshape((len(n), 12)), _coords)).reshape((len(n)*5, 3)))
+    imputed_core.setChids(np.hstack((chids.reshape((len(n), 4)), _chids.reshape((len(n),1)))).reshape((len(n)*5)))
+    imputed_core.setResnames(np.hstack((resnames.reshape((len(n), 4)), _resnames.reshape((len(n),1)))).reshape((len(n)*5)))
+    imputed_core.setResnums(np.hstack((resnums.reshape((len(n), 4)), _resnums.reshape((len(n),1)))).reshape((len(n)*5)))
+    imputed_core.setNames(np.hstack((names.reshape((len(n), 4)), _names.reshape((len(n),1)))).reshape((len(n)*5)))
+
+    return imputed_core
+
 def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int, c_beta: bool):
     """Generates binding core backbone distances and label files.
 
@@ -34,12 +82,13 @@ def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: 
     binding_core_resnums = core.select('protein').select('name N').getResnums()
     binding_core_chids = core.select('protein').select('name N').getChids()
     binding_core_identifiers = [(binding_core_resnums[i], binding_core_chids[i]) for i in range(0,len(binding_core_resnums))]
+    sequence = core.select('protein').select('name N').getResnames()
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     metal_coords = metal_sel.getCoords()[0]
     max_atoms = 5 * (coordination_number + (2*coordination_number*no_neighbors)) if c_beta else 4 * (coordination_number + (2*coordination_number*no_neighbors))
 
-    binding_core_backbone = core.select('protein').select(selstr)
+    binding_core_backbone = _impute_cb(core) if 'GLY' not in sequence and c_beta else core.select('protein').select(selstr)
     full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
     padding = max_atoms - full_dist_mat.shape[0]
     full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
