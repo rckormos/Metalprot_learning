@@ -9,8 +9,7 @@ from prody import *
 import itertools
 
 def _trim(dist_mat: np.ndarray):
-    trimmed = np.triu(dist_mat, k=1).flatten()
-    trimmed = trimmed[trimmed != 0]
+    trimmed = dist_mat[np.triu_indices(dist_mat.shape[0], k=1).flatten()]
     return trimmed
 
 def identify_fragments(binding_core_identifiers: list):
