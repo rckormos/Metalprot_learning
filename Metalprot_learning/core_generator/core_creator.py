@@ -45,7 +45,7 @@ def test_permutation(features, max_permutations):
     if False in set({dimensionality_test, permutation_test}):
         raise utils.PermutationError
 
-def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_beta: bool, coordinating_resis: tuple, no_neighbors=1):
+def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_beta: bool, trim: bool, coordinating_resis=(2,4), no_neighbors=1):
     """For a given pdb file, constructs a training example and extracts all features.
 
     Args:
