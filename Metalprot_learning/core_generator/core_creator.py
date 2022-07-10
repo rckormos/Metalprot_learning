@@ -10,6 +10,7 @@ from prody import writePDB
 import os
 import pickle
 from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter, core_noiser
+from Metalprot_learning.core_generator.core_permuter import _trim
 from Metalprot_learning import utils
 
 def test_core_loader(unique_cores, unique_names, unique_numbers):
@@ -78,11 +79,12 @@ def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_
 
         #permute distance matrices, labels, and encodings
         if permute:
-            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers, coordinate_label, c_beta)
+            features = core_permuter.permute_fragments(full_dist_mat, label, noised_dist_mat, noised_label, encoding, binding_core_identifiers, coordinate_label, c_beta, trim)
             test_permutation(features, max_permutations)
 
         else:
-            features = {'distance_matrices': [full_dist_mat.flatten().squeeze()], 'noised_distance_matrices': [noised_dist_mat.flatten().squeeze()],'labels': [label.squeeze()], 
+            full_dist_mat, noised_dist_mat = (_trim(full_dist_mat), _trim(noised_dist_mat)) if trim else (full_dist_mat.flatten().squeeze(), noised_dist_mat.flatten().squeeze())
+            features = {'distance_matrices': [full_dist_mat], 'noised_distance_matrices': [noised_dist_mat],'labels': [label.squeeze()], 
             'noised_label': [noised_label.squeeze()],'identifiers': [binding_core_identifiers], 'encodings': [encoding.squeeze()], 'coordinate_labels': [coordinate_label]}
 
         #write files to disk
