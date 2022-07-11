@@ -48,11 +48,27 @@ if __name__ == '__main__':
         'batch_size': 50,
         'lr': 0.003,
         'seed': np.random.randint(1000),
-        'epochs': 1,
+        'epochs': 2000,
         'loss_fn': 'MAE',
         'c_beta': True,
         'encodings': True,
-        'noise': True}
+        'noise': True},
+
+        {'l1': 2000,
+        'l2': 1700,
+        'l3': 400,
+        'input_dropout': 0.15578875454945562,
+        'hidden_dropout': 0.30066048849068494,
+        'weight_decay': 0,
+        'batch_size': 50,
+        'lr': 0.003,
+        'seed': np.random.randint(1000),
+        'epochs': 2000,
+        'loss_fn': 'MAE',
+        'c_beta': True,
+        'encodings': True,
+        'noise': False}
+
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
