@@ -17,7 +17,7 @@ def _write_output_files(subdir: str, train_loss: np.ndarray, test_loss: np.ndarr
     np.save(os.path.join(subdir, 'train_loss.npy'), train_loss)
     np.save(os.path.join(subdir, 'test_loss.npy'), test_loss)
 
-def define_objective(path2output: str, features_file: str, config: dict, encodings: bool):
+def define_objective(path2output: str, features_file: str, config: dict):
 
     _input = 1770 if config['c_beta'] else 1128
     input_dim = _input + (20*12) if config['encodings'] else _input
@@ -75,7 +75,7 @@ def define_objective(path2output: str, features_file: str, config: dict, encodin
         with open(os.path.join(trial_dir, 'config.json'), 'w') as f:
             json.dump(selected, f)
 
-        train_dataloader, test_dataloader, _, _ = train.load_data(features_file, (0.8,0.1,0.1), batch_size, seed, encodings)
+        train_dataloader, test_dataloader, _, _ = train.load_data(features_file, (0.8,0.1,0.1), batch_size, seed, config['encodings'], config['noise'])
 
         train_loss = np.array([])
         test_loss = np.array([])
