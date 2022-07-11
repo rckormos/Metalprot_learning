@@ -7,7 +7,7 @@ This script runs model training.
 """
 
 #imports
-from Metalprot_learning.train.train import train_model, train_model_control
+from Metalprot_learning.train.train import train_model
 import os
 import sys
 import numpy as np
@@ -36,18 +36,13 @@ def distribute_tasks(MODELS: list):
     tasks = [MODELS[i] for i in range(0,len(MODELS)) if i % no_jobs == job_id]
     return path2output, tasks
 
-def configure_run(models: dict, cbeta: bool, encodings: bool, noise: bool, coordination_number: tuple):
+def configure_run(models: dict, cbeta: bool, encodings: bool, noise: bool):
 
     encoding_dim = 20*12 if encodings else 0
     distance_dim = 3600 if cbeta else 2304
     total_dim = encoding_dim + distance_dim
     output_dim = 60 if cbeta else 48
-
-    if cbeta:
-        path2features = '' if coordination_number[0] < 2 else ''
-
-    else:
-        path2features = '' if coordination_number[0] < 2 else ''
+    path2features = '' if cbeta else ''
 
     for model in models:
         model['input'] = total_dim
@@ -62,7 +57,6 @@ if __name__ == '__main__':
     CBETA = False
     ENCODINGS = True
     NOISE = False
-    COORDINATION_NUMBER = (2, 4)
     MODELS = [
         {'l1': 2789,
         'l2': 1725,
