@@ -53,10 +53,7 @@ def configure_run(models: dict, cbeta: bool, encodings: bool, noise: bool):
     return models, path2features
 
 if __name__ == '__main__':
-
-    CBETA = False
-    ENCODINGS = True
-    NOISE = False
+    PATH2FEATURES = ''
     MODELS = [
         {'l1': 2789,
         'l2': 1725,
@@ -68,13 +65,15 @@ if __name__ == '__main__':
         'lr': 0.003853602505520586,
         'seed': np.random.randint(1000),
         'epochs': 2000,
-        'loss_fn': 'MAE'}
+        'loss_fn': 'MAE',
+        'c_beta': True,
+        'encodings': True,
+        'noise': True}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
-    tasks, path2features = configure_run(tasks, CBETA, ENCODINGS, NOISE)
     for model in tasks:
         today = datetime.datetime.now()
-        dirname = os.path.join(path2output, '_'.join(str(i) for i in [today.day, today.month, today.year, today.hour, today.minute, today.second, today.microsecond, model['seed']]))
+        dirname = os.path.join(path2output, '-'.join(str(i) for i in [today.day, today.month, today.year, model['seed']]))
         os.mkdir(dirname)
-        train_model(dirname, model, path2features)
+        train_model(dirname, model, PATH2FEATURES)
