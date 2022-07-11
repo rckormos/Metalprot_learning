@@ -19,8 +19,9 @@ def _write_output_files(subdir: str, train_loss: np.ndarray, test_loss: np.ndarr
 
 def define_objective(path2output: str, features_file: str, config: dict, encodings: bool):
 
-    input_dim = 2544 if encodings else 2304
-    output_dim = 48
+    _input = 1770 if config['c_beta'] else 1128
+    input_dim = _input + (20*12) if config['encodings'] else _input
+    output_dim = 60 if config['c_beta'] else 48
 
     def objective(trial):
 
