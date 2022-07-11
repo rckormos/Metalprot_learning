@@ -39,16 +39,16 @@ def distribute_tasks(MODELS: list):
 if __name__ == '__main__':
     PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
     MODELS = [
-        {'l1': 2789,
-        'l2': 1725,
-        'l3': 777,
+        {'l1': 2000,
+        'l2': 1700,
+        'l3': 400,
         'input_dropout': 0.15578875454945562,
         'hidden_dropout': 0.30066048849068494,
         'weight_decay': 0,
         'batch_size': 50,
         'lr': 0.003,
         'seed': np.random.randint(1000),
-        'epochs': 2000,
+        'epochs': 1,
         'loss_fn': 'MAE',
         'c_beta': True,
         'encodings': True,
@@ -61,3 +61,4 @@ if __name__ == '__main__':
         dirname = os.path.join(path2output, '-'.join(str(i) for i in [today.day, today.month, today.year, model['seed']]))
         os.mkdir(dirname)
         train_model(dirname, model, PATH2FEATURES)
+        print(f'Execution time: {(datetime.datetime.now() - today)/ (60**2)} hours')
