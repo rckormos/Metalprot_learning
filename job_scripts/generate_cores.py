@@ -77,15 +77,14 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-    PATH2EXAMPLES = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/ZN_binding_cores/src'
+    PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
     PERMUTE = True
-    C_BETA = False
+    C_BETA = True
     TRIM = True
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
     for file in tasks:
-        # construct_training_example(file, path2output, PERMUTE, C_BETA, COORDINATION_NUMBER)
         failed_file_line = run_construct_training_example(file, path2output, PERMUTE, C_BETA, TRIM)
         failed.append(failed_file_line)
 
