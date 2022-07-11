@@ -36,24 +36,8 @@ def distribute_tasks(MODELS: list):
     tasks = [MODELS[i] for i in range(0,len(MODELS)) if i % no_jobs == job_id]
     return path2output, tasks
 
-def configure_run(models: dict, cbeta: bool, encodings: bool, noise: bool):
-
-    encoding_dim = 20*12 if encodings else 0
-    distance_dim = 3600 if cbeta else 2304
-    total_dim = encoding_dim + distance_dim
-    output_dim = 60 if cbeta else 48
-    path2features = '' if cbeta else ''
-
-    for model in models:
-        model['input'] = total_dim
-        model['output'] = output_dim
-        model['encodings'] = encodings
-        model['noise'] = noise
-
-    return models, path2features
-
 if __name__ == '__main__':
-    PATH2FEATURES = ''
+    PATH2FEATURES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
     MODELS = [
         {'l1': 2789,
         'l2': 1725,
@@ -61,8 +45,8 @@ if __name__ == '__main__':
         'input_dropout': 0.15578875454945562,
         'hidden_dropout': 0.30066048849068494,
         'weight_decay': 0,
-        'batch_size': 51,
-        'lr': 0.003853602505520586,
+        'batch_size': 50,
+        'lr': 0.003,
         'seed': np.random.randint(1000),
         'epochs': 2000,
         'loss_fn': 'MAE',
