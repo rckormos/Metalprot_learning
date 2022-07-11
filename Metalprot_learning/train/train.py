@@ -37,7 +37,8 @@ def configure_model(config: dict):
     assert type('input'), type(config['l1']) == type(config['l2']) == type(config['output']) == type(config['seed']) == type(config['batch_size']) == type(config['epochs']) == set(int)
     assert type(config['lr']) == type(config['input_dropout']) == type(config['hidden_dropout']) == float
 
-    input = 1770 if config['c_beta'] else 1128
+    _input = 1770 if config['c_beta'] else 1128
+    input = _input + (20*12) if config['encodings'] else _input
     output = 60 if config['c_beta'] else 48
 
     if 'l3' not in config.keys():
