@@ -70,8 +70,6 @@ def define_objective(path2output: str, features_file: str, config: dict):
             if key in locals():
                 selected[key] = locals()[key]
 
-        print(selected)
-
         with open(os.path.join(trial_dir, 'config.json'), 'w') as f:
             json.dump(selected, f)
 
