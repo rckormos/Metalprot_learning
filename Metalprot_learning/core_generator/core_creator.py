@@ -21,9 +21,16 @@ def test_core_loader(unique_cores, unique_names, unique_numbers):
     if dimensionality_test == False:
         raise utils.CoreLoadingError
 
-def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis, c_beta):
-    max_atoms = max_resis * 5 if c_beta else max_resis * 4
-    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_atoms
+def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis, c_beta, trim):
+
+    if trim:
+        length = 1170 if c_beta else 1128
+        dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == length
+
+    else:
+        max_atoms = max_resis * 5 if c_beta else max_resis * 4
+        dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_atoms 
+        
     label_check = label.shape[1] ==  noised_label.shape[1] == max_atoms
     encoding_check = encoding.shape[1] == max_resis * 20
 
