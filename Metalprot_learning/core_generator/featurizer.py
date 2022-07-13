@@ -61,7 +61,7 @@ def _impute_cb(core):
 
     return imputed_core
 
-def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int, c_beta: bool):
+def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int):
     """Generates binding core backbone distances and label files.
 
     Args:
@@ -77,8 +77,6 @@ def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: 
         label (np.ndarray): A numpy array containing backbone distances to metal. 
     """
 
-    selstr = 'name CA C N O CB' if c_beta else 'name CA O C N'
-
     binding_core_resnums = core.select('protein').select('name N').getResnums()
     binding_core_chids = core.select('protein').select('name N').getChids()
     binding_core_identifiers = [(binding_core_resnums[i], binding_core_chids[i]) for i in range(0,len(binding_core_resnums))]
@@ -86,57 +84,43 @@ def compute_distance_matrices(core, noised_core, metal_name: str, no_neighbors: 
 
     metal_sel = core.select('hetero').select(f'name {metal_name}')
     metal_coords = metal_sel.getCoords()[0]
-    max_atoms = 5 * (coordination_number + (2*coordination_number*no_neighbors)) if c_beta else 4 * (coordination_number + (2*coordination_number*no_neighbors))
+    max_atoms = 4 * (coordination_number + (2*coordination_number*no_neighbors)) 
 
-    binding_core_backbone = _impute_cb(core) if 'GLY' not in sequence and c_beta else core.select('protein').select(selstr)
-    full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
-    padding = max_atoms - full_dist_mat.shape[0]
-    full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
-    label = buildDistMatrix(metal_sel, binding_core_backbone)
-    label = np.lib.pad(label, ((0,0),(0,padding)), 'constant', constant_values=0)
+    core, noised_core = (_impute_cb(core), _impute_cb(noised_core)) if 'GLY' not in sequence else (core, noised_core)
+    atoms = ['CA', 'C', 'N', 'CB']
+    distance_matrices, labels, noised_distance_matrices, noised_labels = [], [], [], []
+    for atom in atoms:
+        dist_mat, label = np.zeros((max_atoms, max_atoms)), np.zeros(max_atoms)
+        noised_dist_mat, noised_label = np.zeros((max_atoms, max_atoms)), np.zeros(max_atoms)
 
-    noised_core_backbone = noised_core.select('protein').select(selstr)
-    noised_dist_mat = buildDistMatrix(noised_core_backbone, noised_core_backbone)
-    noised_dist_mat = np.lib.pad(noised_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
-    noised_label = buildDistMatrix(metal_sel, noised_core_backbone)
-    noised_label = np.lib.pad(noised_label, ((0,0),(0,padding)), 'constant', constant_values=0)
+        selstr = f'name {atom}'
+        selection = core.select('protein').select(selstr)
+        dist_mat[0:len(selection), 0:len(selection)], label[0:len(selection)] = buildDistMatrix(selection, selection), buildDistMatrix(metal_sel, selection)
 
-    return full_dist_mat, label, noised_dist_mat, noised_label, metal_coords, binding_core_identifiers
+        noised_selection = noised_core.select('protein').select(selstr)
+        noised_dist_mat[0:len(selection), 0:len(selection)], noised_label[0:len(selection)]  = buildDistMatrix(noised_selection, noised_selection), buildDistMatrix(metal_sel, noised_selection)
 
-def onehotencode(core, no_neighbors: int, coordinating_resis: int):
-    """Adapted from Ben Orr's function from make_bb_info_mats, get_seq_mat. Generates one-hot encodings for sequences.
+        distance_matrices.append(dist_mat), labels.append(label), noised_distance_matrices.append(noised_dist_mat), noised_labels.append(noised_label)
 
-    Args:
-        core (prody.atomic.atomgroup.AtomGroup): Input core.
-        no_neighbors (int): Number of neighbors in primary sequence.
-        coordination_number (int): User-defined upper limit for coordination number.
+    return distance_matrices, labels, noised_distance_matrices, noised_labels, binding_core_identifiers, metal_coords
 
-    Returns:
-        encoding (np.ndarray): Numpy array containing onehot encoding of core sequence.
-    """
-    seq = core.select('name CA').getResnames()
+def compute_seq_channel(core: list):
 
-    threelettercodes = {'ALA': 0 , 'ARG': 1, 'ASN': 2, 'ASP': 3, 'CYS': 4, 'CSO': 4,'GLU': 5, 'GLN': 6, 'GLY': 7, 'HIS': 8, 'ILE': 9, 'LEU': 10,
-                        'LYS': 11, 'MET': 12, 'MSE': 12, 'PHE': 13, 'PRO': 14, 'SER': 15, 'SEP': 15, 'THR': 16, 'TPO': 16, 'TRP': 17, 'TYR': 18, 'VAL': 19}
+    threelettercodes = {'ALA': 0 , 'ARG': 1, 'ASN': 2, 'ASP': 3, 'CYS': 4, 'CSO': 4,'GLU': 5, 'GLN': 6, 'GLY': 7, 'HIS': 8, 'ILE': 9, 'LEU': 10, 
+                    'LYS': 11, 'MET': 12, 'MSE': 12, 'PHE': 13, 'PRO': 14, 'SER': 15, 'SEP': 15, 'THR': 16, 'TPO': 16, 'TRP': 17, 'TYR': 18, 'VAL': 19}
+    seq_channels = np.zeros([len(12), len(12), 40], dtype=int)
 
-    encoding = np.array([[]])
-
-    for i in range(len(seq)):
-        aa = str(seq[i])
-
-        if aa not in threelettercodes:
+    sequence = core.select('protein').select('name N').getResnames()
+    for ind, AA in enumerate(sequence):
+        if AA not in threelettercodes.keys():
             raise EncodingError
 
-        idx = threelettercodes[aa]
-        one_hot = np.zeros((1,20))
-        one_hot[0,idx] = 1
-        encoding = np.concatenate((encoding, one_hot), axis=1)
+        idx = threelettercodes[AA]
+        for j in range(len(sequence)):
+            seq_channels[ind][j][idx] = 1 # horizontal rows of 1's in first 20 channels
+            seq_channels[j][ind][idx+20] = 1 # vertical columns of 1's in next 20 channels
 
-    max_resis = coordinating_resis +  (coordinating_resis * no_neighbors * 2)
-    padding = 20 * (max_resis - len(seq))
-    encoding = np.concatenate((encoding, np.zeros((1,padding))), axis=1)
-
-    return encoding
+    return seq_channels
 
 def compute_coordinate_label(core, coordinating_resindices: tuple, no_neighbors: int, coordinating_resis: int):
     residues = core.select('name CA').getResindices()
@@ -144,3 +128,6 @@ def compute_coordinate_label(core, coordinating_resindices: tuple, no_neighbors:
     padding = ((coordinating_resis * no_neighbors * 2) + coordinating_resis) - len(coordinate_label)
     coordinate_label = np.concatenate((coordinate_label, np.zeros(padding)))
     return coordinate_label
+
+def compute_all_channels(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int):
+    distance_matrices, labels, noised_distance_matrices, noised_labels, binding_core_identifiers, metal_coords = compute_distance_matrices(core, noised_core, metal_name, no_neighbors, coordination_number)
