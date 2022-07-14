@@ -41,10 +41,14 @@ def configure_model(config: dict):
     input = _input + (20*12) if config['encodings'] else _input
     output = 60 if config['c_beta'] else 48
 
-    if 'l3' not in config.keys():
-        model = models.SingleLayerNet(input, config['l1'], config['l2'], output, config['input_dropout'], config['hidden_dropout']) 
-    else:
+    if 'l3' in config.keys():
         model = models.DoubleLayerNet(input, config['l1'], config['l2'], config['l3'], output, config['input_dropout'], config['hidden_dropout'])
+
+    elif 'l4' in config.keys():
+        model = models.FourLayerNet(input, config['l1'], config['l2'], config['l3'], config['l4'], output, config['input_dropout'], config['hidden_dropout'])
+
+    else:
+        model = models.SingleLayerNet(input, config['l1'], config['l2'], output, config['input_dropout'], config['hidden_dropout']) 
 
     return model
 
