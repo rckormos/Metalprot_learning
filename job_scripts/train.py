@@ -39,36 +39,21 @@ def distribute_tasks(MODELS: list):
 if __name__ == '__main__':
     PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
     MODELS = [
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
+        {'l1': 1947,
+        'l2': 652,
+        'l3': 562,
+        'l4': 300,
+        'input_dropout': 0.3,
+        'hidden_dropout': 0.4,
         'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
+        'batch_size': 20,
+        'lr': 0.0092982,
         'seed': np.random.randint(1000),
         'epochs': 2000,
         'loss_fn': 'MAE',
         'c_beta': True,
-        'encodings': True,
+        'encodings': False,
         'noise': True},
-
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
-        'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
-        'seed': np.random.randint(1000),
-        'epochs': 2000,
-        'loss_fn': 'MAE',
-        'c_beta': True,
-        'encodings': True,
-        'noise': False}
-
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
