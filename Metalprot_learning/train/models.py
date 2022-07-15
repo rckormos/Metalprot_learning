@@ -24,7 +24,7 @@ class SingleLayerNet(torch.nn.Module):
 
     def forward(self, x):
         y = self.block1(x.float())
-        return y 
+        return y.float() 
 
 class DoubleLayerNet(torch.nn.Module):
     def __init__(self, input_dim: int, l1: int, l2: int, l3: int, output_dim: int, input_dropout: float, hidden_dropout: float):
@@ -46,7 +46,7 @@ class DoubleLayerNet(torch.nn.Module):
 
     def forward(self, x):
         y = self.block1(x.float())
-        return y 
+        return y.float()
 
 class FourLayerNet(torch.nn.Module):
     def __init__(self, input_dim: int, l1: int, l2: int, l3: int, l4: int, output_dim: int, input_dropout: float, hidden_dropout: float):
@@ -71,4 +71,4 @@ class FourLayerNet(torch.nn.Module):
 
     def forward(self, x):
         y = self.block1(x.float())
-        return y 
+        return y.float()
