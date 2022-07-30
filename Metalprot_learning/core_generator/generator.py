@@ -11,42 +11,6 @@ import os
 import pickle
 from Metalprot_learning.core_generator import core_loader, core_featurizer, core_permuter, core_noiser
 from Metalprot_learning.core_generator.core_permuter import _trim
-from Metalprot_learning import utils
-
-def test_core_loader(unique_cores, unique_names, unique_numbers):
-    dimensionality_test = len(unique_cores) == len(unique_names) == len(unique_numbers)
-    if len(unique_cores) == 0:
-        raise utils.NoCoresError
-
-    if dimensionality_test == False:
-        raise utils.CoreLoadingError
-
-def test_featurization(full_dist_mat, label, noised_dist_mat, noised_label, encoding, max_resis, c_beta):
-
-    max_atoms = max_resis * 5 if c_beta else max_resis * 4
-    dist_mat_check = len(full_dist_mat) == len(noised_dist_mat) == max_atoms 
-        
-    label_check = label.shape[1] ==  noised_label.shape[1] == max_atoms
-    encoding_check = encoding.shape[1] == max_resis * 20
-
-    if False in set({dist_mat_check, label_check, encoding_check}):
-        raise utils.FeaturizationError
-
-def test_noiser(noised_cores, unique_cores):
-    for n, c in zip(noised_cores, unique_cores):
-        resnum_check = set([bool(i==j) for i,j in zip(n.getResnums(), c.select('protein and name CA N C O CB').getResnums())])
-        resname_check = set([bool(i==j) for i,j in zip(n.getResnames(), c.select('protein and name CA N C O CB').getResnames())])
-        name_check = set([bool(i==j) for i,j in zip(n.getNames(), c.select('protein and name CA N C O CB').getNames())])
-
-        if False in resnum_check or False in name_check or False in resname_check:
-            raise utils.NoisingError
-
-def test_permutation(features, max_permutations):
-    dimensionality_test = len(set([len(features[key]) for key in features.keys()])) == 1
-    permutation_test = len(features['distance_matrices']) <= max_permutations
-    
-    if False in set({dimensionality_test, permutation_test}):
-        raise utils.PermutationError
 
 def construct_training_example(pdb_file: str, output_dir: str, permute: bool, c_beta: bool, trim: bool, coordinating_resis=(2,4), no_neighbors=1):
     """For a given pdb file, constructs a training example and extracts all features.

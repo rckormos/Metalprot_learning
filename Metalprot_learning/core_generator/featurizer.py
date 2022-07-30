@@ -129,5 +129,4 @@ def compute_coordinate_label(core, coordinating_resindices: tuple, no_neighbors:
     coordinate_label = np.concatenate((coordinate_label, np.zeros(padding)))
     return coordinate_label
 
-def compute_all_channels(core, noised_core, metal_name: str, no_neighbors: int, coordination_number: int):
-    distance_matrices, labels, noised_distance_matrices, noised_labels, binding_core_identifiers, metal_coords = compute_distance_matrices(core, noised_core, metal_name, no_neighbors, coordination_number)
+
