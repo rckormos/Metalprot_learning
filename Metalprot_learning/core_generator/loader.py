@@ -9,7 +9,6 @@ found in extract_cores that are the same. For example, homomeric metalloproteins
 of remove_degenerate_cores.
 """
 
-#imports
 import os
 import numpy as np
 import pandas as pd
@@ -17,6 +16,22 @@ from itertools import permutations
 from scipy.spatial.distance import cdist
 from Metalprot_learning.utils import AlignmentError, EncodingError
 from prody import parsePDB, AtomGroup, matchChains, buildDistMatrix, writePDB
+
+def _get_neighbors(structure: AtomGroup, coordinating_resind: int, no_neighbors: int):
+    """
+    Helper function for getting neighboring residues. If a terminal residue is passed, only
+    one neighrbor will be returned.
+    """
+    chain_id = list(set(structure.select(f'resindex {coordinating_resind}').getChids()))[0]
+    all_resinds = structure.select(f'chain {chain_id}').select('protein').getResindices()
+    terminal = max(all_resinds)
+    start = min(all_resinds)
+
+    extend = np.array(range(-no_neighbors, no_neighbors+1))
+    _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
+    core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment >= start) & (_core_fragment <= terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
+
+    return core_fragment
 
 def remove_degenerate_cores(cores: list):
     """
@@ -76,45 +91,59 @@ def _impute_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
     return (-0.58273431 * A) + (0.56802827 * B) - (0.54067466 * C) + ca
 
 class Core:
-    def __init__(self, core: AtomGroup, coordinating_resis: np.ndarray):
+    def __init__(self, core: AtomGroup, coordinating_resis: np.ndarray, source: str):
         self.structure = core
         self.coordinating_resis = coordinating_resis
-        self.identifiers = [(i, j) for i,j in zip(core.select('protein').getResnums(), core.select('protein').getChids())]
+        self.identifiers = [(i, j) for i,j in zip(core.select('protein').select('name N').getResnums(), core.select('protein').select('name N').getChids())]
+        self.source = source
+        self.metal_coords = core.select('hetero').getCoords()[0]
+        self.metal_name = core.select('hetero').getResnames()[0]
+        self.coordination_number = len(coordinating_resis)
+        self.permuted_channels = None
+        self.permuted_labels = None
+        self.permuted_identifiers = None
 
-    def compute_channels(self):
+    def _compute_seq_channels(self, sequence: list):
         """
-        Sequence encoding code adapted from https://github.com/lonelu/Metalprot_learning/blob/main/src/extractor/make_bb_info_mats.py
-
-        The function itself returns nothing, but assigns computed channels to a new attribute.
+        Code adapted from https://github.com/lonelu/Metalprot_learning/blob/main/src/extractor/make_bb_info_mats.py
         """
-        channels = np.zeros((12,12,12))
-        CB = _impute_cb(self.structure.select('protein').select('name N').getCoords(), self.structure.select('protein').select('name CA').getCoords(), \
-                        self.structure.select('protein').select('name C').getCoords())
-        _distance_matrices = [buildDistMatrix(self.structure.select('protein').select(f'name {name}')) for name in ['CA', 'C', 'N']]
-        distance_matrices = np.dstack(_distance_matrices.append(cdist(CB, CB)))
-        
-        #compute sequence channels
         threelettercodes = {'ALA': 0 , 'ARG': 1, 'ASN': 2, 'ASP': 3, 'CYS': 4, 'CSO': 4,'GLU': 5, 'GLN': 6, 'GLY': 7, 'HIS': 8, 'ILE': 9, 'LEU': 10, 
                 'LYS': 11, 'MET': 12, 'MSE': 12, 'PHE': 13, 'PRO': 14, 'SER': 15, 'SEP': 15, 'THR': 16, 'TPO': 16, 'TRP': 17, 'TYR': 18, 'VAL': 19}
-        seq_channels = np.zeros([len(12), len(12), 40], dtype=int)
-        sequence = self.structure.select('protein').select('name N').getResnames()
+
+        seq_channels = np.zeros([12, 12, 40], dtype=int)
         for ind, AA in enumerate(sequence):
             if AA not in threelettercodes.keys():
                 raise EncodingError
 
             idx = threelettercodes[AA]
-            for j in range(len(sequence)):
+            for j in range(12):
                 seq_channels[ind][j][idx] = 1 # horizontal rows of 1's in first 20 channels
                 seq_channels[j][ind][idx+20] = 1 # vertical columns of 1's in next 20 channels
+        return np.stack([seq_channels[:, :, i] for i in range(40)], axis=0)
 
-        _channels =  np.dstack([distance_matrices, seq_channels])
-        m, n, o = _channels.shape
-        channels[0:m, 0:n, 0:o] = _channels
+    def compute_channels(self):
+        """
+        Returns nothing, but assigns computed channels to a new attribute.
+        """
+        channels = np.zeros((44,12,12))
+        CB = _impute_cb(self.structure.select('protein').select('name N').getCoords(), self.structure.select('protein').select('name CA').getCoords(), \
+                        self.structure.select('protein').select('name C').getCoords())
+        
+        _distance_matrices = [buildDistMatrix(self.structure.select('protein').select(f'name {name}')) for name in ['N', 'CA', 'C']]
+        _distance_matrices.append(cdist(CB, CB))
+        m, n = _distance_matrices[0].shape
+        channels[0:4, 0:m, 0:n] = np.stack(_distance_matrices, axis=0)        
+        
+        #compute sequence channels
+        sequence = self.structure.select('protein').select('name N').getResnames()
+        seq_channels = self._compute_seq_channels(sequence)
+        channels[4:, 0:12, 0:12] = seq_channels
+
         self.channels = channels
 
     def compute_labels(self):
         label = np.zeros(12*4)
-        _label =  buildDistMatrix(self.structure.select('protein'), self.structure.select('hetero')).squeeze()
+        _label = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
         label[0:len(_label)] = _label
         self.label = label
 
@@ -122,7 +151,7 @@ class Core:
         """
 
         """
-        binding_core_identifiers = self.structure.select('name N').getResindices()
+        binding_core_identifiers = self.identifiers
         temp = binding_core_identifiers[:]
         fragments = []
         while len(temp) != 0:
@@ -146,28 +175,32 @@ class Core:
     def permute(self):
         permuted_channels, permuted_labels, permuted_identifiers = [], [], []
         fragment_indices = self._identify_fragments()
+        sequence = self.structure.select('protein').select('name N').getResnames()
         fragment_permutations = permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
         for permutation in fragment_permutations:
-            permuted_channel, permuted_label = np.zeros(self.channels.shape), np.zeros(len(self.labels))
+            permuted_channel, permuted_label = np.zeros(self.channels.shape), np.zeros(len(self.label))
             fragment_index_permutation = sum([fragment_indices[i] for i in permutation], [])
 
             for i, I in enumerate(fragment_index_permutation):
                 for j, J in enumerate(fragment_index_permutation):
-                    permuted_channel[:,I,J] = self.channels[:,i,j]
+                    permuted_channel[0:4,I,J] = self.channels[0:4,i,j]
 
-            no_atoms = len(self.structure.select)
+            permuted_channel[4:,:,:] = self._compute_seq_channels([sequence[i] for i in fragment_index_permutation])
+
+            no_atoms = len(self.structure.select('protein').select('name N CA C O'))
             atom_indices = np.split(np.linspace(0, no_atoms - 1, no_atoms), no_atoms / 4)
-            permuted_label = np.array([])
+            _permuted_label = np.array([])
             for i in permutation:
                 frag = fragment_indices[i]
                 for j in frag:
                     atoms = atom_indices[j]
                     for atom in atoms:
-                        permuted_label = np.append(permuted_label, self.label[int(atom)])            
+                        _permuted_label = np.append(_permuted_label, self.label[int(atom)])            
+            permuted_label[0:len(_permuted_label)] = _permuted_label
 
             permuted_channels.append(permuted_channel)
             permuted_labels.append(permuted_label)
-            permuted_identifiers.append()
+            permuted_identifiers.append([self.identifiers[i] for i in fragment_index_permutation])
 
         self.permuted_channels = permuted_channels
         self.permuted_labels = permuted_labels
@@ -178,50 +211,26 @@ class Core:
 
     def write_pdb_files(self, output_dir: str):
         metal = self.structure.select('hetero')
-        metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()
-        if self.permuted_channels and self.permuted_labels and self.permuted_identifiers:
-            for identifier in self.permuted_identifiers:
-                filename = self._name(identifier, metal_identifier) + '.pdb.gz'
-                writePDB(os.path.join(output_dir, filename), self.structure)
-
-        else:
-            filename = self._name(self.identifiers, metal_identifier) + '.pdb.gz'
-            writePDB(os.path.join(output_dir, filename), self.structure)
+        metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()[0]
+        filename = self._name(self.identifiers, metal_identifier) + '.pdb.gz'
+        writePDB(os.path.join(output_dir, filename), self.structure)
 
     def write_data_files(self, output_dir: str):
         metal = self.structure.select('hetero')
-        metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()
+        metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()[0]
+        filename = self._name(self.identifiers, metal_identifier) + '.pkl'
         if self.permuted_channels and self.permuted_labels and self.permuted_identifiers:
-            for i, j, k in zip(self.permuted_channels, self.permuted_labels, self.permuted_identifiers):
-                filename = self._name(k, metal_identifier) + '.pkl'
-                df = pd.DataFrame({'channels': i, 'labels': j, 'identifiers': k})
-                df.to_pickle(os.path.join(output_dir, filename))
+            df = pd.DataFrame({'channels': self.permuted_channels, 'labels': self.permuted_labels, 'identifiers': self.permuted_identifiers})
+            df.to_pickle(os.path.join(output_dir, filename))
 
         else:
-            filename = self._name(self.identifiers, metal_identifier) + '.pkl'
-            df = pd.DataFrame({'channels': self.channels, 'labels': self.labels, 'identifiers': self.identifiers})
+            df = pd.DataFrame({'channels': [self.channels], 'labels': [self.label], 'identifiers': [self.identifiers]})
             df.to_pickle(os.path.join(output_dir, filename))
 
 class Protein:
     def __init__(self, pdb_file: str):
         self.filepath = pdb_file
         self.structure = parsePDB(pdb_file)
-    
-    def _get_neighbors(structure: AtomGroup, coordinating_resind: int, no_neighbors: int):
-        """
-        Helper function for getting neighboring residues. If a terminal residue is passed, only
-        one neighrbor will be returned.
-        """
-        chain_id = list(set(structure.select(f'resindex {coordinating_resind}').getChids()))[0]
-        all_resinds = structure.select(f'chain {chain_id}').select('protein').getResindices()
-        terminal = max(all_resinds)
-        start = min(all_resinds)
-
-        extend = np.array(range(-no_neighbors, no_neighbors+1))
-        _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
-        core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment >= start) & (_core_fragment <= terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
-
-        return core_fragment
 
     def get_cores(self, no_neighbors=1, coordination_number=(2,4)):
         """
@@ -249,7 +258,7 @@ class Protein:
 
                 binding_core_resindices.append(metal_ind)
                 binding_core = self.structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
-                cores.append(Core(binding_core, np.array(coordinating_resindices)))
+                cores.append(Core(binding_core, np.array(coordinating_resindices), self.filepath))
 
             else:
                 continue
