@@ -1,0 +1,15 @@
+name: Metalprot_design
+channels:
+  - defaults
+dependencies:
+  - python=3.9.12
+  - torchvision
+  - pytorch
+  - pandas
+  - dssp
+  - pip:
+    - biopython==1.76
+    - numpy==1.22.4
+    - prody==2.2.0
+    - scipy==1.8.1
+prefix: /opt/anaconda3/envs/Metalprot_design

@@ -8,20 +8,24 @@ class Error(Exception):
     """Base class for other exceptions"""
     pass 
 
+class AlignmentError(Error):
+    """Raised when identification of unique cores fails"""
+    pass
+
+class CoreLoadingError(Error):
+    """Raised when cores are not loaded successfully"""
+    pass
+
 class NoCoresError(Error):
     """Raised when no cores are found"""
     pass
 
-class DistMatDimError(Error):
-    """Raised when dimensions of distance matrix are incorrect"""
+class NoisingError(Error):
+    """Raised when core noising was done improperly"""
     pass
 
-class LabelDimError(Error):
-    """Raised when dimensions of label are incorrect"""
-    pass
-
-class EncodingDimError(Error):
-    """Raised when dimensions of sequence encoding are incorrect"""
+class FeaturizationError(Error):
+    """Raised when featurization fails"""
     pass
 
 class EncodingError(Error):

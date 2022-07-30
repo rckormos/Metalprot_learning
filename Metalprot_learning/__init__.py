@@ -3,10 +3,11 @@ Metalprot_learning
 DeGrado Lab 2021
 """
 
-from .core_generator import *
-from .trainer import *
-from .datasets import *
-from .models import *
-from .utils import *
+from . import loader 
+from . import train
+from . import predictor
+from . import processor
+from . import tune
+from . import utils
 
 __version__ = '0.1.0'
