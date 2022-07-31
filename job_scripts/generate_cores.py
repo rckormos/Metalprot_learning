@@ -60,13 +60,8 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-<<<<<<< HEAD
-    #YOU WILL NEED TO EDIT THIS PATH HERE
-    path2examples = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/src'
-=======
     PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
     PERMUTE = True
->>>>>>> d69c730f6ccba4dbadb6bec84bbc4d8f4ce728c7
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
