@@ -220,11 +220,11 @@ class Core:
         metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()[0]
         filename = self._name(self.identifiers, metal_identifier) + '.pkl'
         if self.permuted_channels and self.permuted_labels and self.permuted_identifiers:
-            df = pd.DataFrame({'channels': self.permuted_channels, 'labels': self.permuted_labels, 'identifiers': self.permuted_identifiers})
+            df = pd.DataFrame({'channels': self.permuted_channels, 'labels': self.permuted_labels, 'identifiers': self.permuted_identifiers, 'sources': [self.source] * len(self.permuted_channels)})
             df.to_pickle(os.path.join(output_dir, filename))
 
         else:
-            df = pd.DataFrame({'channels': [self.channels], 'labels': [self.label], 'identifiers': [self.identifiers]})
+            df = pd.DataFrame({'channels': [self.channels], 'labels': [self.label], 'identifiers': [self.identifiers], 'sources': [self.source] * len(self.permuted_channels)})
             df.to_pickle(os.path.join(output_dir, filename))
 
 class Protein:
