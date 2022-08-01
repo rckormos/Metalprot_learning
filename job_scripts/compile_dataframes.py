@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 """
 Author: Jonathan Zhang <jon.zhang@ucsf.edu>
 
@@ -14,6 +16,7 @@ if __name__ == '__main__':
     upsample = sys.argv[2] 
     pickled_files = [os.path.join(working_dir, i) for i in os.listdir(working_dir) if '.pkl' in i]
     for count, file in enumerate(pickled_files):
+        print(file)
         df = pd.read_pickle(file)
         df['barcode'] = [count] * len(df)
 
