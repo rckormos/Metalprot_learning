@@ -11,22 +11,14 @@ import numpy as np
 import torch
 from Metalprot_learning.train import datasets, models
 
-def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool, noise: bool):
-    """Loads data for model training.
-
-    Args:
-        feature_file (str): Path to compiled_features.pkl file.
-        partitions (tuple): Tuple containing percentages of the dataset partitioned into training, testing, and validation sets respectively.
-        batch_size (int): The batch size.
-        seed (int): Random seed defined by user.
-
-    Returns:
-        train_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled training observations and labels.
-        test_dataloader (torch.utils.data.DataLoader): DataLoader object containing shuffled testing observations and labels.
+def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool):
+    """
+    Loads data for model training.
+    :param encodings: boolean that determines whether or not sequence encodings are included during model training.
     """
     train_set, test_set, val_set, barcodes = datasets.split_data(features_file, partitions, seed)
 
-    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings, noise), batch_size=batch_size, shuffle=True)
+    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings), batch_size=batch_size, shuffle=True)
     test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings, False), batch_size=batch_size, shuffle=False)
     validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings, False), batch_size=batch_size, shuffle=False)
 
