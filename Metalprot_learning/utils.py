@@ -11,3 +11,7 @@ class Error(Exception):
 class AlignmentError(Error):
     """Raised when identification of unique cores fails"""
     pass
+
+class EncodingError(Error):
+    """Raise when unrecognized amino acid is found during encoding"""
+    pass
