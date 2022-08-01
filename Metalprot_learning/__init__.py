@@ -6,7 +6,6 @@ DeGrado Lab 2021
 from . import loader 
 from . import train
 from . import predictor
-from . import processor
 from . import tune
 from . import utils
 
