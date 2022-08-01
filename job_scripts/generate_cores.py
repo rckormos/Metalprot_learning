@@ -26,6 +26,7 @@ def run(pdb_file: str, permute: bool):
     """
     try:
         print(pdb_file)
+        failed_file_line = None
         protein = loader.Protein(pdb_file)
         cores = protein.get_cores()
         unique_cores = loader.remove_degenerate_cores(cores)
@@ -36,9 +37,12 @@ def run(pdb_file: str, permute: bool):
             if permute:
                 core.permute()
 
-            core.write_pdb_files(path2output)
-            core.write_data_files(path2output)
-        failed_file_line = None
+            if len(core.permuted_channels) > 24:
+                failed_file_line = pdb_file + ' Error permuting fragments'
+
+            else:
+                core.write_pdb_files(path2output)
+                core.write_data_files(path2output)
 
     except AlignmentError as e:
         failed_file_line = pdb_file + ' Error identifying unique cores'
