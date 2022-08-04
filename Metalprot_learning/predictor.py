@@ -6,7 +6,6 @@ This file contains functions for predicting metal coordinates.
 
 #imports
 import os
-from Metalprot_learning.train.models import SingleLayerNet, DoubleLayerNet
 import pandas as pd
 import torch
 import numpy as np
