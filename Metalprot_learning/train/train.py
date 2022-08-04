@@ -11,50 +11,25 @@ import numpy as np
 import torch
 from Metalprot_learning.train import datasets, models
 
-def load_data(features_file: str, partitions: tuple, batch_size: int, seed: int, encodings: bool):
+def load_data(features_file: str, path2output: str, partitions: tuple, batch_size: int, seed: int, encodings: bool):
     """
     Loads data for model training.
     :param encodings: boolean that determines whether or not sequence encodings are included during model training.
     """
-    train_set, test_set, val_set, barcodes = datasets.split_data(features_file, partitions, seed)
-
-    train_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(train_set, encodings), batch_size=batch_size, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(test_set, encodings, False), batch_size=batch_size, shuffle=False)
-    validation_dataloader = torch.utils.data.DataLoader(datasets.DistanceData(val_set, encodings, False), batch_size=batch_size, shuffle=False)
-
-    return train_dataloader, test_dataloader, validation_dataloader, barcodes
+    train_set, test_set, val_set = datasets.split_data(features_file, path2output, partitions, seed)
+    train_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(train_set, encodings), batch_size=batch_size, shuffle=True)
+    test_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(test_set, encodings, False), batch_size=batch_size, shuffle=False)
+    validation_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(val_set, encodings, False), batch_size=batch_size, shuffle=False)
+    return train_dataloader, test_dataloader, validation_dataloader
 
 def configure_model(config: dict):
-    assert type(config['encodings']) == bool
-    assert type('input'), type(config['l1']) == type(config['l2']) == type(config['output']) == type(config['seed']) == type(config['batch_size']) == type(config['epochs']) == set(int)
-    assert type(config['lr']) == type(config['input_dropout']) == type(config['hidden_dropout']) == float
-
-    _input = 1770 if config['c_beta'] else 1128
-    input = _input + (20*12) if config['encodings'] else _input
-    output = 60 if config['c_beta'] else 48
-
-    if 'l3' not in config.keys():
-        model = models.SingleLayerNet(input, config['l1'], config['l2'], output, config['input_dropout'], config['hidden_dropout']) 
-    else:
-        model = models.DoubleLayerNet(input, config['l1'], config['l2'], config['l3'], output, config['input_dropout'], config['hidden_dropout'])
-
-    return model
+    return models.AlphafoldNet(config)
 
 def train_loop(model, train_dataloader, loss_fn, optimizer, device):
-    """Runs a single epoch of model training.
-
-    Args:
-        model: Instantiation of a neural network to be trained.
-        train_dataloader (torch.utils.data.DataLoader): Dataloader containing training data.
-        loss_fn: User-defined loss function.
-        optimizer: User-defined optimizer for backpropagation.
-
-    Returns:
-        train_loss: The average training loss across batches.
     """
-
-    #set model to train mode
-    model.train()
+    Runs a single epoch of model training.
+    """
+    model.train() #set model to train mode
     running_loss = 0
     for batch, (X, y) in enumerate(train_dataloader):
         X, y = X.to(device), y.to(device)
@@ -67,26 +42,16 @@ def train_loop(model, train_dataloader, loss_fn, optimizer, device):
         optimizer.zero_grad()
         loss.backward()
         optimizer.step()
-
         running_loss += loss.item()
 
     running_loss /= len(train_dataloader)
     return running_loss
 
 def validation_loop(model, test_dataloader, loss_fn, device):
-    """Computes a forward pass of the testing dataset through the network and the resulting testing loss.
-
-    Args:
-        model: Instantiation of a neural network to be trained.
-        test_dataloader (torch.utils.data.DataLoader): Dataloader containing testing data.
-        loss_fn: User-defined loss function.
-
-    Returns:
-        validation_loss: The average validation loss across batches.
     """
-
-    #set model to evaluation mode
-    model.eval()
+    Computes a forward pass of the testing dataset through the network and the resultant test loss.
+    """
+    model.eval() #set model to evaluation mode
 
     vloss = 0
     with torch.no_grad():
@@ -98,21 +63,13 @@ def validation_loop(model, test_dataloader, loss_fn, device):
     return vloss
 
 def train_model(path2output: str, config: dict, features_file: str):
-    """Runs model training.
-
-    Args:
-        path2output (str): Directory to dump output files.
-        arch (dict): List of dictionaries defining architecture of the neural network.
-        features_file (str): Contains observations and labels.
-        config (dict): Defines configurable model hyperparameters.
-        arch (dict): Defines the architecture of the neural network with configurable parameters.
-        partitions (tuple): Tuple containing percentages of the dataset partitioned into training, testing, and validation sets respectively.
-        seed (int): Random seed defined by user.
+    """
+    Main function for running model training.
+    :param config: dictionary defining model hyperparameters for a given training run.
     """
 
     np.random.seed(config['seed'])
     torch.manual_seed(config['seed'])
-    # torch.cuda.manual_seed(config['seed'])
 
     #instantiate model
     model = configure_model(config)
@@ -123,11 +80,11 @@ def train_model(path2output: str, config: dict, features_file: str):
     print(f'Model on GPU? {next(model.parameters()).is_cuda}')
 
     #instantiate dataloader objects for train and test sets
-    train_loader, test_loader, val_loader, barcodes = load_data(features_file, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'], config['noise'])
+    train_loader, test_loader, val_loader = load_data(features_file, path2output, (0.8,0.1,0.1), config['batch_size'], config['seed'], config['encodings'])
 
     #define optimizer and loss function
-    optimizer = torch.optim.SGD(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay']) if 'b1' not in config.keys() else torch.optim.Adam(model.parameters(), lr=config['lr'], weight_decay=config['weight_decay'], betas=(config['b1'], config['b2']))
-    criterion = torch.nn.L1Loss() if config['loss_fn'] == 'MAE' else torch.nn.MSELoss()
+    optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad],lr=config['lr'])    
+    criterion = torch.nn.L1Loss()
 
     train_loss = np.array([])
     test_loss = np.array([])
@@ -153,6 +110,3 @@ def train_model(path2output: str, config: dict, features_file: str):
     torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
     with open(os.path.join(path2output, 'config.json'), 'w') as f:
         json.dump(config, f)
-
-    with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
-        json.dump(barcodes, f)
