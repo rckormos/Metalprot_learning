@@ -20,7 +20,7 @@ def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     tasks = [pdbs[i] for i in range(0, len(pdbs)) if i % no_jobs == job_id]
     return tasks
 
-def run(pdb_file: str, permute: bool):
+def run(pdb_file: str, permute: bool, coordination_number: tuple):
     """
     Wrapper function for running core loading.
     """
@@ -28,7 +28,7 @@ def run(pdb_file: str, permute: bool):
         print(pdb_file)
         failed_file_line = None
         protein = loader.Protein(pdb_file)
-        cores = protein.get_cores()
+        cores = protein.get_cores(coordination_number=coordination_number)
         unique_cores = loader.remove_degenerate_cores(cores)
         for core in unique_cores:
             core.compute_channels()
@@ -66,11 +66,12 @@ if __name__ == '__main__':
     
     PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
     PERMUTE = True
+    COORDINATION_NUMBER = (2,4)
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)
     for pdb_file in tasks:
-        failed_file_line = run(pdb_file, PERMUTE)
+        failed_file_line = run(pdb_file, PERMUTE, COORDINATION_NUMBER)
         failed.append(failed_file_line)
         
     failed = list(filter(None, failed))
