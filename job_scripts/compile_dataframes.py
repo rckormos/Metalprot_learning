@@ -23,7 +23,7 @@ if __name__ == '__main__':
         if upsample:
             #if the number of core permutations is less than the maximum, upsample
             sample_size = 24 - len(df)
-            df = df.sample(n=sample_size, replace=True, random_state=69)
+            df = pd.concat[df, df.sample(n=sample_size, replace=True, random_state=69)]
 
         compiled_df = df if count == 0 else pd.concat([compiled_df, df])
         print(f'Successfully compiled {file}')
