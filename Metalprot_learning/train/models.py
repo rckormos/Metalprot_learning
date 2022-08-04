@@ -103,9 +103,9 @@ class AlphafoldNet(nn.Module):
         self.linear3 = nn.Linear(config['linear3']['in'],config['linear3']['out'])
 
     def forward(self, x):
+        x = x.float()
         x1 = x[:, :4, :, :] #the backbone atom distance matrix channels for a batch
         x2 = x[:, 4:, :, :] #the sequence encoding channels for a batch
-
         x2 = self.block_n1(x2)              
         x = torch.cat([x1,x2],1)
 
