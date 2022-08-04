@@ -43,7 +43,6 @@ def remove_degenerate_cores(cores: list):
             unique_cores = []
             while cores:
                 ref = cores.pop() #extract last element in cores
-
                 ref_total_atoms = ref.structure.select('protein').numAtoms()
                 ref_resis = set(ref.structure.select('protein').select('name CA').getResnames())
                 ref_length = len(ref_resis)
@@ -57,7 +56,7 @@ def remove_degenerate_cores(cores: list):
                     #if the reference and core have the same number of atoms, quantify similarity
                     if ref_total_atoms == total_atoms and ref_resis == resis and ref_length == length:    
                         try:
-                            _, _, seqid, overlap = matchChains(ref.select('protein'), core.select('protein'))[0]
+                            _, _, seqid, overlap = matchChains(ref.structure.select('protein'), core.structure.select('protein'))[0]
                             pairwise_seqids, pairwise_overlap = np.append(pairwise_seqids, seqid), np.append(pairwise_overlap, overlap)
 
                         except:
