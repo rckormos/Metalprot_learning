@@ -10,7 +10,6 @@ This script runs model training.
 from Metalprot_learning.train.train import train_model
 import os
 import sys
-import numpy as np
 import datetime
 
 def distribute_tasks(MODELS: list):
@@ -39,36 +38,21 @@ def distribute_tasks(MODELS: list):
 if __name__ == '__main__':
     PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
     MODELS = [
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
-        'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
-        'seed': np.random.randint(1000),
-        'epochs': 2000,
-        'loss_fn': 'MAE',
-        'c_beta': True,
+    {
+        'block_n1': {'pin': 40, 'pout': 8, 'kernel_size': 3, 'padding': 1, 'dropout': 0.2},
+        'block0': {'pin': 12, 'pout': 64, 'kernel_size': 3, 'padding': 1, 'dropout': 0.3},
+        'block1': {'pin_residual': 64, 'dilation_residual': 1, 'pin_conv': 64, 'pout_conv': 128, 'kernel_size_conv': 1, 'padding_conv': 0, 'kernel_size_pool': (2,2),'dropout': 0.2},
+        'block2': {'pin_residual': 128, 'dilation_residual': 1, 'pin_conv': 128, 'pout_conv': 256, 'kernel_size_conv': 1, 'padding_conv': 0, 'kernel_size_pool': (2,2),'dropout': 0.2},
+        'block3': {'pin_residual': 256, 'dilation_residual': 1, 'dropout': 0.2},
+        'linear1': {'in': 2304, 'out': 512},
+        'linear2': {'in': 512, 'out': 256},
+        'linear3': {'in': 256, 'out': 48},
         'encodings': True,
-        'noise': True},
-
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
-        'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
-        'seed': np.random.randint(1000),
-        'epochs': 2000,
-        'loss_fn': 'MAE',
-        'c_beta': True,
-        'encodings': True,
-        'noise': False}
-
+        'batch_size': 16,
+        'seed': 69,
+        'lr': 0.0001,
+        'epochs': 1
+    }
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
