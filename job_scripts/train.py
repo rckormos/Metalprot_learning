@@ -36,7 +36,7 @@ def distribute_tasks(MODELS: list):
     return path2output, tasks
 
 if __name__ == '__main__':
-    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cnn-cores-2022-07-31/compiled_data.pkl'
     MODELS = [
     {
         'block_n1': {'pin': 40, 'pout': 8, 'kernel_size': 3, 'padding': 1, 'dropout': 0.2},
