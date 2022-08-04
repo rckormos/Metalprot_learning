@@ -18,8 +18,8 @@ def load_data(features_file: str, path2output: str, partitions: tuple, batch_siz
     """
     train_set, test_set, val_set = datasets.split_data(features_file, path2output, partitions, seed)
     train_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(train_set, encodings), batch_size=batch_size, shuffle=True)
-    test_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(test_set, encodings, False), batch_size=batch_size, shuffle=False)
-    validation_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(val_set, encodings, False), batch_size=batch_size, shuffle=False)
+    test_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(test_set, encodings), batch_size=batch_size, shuffle=False)
+    validation_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(val_set, encodings), batch_size=batch_size, shuffle=False)
     return train_dataloader, test_dataloader, validation_dataloader
 
 def configure_model(config: dict):
@@ -88,6 +88,7 @@ def train_model(path2output: str, config: dict, features_file: str):
 
     train_loss = np.array([])
     test_loss = np.array([])
+    model = model.float()
     validation_loss = np.array([])
     for epoch in range(0, config['epochs']):
         _train_loss = train_loop(model, train_loader, criterion, optimizer, device)
