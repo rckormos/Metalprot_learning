@@ -82,7 +82,7 @@ class AlphafoldNet(nn.Module):
             Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
             ConvBn2d(config['block0']['out'], config['block1']['out'], kernel_size=config['block1']['kernel_size_conv'], padding=config['block1']['padding_conv']),
             Swish(), 
-            nn.MaxPool2d(kernel_size=config['block1']['kernel_size_pool']),
+            nn.MaxPool2d(kernel_size=(config['block1']['kernel_size_pool'], config['block1']['kernel_size_pool'])),
             nn.Dropout(config['block1']['dropout']),
         )
         self.block2 = nn.Sequential(
@@ -90,7 +90,7 @@ class AlphafoldNet(nn.Module):
             Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
             ConvBn2d(config['block1']['out'], config['block2']['out'], kernel_size=config['block2']['kernel_size_conv'], padding=config['block2']['padding_conv']),
             Swish(), 
-            nn.MaxPool2d(kernel_size=config['block2']['kernel_size_pool']),
+            nn.MaxPool2d(kernel_size=(config['block2']['kernel_size_pool'], config['block2']['kernel_size_pool'])),
             nn.Dropout(config['block2']['dropout']),
         )
         self.block3 = nn.Sequential(
