@@ -7,13 +7,13 @@ This script optimizes model performance by tuning dropout rate.
 """
 
 #imports
+import os
 import sys
-import numpy as np
-from copy import deepcopy
 import json
-from Metalprot_learning.models import *
-from Metalprot_learning.datasets import *
-from Metalprot_learning.trainer import *
+import optuna
+import datetime
+import numpy as np
+from Metalprot_learning.train import tune
 
 def distribute_tasks(no_jobs: int, job_id: int, arch: list, input_layer_rates: np.ndarray, hidden_layer_rates: np.ndarray):
     combinations = [(i,j) for i in input_layer_rates for j in hidden_layer_rates]
@@ -46,41 +46,32 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    #provide paths to observations and labels
-    path2observations = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/observations.npy'
-    path2labels = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/labels.npy'
+    FEATURES_FILE = ''
+    NO_TRIALS = 50
+    CONFIG = {
+        'block_n1': {'in': 40, 'out': (2,20), 'kernel_size': (1,10), 'padding': (1,5), 'dropout': (0,.5)},
+        'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout': 0.3},
+        'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size_conv': 1, 'padding_conv': 0, 'kernel_size_pool': (2,2),'dropout': 0.2},
+        'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size_conv': 1, 'padding_conv': 0, 'kernel_size_pool': (2,2),'dropout': 0.2},
+        'block3': {'dilation_residual': 1, 'dropout': 0.2},
+        'linear1': {'out': 512},
+        'linear2': {'out': 256},
+        'linear3': {'out': 48},
+        'encodings': True,
+        'batch_size': 16,
+        'seed': 69,
+        'lr': 0.0001,
+        'epochs': 1
+        }
 
-    #define hyperparameters. 
-    epochs = 2000
-    batch_size = 1000
-    learning_rate = 0.01
-    loss_function = 'MAE' #can be mean absolute error (MAE) or mean squared error (MSE)
-    optimizer = 'SGD' #currently can only be stochastic gradient descent (SGD)
-    partition = (0.8,0.1,0.1)
-    seed = 42
+    today = datetime.datetime.now()
+    dirname = os.path.join(path2output, '-'.join( str(i) for i in ['tune', today.year, today.month, today.day, today.hour, today.minute, today.second, today.microsecond]))
+    os.mkdir(dirname)
+    objective = tune.define_objective(path2output, FEATURES_FILE, CONFIG)
+    study = optuna.create_study(direction='minimize')
+    study.optimize(objective, n_trials=NO_TRIALS)
 
-    #define dropout rate vectors
-    input_layer_rates = np.linspace(.5,.9,5)
-    hidden_layer_rates = np.linspace(.1,.9,9)
-
-    #define base architecture
-    arch = [{'input_dim': 2544, 'output_dim': 1272, 'activation': 'ReLU'}, 
-            {'input_dim': 1272, 'output_dim': 636, 'activation': 'ReLU'},
-            {'input_dim': 636, 'output_dim': 318, 'activation': 'ReLU'},
-            {'input_dim': 318, 'output_dim': 48, 'activation': 'ReLU'}]
-
-    training_data, testing_data, validation_data = split_data(path2observations, path2labels, partition, seed)
-    tasks = distribute_tasks(no_jobs, job_id, arch, input_layer_rates, hidden_layer_rates)
-    for architecture in tasks:
-        name = os.path.join(path2output, str(architecture[0]['dropout']) + '_' + str(round(architecture[1]['dropout'],2)))
-        os.makedirs(name)
-
-        model = SingleLayerNet(architecture)
-        train_model(model, name, training_data, testing_data, (epochs, batch_size, learning_rate, loss_function, optimizer))
-
-        with open(os.path.join(name, 'architecture.json'), 'w') as f:
-            json.dump(architecture, f)
-
-
-
-
+    if NO_TRIALS > 1:
+        importances = optuna.importance.get_param_importances(study)
+        with open(os.path.join(dirname, 'importances.json'), 'w') as f:
+            json.dump(importances, f)
