@@ -68,39 +68,39 @@ class AlphafoldNet(nn.Module):
         super(AlphafoldNet, self).__init__()
         self.encodings = config['encodings']
         self.block_n1 = nn.Sequential(
-            ConvBn2d(config['block_n1']['pin'], config['block_n1']['pout'], kernel_size=config['block_n1']['kernel_size'], padding=config['block_n1']['padding']),
+            ConvBn2d(config['block_n1']['in'], config['block_n1']['out'], kernel_size=config['block_n1']['kernel_size'], padding=config['block_n1']['padding']),
             Swish(), 
             nn.Dropout(config['block_n1']['dropout']),
         )
         self.block0 = nn.Sequential(
-            ConvBn2d(config['block0']['pin'], config['block0']['pout'], kernel_size=config['block0']['kernel_size'], padding=config['block0']['padding']),
+            ConvBn2d(4 + config['block_n1']['out'], config['block0']['out'], kernel_size=config['block0']['kernel_size'], padding=config['block0']['padding']),
             Swish(), 
             nn.Dropout(config['block0']['dropout']),
         )
         self.block1 = nn.Sequential(
-            Residual(config['block1']['pin_residual'], dilation=config['block1']['dilation_residual']),
-            Residual(config['block1']['pin_residual'], dilation=config['block1']['dilation_residual']),
-            ConvBn2d(config['block1']['pin_conv'], config['block1']['pout_conv'], kernel_size=config['block1']['kernel_size_conv'], padding=config['block1']['padding_conv']),
+            Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
+            Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
+            ConvBn2d(config['block0']['out'], config['block1']['out'], kernel_size=config['block1']['kernel_size_conv'], padding=config['block1']['padding_conv']),
             Swish(), 
             nn.MaxPool2d(kernel_size=config['block1']['kernel_size_pool']),
             nn.Dropout(config['block1']['dropout']),
         )
         self.block2 = nn.Sequential(
-            Residual(config['block2']['pin_residual'], dilation=config['block2']['dilation_residual']),
-            Residual(config['block2']['pin_residual'], dilation=config['block2']['dilation_residual']),
-            ConvBn2d(config['block2']['pin_conv'], config['block2']['pout_conv'], kernel_size=config['block2']['kernel_size_conv'], padding=config['block2']['padding_conv']),
+            Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
+            Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
+            ConvBn2d(config['block1']['out'], config['block2']['out'], kernel_size=config['block2']['kernel_size_conv'], padding=config['block2']['padding_conv']),
             Swish(), 
             nn.MaxPool2d(kernel_size=config['block2']['kernel_size_pool']),
             nn.Dropout(config['block2']['dropout']),
         )
         self.block3 = nn.Sequential(
-            Residual(config['block3']['pin_residual'], dilation=config['block3']['dilation_residual']),
-            Residual(config['block3']['pin_residual'], dilation=config['block3']['dilation_residual']),
+            Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
+            Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
             nn.Dropout(config['block3']['dropout']),
         )
-        self.linear1 = nn.Linear(config['linear1']['in'],config['linear1']['out'])
-        self.linear2 = nn.Linear(config['linear2']['in'],config['linear2']['out'])
-        self.linear3 = nn.Linear(config['linear3']['in'],config['linear3']['out'])
+        self.linear1 = nn.Linear(9 * config['block2']['out'],config['linear1']['out'])
+        self.linear2 = nn.Linear(config['linear1']['out'],config['linear2']['out'])
+        self.linear3 = nn.Linear(config['linear2']['out'],config['linear3']['out'])
 
     def forward(self, x):
         x = x.float()
