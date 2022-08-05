@@ -46,8 +46,8 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    FEATURES_FILE = ''
-    NO_TRIALS = 50
+    FEATURES_FILE = '/home/gpu/jzhang1198/data/ZN_binding_cores/cnn-cores-2022-07-31/compiled_data.pkl'
+    NO_TRIALS = 30
     CONFIG = {
         'block_n1': {'in': 40, 'out': (2,20), 'kernel_size': (1,10), 'padding': (1,5), 'dropout': (0,.5)},
         'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout': 0.3},
