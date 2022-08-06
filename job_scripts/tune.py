@@ -27,23 +27,23 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    FEATURES_FILE = '/Users/jonathanzhang/Documents/ucsf/degrado/data/metalprot_learning/cnn/ZN_binding_cores/cnn-cores-2022-07-31/compiled_data.pkl'
-    NO_STUDIES = 2
-    NO_TRIALS = 1
+    FEATURES_FILE = '/home/gpu/jzhang1198/data/ZN_binding_cores/cnn-cores-2022-07-31/compiled_data.pkl'
+    NO_STUDIES = 4
+    NO_TRIALS = 20
     CONFIG = {
-        'block_n1': {'in': 40, 'out': (2,20), 'padding': (2,5), 'dropout': (0,.5)},
-        'block0': {'out': (50,100), 'kernel_size': (1,4), 'padding': (0,5), 'dropout': (0.1, 0.9)}, #constraint: kernel size must be less than the width of the block_n1 output
-        'block1': {'dilation_residual': (1,2), 'out': (100,200), 'kernel_size': (1,2), 'padding': (1,2), 'kernel_size_pool': 2,'dropout': (0.1, 0.9)},
-        'block2': {'dilation_residual': (1,2), 'out': (200,400), 'kernel_size': (1,2), 'padding': (1,2), 'kernel_size_pool': 2,'dropout': (0.1, 0.9)},
-        'block3': {'dilation_residual': (1,2), 'dropout': (0.1, 0.9)},
-        'linear1': {'out': (200,400)},
-        'linear2': {'out': (200,400)},
+        'block_n1': {'in': 40, 'out': 8, 'padding': 1, 'dropout': 0.2},
+        'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout': 0.3}, 
+        'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': 0.2},
+        'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': 0.2},
+        'block3': {'dilation_residual': 1, 'dropout': 0.2},
+        'linear1': {'out': 512},
+        'linear2': {'out': 256},
         'linear3': {'out': 48},
         'encodings': True,
         'batch_size': (2,40),
         'seed': 69,
-        'lr': (0.0001, 0.01),
-        'epochs': 1
+        'lr': (0.0001, 0.1),
+        'epochs': 30
         }
 
     today = datetime.datetime.now()

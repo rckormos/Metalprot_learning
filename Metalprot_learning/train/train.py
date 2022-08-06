@@ -16,7 +16,7 @@ def load_data(features_file: str, path2output: str, partitions: tuple, batch_siz
     Loads data for model training.
     :param encodings: boolean that determines whether or not sequence encodings are included during model training.
     """
-    train_set, test_set, val_set = datasets.split_data(features_file, path2output, partitions, seed, write_json: bool)
+    train_set, test_set, val_set = datasets.split_data(features_file, path2output, partitions, seed, write_json)
     train_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(train_set, encodings), batch_size=batch_size, shuffle=True)
     test_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(test_set, encodings), batch_size=batch_size, shuffle=False)
     validation_dataloader = torch.utils.data.DataLoader(datasets.ImageSet(val_set, encodings), batch_size=batch_size, shuffle=False)
