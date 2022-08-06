@@ -67,7 +67,7 @@ class Swish(nn.Module):
 class Residual(nn.Module):
     def __init__(self,in_channel, dilation):
         super(Residual, self).__init__()
-        self.conv = nn.Conv2d(in_channel, in_channel, kernel_size=3, padding=dilation, dilation=dilation, bias=False)
+        self.conv = nn.Conv2d(in_channel, in_channel, kernel_size=3, padding=dilation, dilation=dilation, bias=False) #given that the height and width of the output must be the same as that of the input, the kernel size must always be 3
         self.bn   = nn.BatchNorm2d(in_channel)
         self.act  = Swish()
 
@@ -80,14 +80,17 @@ class Residual(nn.Module):
         return x
 
 class AlphafoldNet(nn.Module):
+    """
+    Class for Alphafold-like neural network.
+    """
     def __init__(self, config: dict):
         super(AlphafoldNet, self).__init__()
         self.encodings = config['encodings']
         self.block_n1 = nn.Sequential(
-            ConvBn2d(config['block_n1']['in'], config['block_n1']['out'], kernel_size=config['block_n1']['kernel_size'], padding=config['block_n1']['padding']),
+            ConvBn2d(config['block_n1']['in'], config['block_n1']['out'], kernel_size=(2 * config['block_n1']['padding']) + 1, padding=config['block_n1']['padding']), 
             Swish(), 
             nn.Dropout(config['block_n1']['dropout']),
-        )
+        ) #based on the constraint that the width and height of the output must be 12, the kernel size and padding are coupled
         self.block0 = nn.Sequential(
             ConvBn2d(4 + config['block_n1']['out'], config['block0']['out'], kernel_size=config['block0']['kernel_size'], padding=config['block0']['padding']),
             Swish(), 
