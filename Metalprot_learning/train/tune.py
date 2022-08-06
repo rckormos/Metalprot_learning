@@ -41,11 +41,11 @@ def define_objective(path2output: str, features_file: str, config: dict):
                 layer_dict = {}
                 for key in config[layer_key].keys():
                     if key != 'dropout':
-                        layer_dict[key] = trial.suggest_int(key, config[key][0], config[key][1]) if type(config[key]) == tuple else config[key]
+                        layer_dict[key] = trial.suggest_int(key, config[layer_key][key][0], config[layer_key][key][1]) if type(config[layer_key][key]) == tuple else config[layer_key][key]
 
                     else:
-                       layer_dict[key] = trial.suggest_float(key, config[key][0], config[key][1]) if type(config[key]) == tuple else config[key]
-                trial_dict['layer_key'] = layer_dict
+                       layer_dict[key] = trial.suggest_float(key, config[layer_key][key][0], config[layer_key][key][1]) if type(config[layer_key][key]) == tuple else config[layer_key][key]
+                trial_dict[layer_key] = layer_dict
 
         model = models.AlphafoldNet(trial_dict)
         device = 'cuda' if torch.cuda.is_available() else 'cpu'
@@ -53,7 +53,7 @@ def define_objective(path2output: str, features_file: str, config: dict):
         print(f'Training running on {device}')
         loss_fn = torch.nn.L1Loss()
         optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad],lr=trial_dict['lr'])   
-        train_dataloader, test_dataloader, _, _ = train.load_data(features_file, path2output, (0.8,0.1,0.1), trial_dict['batch_size'], trial_dict['seed'], trial_dict['encodings'])
+        train_dataloader, test_dataloader, _ = train.load_data(features_file, path2output, (0.8,0.1,0.1), trial_dict['batch_size'], trial_dict['seed'], trial_dict['encodings'])
 
         train_loss = np.array([])
         test_loss = np.array([])
