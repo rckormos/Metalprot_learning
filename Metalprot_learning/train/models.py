@@ -9,6 +9,22 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch
 
+def compute_channel_dims(in_width: int, config: dict):
+    """
+    Utility function for computing dimensionality of features after convolution.
+    """
+    for layer in [x for x in config.keys() if x in ['block0', 'block1', 'block2']]:
+        kernel_size = config[layer]['kernel_size'] 
+        padding=config[layer]['padding']
+        _out_width = ((in_width + (2 * padding) - kernel_size) // 1) + 1
+        if 'kernel_size_pool' in config[layer].keys():
+            kernel_size_pool = config[layer]['kernel_size_pool']
+            out_width = ((_out_width - kernel_size_pool) // 2) + 1
+        else:
+            out_width = _out_width
+        in_width = out_width
+    return in_width
+
 class ConvBn2d(nn.Module):
     """
     Utility class for 2d convolution with a batch norm.
@@ -80,17 +96,17 @@ class AlphafoldNet(nn.Module):
         self.block1 = nn.Sequential(
             Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
             Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
-            ConvBn2d(config['block0']['out'], config['block1']['out'], kernel_size=config['block1']['kernel_size_conv'], padding=config['block1']['padding_conv']),
+            ConvBn2d(config['block0']['out'], config['block1']['out'], kernel_size=config['block1']['kernel_size'], padding=config['block1']['padding']),
             Swish(), 
-            nn.MaxPool2d(kernel_size=(config['block1']['kernel_size_pool'], config['block1']['kernel_size_pool'])),
+            nn.MaxPool2d(kernel_size=config['block1']['kernel_size_pool']),
             nn.Dropout(config['block1']['dropout']),
         )
         self.block2 = nn.Sequential(
             Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
             Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
-            ConvBn2d(config['block1']['out'], config['block2']['out'], kernel_size=config['block2']['kernel_size_conv'], padding=config['block2']['padding_conv']),
+            ConvBn2d(config['block1']['out'], config['block2']['out'], kernel_size=config['block2']['kernel_size'], padding=config['block2']['padding']),
             Swish(), 
-            nn.MaxPool2d(kernel_size=(config['block2']['kernel_size_pool'], config['block2']['kernel_size_pool'])),
+            nn.MaxPool2d(kernel_size=config['block2']['kernel_size_pool']),
             nn.Dropout(config['block2']['dropout']),
         )
         self.block3 = nn.Sequential(
@@ -98,7 +114,7 @@ class AlphafoldNet(nn.Module):
             Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
             nn.Dropout(config['block3']['dropout']),
         )
-        self.linear1 = nn.Linear(9 * config['block2']['out'],config['linear1']['out'])
+        self.linear1 = nn.Linear((compute_channel_dims(12, config) ** 2) * config['block2']['out'],config['linear1']['out'])
         self.linear2 = nn.Linear(config['linear1']['out'],config['linear2']['out'])
         self.linear3 = nn.Linear(config['linear2']['out'],config['linear3']['out'])
 
