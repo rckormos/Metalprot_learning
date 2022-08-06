@@ -25,7 +25,7 @@ class ImageSet(Dataset):
         label = self.labels[index]
         return observation, label 
 
-def split_data(features_file: str, path2output: str, partitions: tuple, seed: int):
+def split_data(features_file: str, path2output: str, partitions: tuple, seed: int, write_json: bool):
     """
     Splits data into training and test sets. Returns a tuple of train, test, and validation dataframes, in that order.
     """
@@ -37,7 +37,8 @@ def split_data(features_file: str, path2output: str, partitions: tuple, seed: in
     train_len, test_len = round(len(barcodes) * partitions[0]), round(len(barcodes) * partitions[1])
     train_barcodes, test_barcodes, val_barcodes = barcodes[0: train_len], barcodes[train_len: train_len + test_len], barcodes[train_len + test_len: len(data)]
 
-    with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
-        json.dump({'train': train_barcodes.tolist(), 'test': test_barcodes.tolist(), 'val': val_barcodes.tolist()}, f)
+    if write_json:
+        with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
+            json.dump({'train': train_barcodes.tolist(), 'test': test_barcodes.tolist(), 'val': val_barcodes.tolist()}, f)
         
     return data[data['barcode'].isin(train_barcodes)], data[data['barcode'].isin(test_barcodes)], data[data['barcode'].isin(val_barcodes)]

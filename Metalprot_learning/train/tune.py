@@ -53,7 +53,7 @@ def define_objective(path2output: str, features_file: str, config: dict):
         print(f'Training running on {device}')
         loss_fn = torch.nn.L1Loss()
         optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad],lr=trial_dict['lr'])   
-        train_dataloader, test_dataloader, _ = train.load_data(features_file, path2output, (0.8,0.1,0.1), trial_dict['batch_size'], trial_dict['seed'], trial_dict['encodings'])
+        train_dataloader, test_dataloader, _ = train.load_data(features_file, path2output, (0.8,0.1,0.1), trial_dict['batch_size'], trial_dict['seed'], trial_dict['encodings'], False)
 
         train_loss = np.array([])
         test_loss = np.array([])
