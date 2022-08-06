@@ -12,7 +12,6 @@ import sys
 import json
 import optuna
 import datetime
-import numpy as np
 from Metalprot_learning.train import tune
 
 def distribute_tasks(no_jobs: int, job_id: int, no_studies: int):
