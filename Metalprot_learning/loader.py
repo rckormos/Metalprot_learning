@@ -101,6 +101,7 @@ class Core:
         self.permuted_channels = None
         self.permuted_labels = None
         self.permuted_identifiers = None
+        self.permuted_coordinating_resis = None
 
     def _compute_seq_channels(self, sequence: list):
         """
@@ -172,7 +173,7 @@ class Core:
         return fragments
 
     def permute(self):
-        permuted_channels, permuted_labels, permuted_identifiers = [], [], []
+        permuted_channels, permuted_labels, permuted_identifiers, permuted_coordinating_resis = [], [], [], []
         fragment_indices = self._identify_fragments()
         sequence = self.structure.select('protein').select('name N').getResnames()
         fragment_permutations = permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
@@ -200,10 +201,12 @@ class Core:
             permuted_channels.append(permuted_channel)
             permuted_labels.append(permuted_label)
             permuted_identifiers.append([self.identifiers[i] for i in fragment_index_permutation])
+            permuted_coordinating_resis.append([self.coordinating_resis[i] for i in fragment_index_permutation])
 
         self.permuted_channels = permuted_channels
         self.permuted_labels = permuted_labels
         self.permuted_identifiers = permuted_identifiers
+        self.permuted_coordinating_resis = permuted_coordinating_resis
 
     def _name(self, identifiers: list, metal_identifier: str):
         return self.structure.getTitle() + '_' + '_'.join([str(tup[0]) + tup[1] for tup in identifiers]) + '_' + metal_identifier
@@ -218,16 +221,18 @@ class Core:
         metal = self.structure.select('hetero')
         metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()[0]
         filename = self._name(self.identifiers, metal_identifier) + '.pkl'
-        if self.permuted_channels and self.permuted_labels and self.permuted_identifiers:
+        if self.permuted_channels and self.permuted_labels and self.permuted_identifiers and self.permuted_coordinating_resis:
             df = pd.DataFrame({'channels': self.permuted_channels, 'labels': self.permuted_labels, 
             'identifiers': self.permuted_identifiers, 'sources': [filename] * len(self.permuted_channels), 
-            'coordination_number': [self.coordination_number] * len(self.permuted_channels)})
+            'coordination_number': [self.coordination_number] * len(self.permuted_channels),
+            'coordinating_resis': self.permuted_coordinating_resis})
             df.to_pickle(os.path.join(output_dir, filename))
 
         else:
             df = pd.DataFrame({'channels': [self.channels], 'labels': [self.label], 
             'identifiers': [self.identifiers], 'sources': [filename],
-            'coordination_number': [self.coordination_number]})
+            'coordination_number': [self.coordination_number],
+            'coordinating_resis': [self.coordinating_resis]})
             df.to_pickle(os.path.join(output_dir, filename))
 
 class Protein:
