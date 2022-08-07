@@ -141,10 +141,18 @@ class Core:
 
         self.channels = channels
 
-    def compute_labels(self):
-        label = np.zeros(12*4)
-        _label = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
-        label[0:len(_label)] = _label
+    def compute_labels(self, distogram=False):
+        if not distogram:
+            label = np.zeros(12*4)
+            _label = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
+            label[0:len(_label)] = _label
+
+        else:
+            distances = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
+            bins = np.arange(0, 12.5, 0.1)
+            label = np.zeros(len(48), len(bins))
+            for ind, distance in enumerate(distances):
+                label[ind] = np.histogram(distance, bins)[0]
         self.label = label
 
     def _identify_fragments(self):
