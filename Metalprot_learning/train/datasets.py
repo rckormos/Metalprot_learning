@@ -42,3 +42,19 @@ def split_data(features_file: str, path2output: str, partitions: tuple, seed: in
             json.dump({'train': train_barcodes.tolist(), 'test': test_barcodes.tolist(), 'val': val_barcodes.tolist()}, f)
         
     return data[data['barcode'].isin(train_barcodes)], data[data['barcode'].isin(test_barcodes)], data[data['barcode'].isin(val_barcodes)]
+
+def split_data_kfolds(features_file: str, k: int, seed: int):
+    """
+    Splits data into k separate folds.
+    """
+    data = pd.read_pickle(features_file)
+    barcodes = np.unique(np.array(data['barcode']))
+    np.random.seed(seed)
+    np.random.shuffle(barcodes)
+
+    x, y = divmod(len(barcodes), k)
+    _folds = list((barcodes[i*x+min(i, y):(i+1)*x+min(i+1, y)] for i in range(k)))
+    folds = {}
+    for number, fold in enumerate(_folds):
+        folds[str(number)] = data[data['barcode'].isin(fold)]
+    return folds

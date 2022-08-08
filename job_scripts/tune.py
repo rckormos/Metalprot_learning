@@ -40,9 +40,9 @@ if __name__ == '__main__':
         'linear2': {'out': 256},
         'linear3': {'out': 48},
         'encodings': True,
-        'batch_size': (2,40),
+        'batch_size': (2,50),
         'seed': 69,
-        'lr': (0.0001, 0.1),
+        'lr': (0.00001, 0.001),
         'epochs': 30
         }
 

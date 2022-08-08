@@ -7,9 +7,11 @@ This file contains functions for model training and hyperparameter optimization.
 #imports
 import os
 import json
-import numpy as np
 import torch
+import numpy as np
+from sklearn.model_selection import KFold
 from Metalprot_learning.train import datasets, models
+from torch.utils.data import Dataset, DataLoader,TensorDataset,random_split,SubsetRandomSampler, ConcatDataset
 
 def load_data(features_file: str, path2output: str, partitions: tuple, batch_size: int, seed: int, encodings: bool, write_json: bool):
     """
@@ -67,7 +69,6 @@ def train_model(path2output: str, config: dict, features_file: str, write_json=T
     Main function for running model training.
     :param config: dictionary defining model hyperparameters for a given training run.
     """
-
     np.random.seed(config['seed'])
     torch.manual_seed(config['seed'])
 
@@ -109,5 +110,57 @@ def train_model(path2output: str, config: dict, features_file: str, write_json=T
     np.save(os.path.join(path2output, 'validation_loss.npy'), validation_loss)
 
     torch.save(model.state_dict(), os.path.join(path2output, 'model.pth'))
+    with open(os.path.join(path2output, 'config.json'), 'w') as f:
+        json.dump(config, f)
+
+def load_data_kfolds(features_file: str, k: int, encodings: bool, seed: int):
+    _folds = datasets.split_data_kfolds(features_file, k, seed)
+    folds = [datasets.ImageSet(_folds[fold], encodings) for fold in _folds.keys()]
+    return folds
+
+def train_kfolds(path2output: str, config: dict, features_file: str):
+    """
+    Function for running k-folds cross-validation model training.
+    """
+    np.random.seed(config['seed'])
+    torch.manual_seed(config['seed'])
+
+    #instantiate model
+    model = configure_model(config)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    model = model.to(device)
+
+    print(f'CUDA available? {torch.cuda.is_available()}')
+    print(f'Model on GPU? {next(model.parameters()).is_cuda}')
+
+    optimizer = torch.optim.Adam([param for param in model.parameters() if param.requires_grad],lr=config['lr'])    
+    criterion = torch.nn.L1Loss()
+
+    folds = load_data_kfolds(features_file, config['k'], config['seed'])
+    for fold in range(len(folds)):
+        fold_dir = os.path.join(path2output, f'fold{fold}')
+        os.mkdir(fold_dir)
+
+        test_loader = torch.utils.DataLoader(folds[0], batch_size=config['batch_size'], shuffle=False)
+        train_loader = torch.utils.DataLoader(torch.utils.ConcatDataset([folds[i] for i in range(len(folds)) if i != fold]), batch_size=['batch_size'], shuffle=True)
+
+        train_loss = np.array([])
+        test_loss = np.array([])
+        model = model.float()
+        for epoch in range(0, config['epochs']):
+            _train_loss = train_loop(model, train_loader, criterion, optimizer, device)
+            _test_loss = validation_loop(model, test_loader, criterion, device)
+
+            train_loss = np.append(train_loss, _train_loss)
+            test_loss = np.append(test_loss, _test_loss)
+
+            print(f'Train Loss for Epoch {epoch}: {_train_loss}')
+            print(f'Test Loss for Epoch {epoch}: {_test_loss}')
+            print('')
+
+        np.save(os.path.join(fold_dir, 'loss.npy'), train_loss)
+        np.save(os.path.join(fold_dir, 'test_loss.npy'), test_loss)
+
+        torch.save(model.state_dict(), os.path.join(fold_dir, 'model.pth'))
     with open(os.path.join(path2output, 'config.json'), 'w') as f:
         json.dump(config, f)
