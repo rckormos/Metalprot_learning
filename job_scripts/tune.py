@@ -31,18 +31,18 @@ if __name__ == '__main__':
     NO_STUDIES = 1
     NO_TRIALS = 20
     CONFIG = {
-        'block_n1': {'in': 40, 'out': 8, 'padding': 1, 'dropout': 0.2},
-        'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout': 0.3}, 
-        'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': 0.2},
-        'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': 0.2},
-        'block3': {'dilation_residual': 1, 'dropout': 0.2},
+        'block_n1': {'in': 40, 'out': 8, 'padding': 1, 'dropout': (0.1, 0.6)},
+        'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout': (0.3, 0.8)}, 
+        'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': (0.3, 0.8)},
+        'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout': (0.3, 0.8)},
+        'block3': {'dilation_residual': 1, 'dropout': (0.3, 0.8)},
         'linear1': {'out': 512},
         'linear2': {'out': 256},
         'linear3': {'out': 48},
         'encodings': True,
-        'batch_size': (2,50),
+        'batch_size': 14,
         'seed': 69,
-        'lr': (0.00001, 0.001),
+        'lr': 0.00020894227630869483,
         'epochs': 30
         }
 

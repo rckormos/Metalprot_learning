@@ -61,7 +61,6 @@ def define_objective(path2output: str, features_file: str, config: dict):
         for epoch in range(0, trial_dict['epochs']):
             _train_loss = train.train_loop(model, train_dataloader, loss_fn, optimizer, device)
             _test_loss = train.validation_loop(model, test_dataloader, loss_fn, device)
-            print(_train_loss, _test_loss)
 
             train_loss = np.append(train_loss, _train_loss)
             test_loss = np.append(test_loss, _test_loss)
