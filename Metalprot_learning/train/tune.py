@@ -40,7 +40,7 @@ def define_objective(path2output: str, features_file: str, config: dict):
             if layer_key not in trial_dict.keys():
                 layer_dict = {}
                 for key in config[layer_key].keys():
-                    if key != 'dropout':
+                    if 'dropout' not in key:
                         layer_dict[key] = trial.suggest_int(key, config[layer_key][key][0], config[layer_key][key][1]) if type(config[layer_key][key]) == tuple else config[layer_key][key]
 
                     else:
