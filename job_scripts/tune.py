@@ -35,7 +35,7 @@ if __name__ == '__main__':
         'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout_0': (0.3, 0.8)}, 
         'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout_1': (0.3, 0.8)},
         'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2,'dropout_2': (0.3, 0.8)},
-        'block3': {'dilation_residual': 1, 'dropout_2': (0.3, 0.8)},
+        'block3': {'dilation_residual': 1, 'dropout_3': (0.3, 0.8)},
         'linear1': {'out': 512},
         'linear2': {'out': 256},
         'linear3': {'out': 48},

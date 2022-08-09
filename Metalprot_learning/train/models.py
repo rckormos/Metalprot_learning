@@ -89,12 +89,12 @@ class AlphafoldNet(nn.Module):
         self.block_n1 = nn.Sequential(
             ConvBn2d(config['block_n1']['in'], config['block_n1']['out'], kernel_size=(2 * config['block_n1']['padding']) + 1, padding=config['block_n1']['padding']), 
             Swish(), 
-            nn.Dropout(config['block_n1']['dropout']),
+            nn.Dropout(config['block_n1']['dropout_n1']),
         ) #based on the constraint that the width and height of the output must be 12, the kernel size and padding are coupled
         self.block0 = nn.Sequential(
             ConvBn2d(4 + config['block_n1']['out'], config['block0']['out'], kernel_size=config['block0']['kernel_size'], padding=config['block0']['padding']),
             Swish(), 
-            nn.Dropout(config['block0']['dropout']),
+            nn.Dropout(config['block0']['dropout_0']),
         )
         self.block1 = nn.Sequential(
             Residual(config['block0']['out'], dilation=config['block1']['dilation_residual']),
@@ -102,7 +102,7 @@ class AlphafoldNet(nn.Module):
             ConvBn2d(config['block0']['out'], config['block1']['out'], kernel_size=config['block1']['kernel_size'], padding=config['block1']['padding']),
             Swish(), 
             nn.MaxPool2d(kernel_size=config['block1']['kernel_size_pool']),
-            nn.Dropout(config['block1']['dropout']),
+            nn.Dropout(config['block1']['dropout_1']),
         )
         self.block2 = nn.Sequential(
             Residual(config['block1']['out'], dilation=config['block2']['dilation_residual']),
@@ -110,12 +110,12 @@ class AlphafoldNet(nn.Module):
             ConvBn2d(config['block1']['out'], config['block2']['out'], kernel_size=config['block2']['kernel_size'], padding=config['block2']['padding']),
             Swish(), 
             nn.MaxPool2d(kernel_size=config['block2']['kernel_size_pool']),
-            nn.Dropout(config['block2']['dropout']),
+            nn.Dropout(config['block2']['dropout_2']),
         )
         self.block3 = nn.Sequential(
             Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
             Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
-            nn.Dropout(config['block3']['dropout']),
+            nn.Dropout(config['block3']['dropout_3']),
         )
         self.linear1 = nn.Linear((compute_channel_dims(12, config) ** 2) * config['block2']['out'],config['linear1']['out'])
         self.linear2 = nn.Linear(config['linear1']['out'],config['linear2']['out'])
