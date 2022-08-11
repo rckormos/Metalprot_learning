@@ -117,8 +117,10 @@ class AlphafoldNet(nn.Module):
             Residual(config['block2']['out'], dilation=config['block3']['dilation_residual']),
             nn.Dropout(config['block3']['dropout_3']),
         )
-        self.linear1 = nn.Linear((compute_channel_dims(12, config) ** 2) * config['block2']['out'],config['linear1']['out'])
-        self.linear2 = nn.Linear(config['linear1']['out'],config['linear2']['out'])
+        self.linear1 = nn.Sequential(nn.Linear((compute_channel_dims(12, config) ** 2) * config['block2']['out'],config['linear1']['out']),
+            nn.Dropout(config['linear1']['dropout_l1']))
+        self.linear2 = nn.Sequential(nn.Linear(config['linear1']['out'],config['linear2']['out']), 
+            nn.Dropout(config['linear2']['dropout']))
         self.linear3 = nn.Linear(config['linear2']['out'],config['linear3']['out'])
 
     def forward(self, x):
