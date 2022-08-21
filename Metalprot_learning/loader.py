@@ -98,10 +98,13 @@ class Core:
         self.metal_coords = core.select('hetero').getCoords()[0]
         self.metal_name = core.select('hetero').getResnames()[0]
         self.coordination_number = len(coordinating_resis)
-        self.permuted_channels = None
+        self.permuted_features = None
         self.permuted_labels = None
         self.permuted_identifiers = None
         self.permuted_coordinating_resis = None
+        self.channels = None 
+        self.distance_matrix = None
+        self.encodings = None
 
     def _compute_seq_channels(self, sequence: list):
         """
@@ -141,6 +144,35 @@ class Core:
 
         self.channels = channels
 
+    def onehotencode(self):
+        seq = self.structure.select('name CA').getResnames()
+
+        threelettercodes = {'ALA': 0 , 'ARG': 1, 'ASN': 2, 'ASP': 3, 'CYS': 4, 'CSO': 4,'GLU': 5, 'GLN': 6, 'GLY': 7, 'HIS': 8, 'ILE': 9, 'LEU': 10,
+                            'LYS': 11, 'MET': 12, 'MSE': 12, 'PHE': 13, 'PRO': 14, 'SER': 15, 'SEP': 15, 'THR': 16, 'TPO': 16, 'TRP': 17, 'TYR': 18, 'VAL': 19}
+        encoding = np.array([[]])
+        for i in range(len(seq)):
+            aa = str(seq[i])
+            if aa not in threelettercodes:
+                raise EncodingError
+            idx = threelettercodes[aa]
+            one_hot = np.zeros((1,20))
+            one_hot[0,idx] = 1
+            encoding = np.concatenate((encoding, one_hot), axis=1)
+        max_resis = 48
+        padding = 20 * (max_resis - len(seq))
+        encoding = np.concatenate((encoding, np.zeros((1,padding))), axis=1)
+        return encoding
+
+    def compute_features(self):
+        selstr = 'name CA O C N'
+        encoding = self.onehotencode()
+        max_atoms = 48
+        binding_core_backbone = self.structure.select('protein').select(selstr)
+        full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
+        padding = max_atoms - full_dist_mat.shape[0]
+        full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
+        return full_dist_mat, encoding
+
     def compute_labels(self, distogram=False):
         if not distogram:
             label = np.zeros(12*4)
@@ -179,39 +211,66 @@ class Core:
                 temp.remove(item)
     
         return fragments
+    
+    def _permute_matrices(self, dist_mat: np.ndarray, atom_ind_permutation):
+        permuted_dist_mat = np.zeros(dist_mat.shape)
+        for i, atom_indi in enumerate(atom_ind_permutation):
+            for j, atom_indj in enumerate(atom_ind_permutation):
+                permuted_dist_mat[i,j] = dist_mat[int(atom_indi), int(atom_indj)]
+        return permuted_dist_mat
 
-    def permute(self):
-        permuted_channels, permuted_labels, permuted_identifiers, permuted_coordinating_resis = [], [], [], []
+    def _permute_encodings(self, encoding: np.ndarray, fragment_indices, permutation):
+        permuted_encoding = np.zeros(len(encoding))
+        split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
+        _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in permutation], []), []) #permute the encoding by fragment
+        permuted_encoding[0: len(_permuted_encoding)] = _permuted_encoding
+        return permuted_encoding
+
+    def _permute_channels(self, fragment_index_permutation, sequence):
+        permuted_channel =np.zeros(self.channels.shape)
+        for i, I in enumerate(fragment_index_permutation):
+            for j, J in enumerate(fragment_index_permutation):
+                permuted_channel[0:4,I,J] = self.channels[0:4,i,j]
+        permuted_channel[4:,:,:] = self._compute_seq_channels([sequence[i] for i in fragment_index_permutation])
+        return permuted_channel
+
+    def _permute_labels(self, permutation, fragment_indices, atom_indices):
+        permuted_label = np.zeros(len(self.label))
+        _permuted_label = np.array([])
+        for i in permutation:
+            frag = fragment_indices[i]
+            for j in frag:
+                atoms = atom_indices[j]
+                for atom in atoms:
+                    permuted_label = np.append(permuted_label, self.label[int(atom)])
+        permuted_label[0:len(_permuted_label)] = _permuted_label
+        return permuted_label
+
+    def permute(self, trim=False):
+        permuted_features, permuted_labels, permuted_identifiers, permuted_coordinating_resis = [], [], [], []
         fragment_indices = self._identify_fragments()
         sequence = self.structure.select('protein').select('name N').getResnames()
         fragment_permutations = permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
+        no_atoms = len(self.structure.select('protein').select('name N CA C O'))
+        atom_indices = np.split(np.linspace(0, no_atoms - 1, no_atoms), no_atoms / 4)
         for permutation in fragment_permutations:
-            permuted_channel, permuted_label = np.zeros(self.channels.shape), np.zeros(len(self.label))
             fragment_index_permutation = sum([fragment_indices[i] for i in permutation], [])
 
-            for i, I in enumerate(fragment_index_permutation):
-                for j, J in enumerate(fragment_index_permutation):
-                    permuted_channel[0:4,I,J] = self.channels[0:4,i,j]
+            if self.channels:
+                permuted_feature = self._permute_channels(fragment_index_permutation, sequence)
 
-            permuted_channel[4:,:,:] = self._compute_seq_channels([sequence[i] for i in fragment_index_permutation])
+            elif self.distance_matrix and self.encodings:
+                atom_index_permutation = sum([list(atom_indices[i]) for i in fragment_index_permutation], []) 
+                distance_matrix_permutation = self._permute_matrices(self.distance_matrix, atom_index_permutation)
+                encoding_permutation = self._permute_encodings(self.encodings, permutation, fragment_indices)
+                permuted_feature = np.concatenate(distance_matrix_permutation.flatten(), encoding_permutation) if trim else np.concatenate(distance_matrix_permutation[np.triu_indices(distance_matrix_permutation.shape[0], k=1)].flatten(), encoding_permutation)
 
-            no_atoms = len(self.structure.select('protein').select('name N CA C O'))
-            atom_indices = np.split(np.linspace(0, no_atoms - 1, no_atoms), no_atoms / 4)
-            _permuted_label = np.array([])
-            for i in permutation:
-                frag = fragment_indices[i]
-                for j in frag:
-                    atoms = atom_indices[j]
-                    for atom in atoms:
-                        _permuted_label = np.append(_permuted_label, self.label[int(atom)])            
-            permuted_label[0:len(_permuted_label)] = _permuted_label
-
-            permuted_channels.append(permuted_channel)
-            permuted_labels.append(permuted_label)
+            permuted_features.append(permuted_feature)
+            permuted_labels.append(self._permute_labels(permutation, fragment_indices, atom_indices))
             permuted_identifiers.append([self.identifiers[i] for i in fragment_index_permutation])
             permuted_coordinating_resis.append([self.coordinating_resis[i] for i in fragment_index_permutation])
 
-        self.permuted_channels = permuted_channels
+        self.permuted_features = permuted_features
         self.permuted_labels = permuted_labels
         self.permuted_identifiers = permuted_identifiers
         self.permuted_coordinating_resis = permuted_coordinating_resis
@@ -279,3 +338,21 @@ class Protein:
             else:
                 continue
         return cores
+
+    def get_putative_cores(self, no_neighbors=1, coordination_number=(2,4), cutoff=15):
+
+        edge_list = []
+        c_alphas = self.structure.select('protein').select('name CA')
+        c_alpha_resindices = c_alphas.getResindices()
+        ca_dist_mat = buildDistMatrix(c_alphas, c_alphas)
+        column_indexer = 0
+        for i in range(len(ca_dist_mat)):
+            for j in range(1+column_indexer, len(ca_dist_mat)):
+                distance = ca_dist_mat[i, j]
+
+                if distance <= cutoff:
+                    edge_list.append(np.array([]))
+                    edge_weights = np.append(edge_weights, distance)
+
+        row_indexer += 1
+        pass
