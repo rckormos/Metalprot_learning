@@ -52,8 +52,8 @@ if __name__ == '__main__':
         'epochs': 2000,
         'loss_fn': 'MAE',
         'c_beta': True,
-        'encodings': False,
-        'noise': True},
+        'encodings': True,
+        'noise': False},
     ]
 
     path2output, tasks = distribute_tasks(MODELS)
