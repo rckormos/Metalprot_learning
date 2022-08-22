@@ -14,6 +14,7 @@ import numpy as np
 import pandas as pd
 from itertools import permutations
 from scipy.spatial.distance import cdist
+from pypivoter.degeneracy_cliques import enumerateCliques
 from Metalprot_learning.utils import AlignmentError, EncodingError
 from prody import parsePDB, AtomGroup, matchChains, buildDistMatrix, writePDB
 
@@ -339,20 +340,29 @@ class Protein:
                 continue
         return cores
 
-    def get_putative_cores(self, no_neighbors=1, coordination_number=(2,4), cutoff=15):
-
+    def get_putative_cores(self, no_neighbors=1, cutoff=15):
+        putative_cores = []
         edge_list = []
-        c_alphas = self.structure.select('protein').select('name CA')
-        c_alpha_resindices = c_alphas.getResindices()
-        ca_dist_mat = buildDistMatrix(c_alphas, c_alphas)
-        column_indexer = 0
-        for i in range(len(ca_dist_mat)):
-            for j in range(1+column_indexer, len(ca_dist_mat)):
-                distance = ca_dist_mat[i, j]
-
+        putative_coordinating_resis = self.structure.select('protein').select('name HIS CYS ASP GLU')
+        putative_coordinating_resindices = putative_coordinating_resis.getResindices()
+        dist_mat = buildDistMatrix(putative_coordinating_resis)
+        edge_weights = np.array([])
+        row_indexer = 0
+        for col_ind in range(len(dist_mat)):
+            for row_ind in range(1+row_indexer, len(dist_mat)):
+                distance = dist_mat[row_ind, col_ind]
                 if distance <= cutoff:
-                    edge_list.append(np.array([]))
+                    edge_list.append(np.array([putative_coordinating_resindices[col_ind], putative_coordinating_resindices[row_ind]]))
                     edge_weights = np.append(edge_weights, distance)
+            row_indexer += 1
 
-        row_indexer += 1
-        pass
+        cliques = enumerateCliques(np.array(edge_list), 4)[4:]
+        for subclique in cliques:
+            for clique in subclique:
+                binding_core_resindices = []
+                for ind in clique:
+                    core_fragment = _get_neighbors(self.structure, ind, no_neighbors)
+                    binding_core_resindices += core_fragment
+                binding_core = self.structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
+                putative_cores.append(Core(binding_core, clique, self.filepath))
+        return putative_cores 
