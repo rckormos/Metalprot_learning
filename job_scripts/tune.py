@@ -11,21 +11,21 @@ if __name__ == '__main__':
     path2output = sys.argv[1]
 
     #user-defined variables
-    features_file = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
-    config = {'seed': np.random.randint(0,1000),
-        'batch_size': (20, 100),
-        'lr': (0.0001, 0.01),
-        'l1': (1000, 2000),
-        'l2': (500, 1000),
-        'l3': (100, 600),
-        'input_dropout': (0.1, 0.6),
-        'hidden_dropout': (0.1, 0.8),
+    features_file = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features_no2coords.pkl'
+    config = {'seed': 69,
+        'batch_size': (15, 40),
+        'lr': (0.0001, 0.1),
+        'l1': (1800, 2200),
+        'l2': (500, 700),
+        'l3': (200, 300),
+        'input_dropout': (0.2, 0.4),
+        'hidden_dropout': (0.3, 0.5),
         'epochs': 60,
         'weight_decay': 0,
         'optimizer_key': 0,
         'loss_fn_key': 0,
         'encodings': True,
-        'noise': True,
+        'noise': False,
         'c_beta': True
         }
 
