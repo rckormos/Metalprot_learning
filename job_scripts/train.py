@@ -37,7 +37,7 @@ def distribute_tasks(MODELS: list):
     return path2output, tasks
 
 if __name__ == '__main__':
-    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features_no2coords.pkl'
     MODELS = [
         {'l1': 1947,
         'l2': 652,
