@@ -93,7 +93,7 @@ def _impute_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
 class Core:
     def __init__(self, core: AtomGroup, coordinating_resis: np.ndarray, source: str):
         self.structure = core
-        self.coordinating_resis = coordinating_resis
+        self.coordinating_resis = np.array([1 if i in coordinating_resis else 0 for i in core.select('name N').getResindices()])
         self.identifiers = [(i, j) for i,j in zip(core.select('protein').select('name N').getResnums(), core.select('protein').select('name N').getChids())]
         self.source = source
         self.metal_coords = core.select('hetero').getCoords()[0]
@@ -105,7 +105,7 @@ class Core:
         self.permuted_coordinating_resis = None
         self.channels = None 
         self.distance_matrix = None
-        self.encodings = None
+        self.encoding = None
 
     def _compute_seq_channels(self, sequence: list):
         """
@@ -159,7 +159,7 @@ class Core:
             one_hot = np.zeros((1,20))
             one_hot[0,idx] = 1
             encoding = np.concatenate((encoding, one_hot), axis=1)
-        max_resis = 48
+        max_resis = 12
         padding = 20 * (max_resis - len(seq))
         encoding = np.concatenate((encoding, np.zeros((1,padding))), axis=1)
         return encoding
@@ -172,7 +172,9 @@ class Core:
         full_dist_mat = buildDistMatrix(binding_core_backbone, binding_core_backbone)
         padding = max_atoms - full_dist_mat.shape[0]
         full_dist_mat = np.lib.pad(full_dist_mat, ((0,padding), (0,padding)), 'constant', constant_values=0)
-        return full_dist_mat, encoding
+        
+        self.distance_matrix = full_dist_mat
+        self.encoding = encoding
 
     def compute_labels(self, distogram=False):
         if not distogram:
@@ -221,12 +223,12 @@ class Core:
         return permuted_dist_mat
 
     def _permute_encodings(self, encoding: np.ndarray, fragment_indices, permutation):
-        permuted_encoding = np.zeros(len(encoding))
+        permuted_encoding = np.zeros(self.encoding.shape[1])
         split_encoding = np.array_split(encoding.squeeze(), encoding.shape[1]/20)
         _permuted_encoding = sum(sum([[list(split_encoding[i]) for i in fragment_indices[j]] for j in permutation], []), []) #permute the encoding by fragment
-        permuted_encoding[0: len(_permuted_encoding)] = _permuted_encoding
+        permuted_encoding[0:len(_permuted_encoding)] = _permuted_encoding
         return permuted_encoding
-
+        
     def _permute_channels(self, fragment_index_permutation, sequence):
         permuted_channel =np.zeros(self.channels.shape)
         for i, I in enumerate(fragment_index_permutation):
@@ -243,11 +245,11 @@ class Core:
             for j in frag:
                 atoms = atom_indices[j]
                 for atom in atoms:
-                    permuted_label = np.append(permuted_label, self.label[int(atom)])
+                    _permuted_label = np.append(_permuted_label, self.label[int(atom)])
         permuted_label[0:len(_permuted_label)] = _permuted_label
         return permuted_label
 
-    def permute(self, trim=False):
+    def permute(self, trim=True):
         permuted_features, permuted_labels, permuted_identifiers, permuted_coordinating_resis = [], [], [], []
         fragment_indices = self._identify_fragments()
         sequence = self.structure.select('protein').select('name N').getResnames()
@@ -257,14 +259,14 @@ class Core:
         for permutation in fragment_permutations:
             fragment_index_permutation = sum([fragment_indices[i] for i in permutation], [])
 
-            if self.channels:
+            if type(self.channels) == np.ndarray:
                 permuted_feature = self._permute_channels(fragment_index_permutation, sequence)
 
-            elif self.distance_matrix and self.encodings:
+            elif type(self.distance_matrix) == np.ndarray:
                 atom_index_permutation = sum([list(atom_indices[i]) for i in fragment_index_permutation], []) 
                 distance_matrix_permutation = self._permute_matrices(self.distance_matrix, atom_index_permutation)
-                encoding_permutation = self._permute_encodings(self.encodings, permutation, fragment_indices)
-                permuted_feature = np.concatenate(distance_matrix_permutation.flatten(), encoding_permutation) if trim else np.concatenate(distance_matrix_permutation[np.triu_indices(distance_matrix_permutation.shape[0], k=1)].flatten(), encoding_permutation)
+                encoding_permutation = self._permute_encodings(self.encoding, fragment_indices, permutation)
+                permuted_feature = np.concatenate((distance_matrix_permutation.flatten(), encoding_permutation)) if not trim else np.concatenate((distance_matrix_permutation[np.triu_indices(distance_matrix_permutation.shape[0], k=1)].flatten(), encoding_permutation))
 
             permuted_features.append(permuted_feature)
             permuted_labels.append(self._permute_labels(permutation, fragment_indices, atom_indices))
@@ -288,11 +290,11 @@ class Core:
     def write_data_files(self, output_dir: str):
         metal = self.structure.select('hetero')
         metal_identifier = metal.getResnames()[0] + str(metal.getResnums()[0]) + metal.getChids()[0]
-        filename = self._name(self.identifiers, metal_identifier) + '.pkl'
-        if self.permuted_channels and self.permuted_labels and self.permuted_identifiers and self.permuted_coordinating_resis:
-            df = pd.DataFrame({'channels': self.permuted_channels, 'labels': self.permuted_labels, 
-            'identifiers': self.permuted_identifiers, 'sources': [filename] * len(self.permuted_channels), 
-            'coordination_number': [self.coordination_number] * len(self.permuted_channels),
+        filename = self._name(self.identifiers, metal_identifier) + '_features' + '.pkl'
+        if self.permuted_features and self.permuted_labels and self.permuted_identifiers and self.permuted_coordinating_resis:
+            df = pd.DataFrame({'channels': self.permuted_features, 'labels': self.permuted_labels, 
+            'identifiers': self.permuted_identifiers, 'sources': [filename] * len(self.permuted_features), 
+            'coordination_number': [self.coordination_number] * len(self.permuted_features),
             'coordinating_resis': self.permuted_coordinating_resis})
             df.to_pickle(os.path.join(output_dir, filename))
 
