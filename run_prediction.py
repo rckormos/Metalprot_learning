@@ -39,11 +39,12 @@ if __name__ == '__main__':
     for pdb_file in tasks:
         print(pdb_file)
         protein = loader.Protein(pdb_file)
-        cores = protein.get_cores_unknown()
+        cores = protein.get_putative_cores()
         _features = np.stack([core.compute_channels() for core in cores], axis=0)
         sources += [pdb_file] * len(cores)
         identifiers += [core.identifiers for core in cores]
         features.append(_features)
+        
     features = np.stack(features, axis=0)
     identifiers = np.array(identifiers)
     sources = np.array(sources)
