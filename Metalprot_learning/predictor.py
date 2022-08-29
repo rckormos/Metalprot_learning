@@ -18,9 +18,6 @@ def _load_model(config: dict, WEIGHTS_FILE: str):
     if 'l3' not in config.keys():
         model = SingleLayerNet(config['input'], config['l1'], config['l2'], config['output'], config['input_dropout'], config['hidden_dropout']) 
 
-    elif 'l4' in config.keys():
-        model = FourLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['l4'],config['output'], config['input_dropout'], config['hidden_dropout'])
-
     else:
         model = DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'], config['input_dropout'], config['hidden_dropout'])
 
