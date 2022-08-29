@@ -79,8 +79,8 @@ if __name__ == '__main__':
     
     PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
     PERMUTE = True
-    C_BETA = True
-    TRIM = True
+    C_BETA = False
+    TRIM = False
 
     failed = []
     tasks = distribute_tasks(PATH2EXAMPLES, no_jobs, job_id)

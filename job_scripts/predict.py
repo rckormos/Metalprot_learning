@@ -47,7 +47,7 @@ if __name__ == '__main__':
 
     #load data
     EXAMPLE = True #true if data are positive examples
-    ENCODINGS = True
+    ENCODINGS = False
     FEATURES_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/datasetV4/barcoded_compiled_features.pkl'
     CONFIG_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/20_6_2022_23_2_39_878954_619/config.json'
     WEIGHTS_FILE = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/models/MLP_v1/20_6_2022_23_2_39_878954_619/model.pth'
