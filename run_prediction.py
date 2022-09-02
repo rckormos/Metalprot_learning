@@ -38,8 +38,8 @@ if __name__ == '__main__':
     tasks = distribute_tasks(PATH2PDBS, no_jobs, job_id)
     sources, identifiers, features = [], [], []
     failed = []
+    df = pd.DataFrame()
     for pdb_file in tasks:
-        df = pd.DataFrame()
         try:
             protein = loader.Protein(pdb_file)
             cores = protein.get_putative_cores()
