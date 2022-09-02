@@ -10,7 +10,6 @@ This script runs model training.
 from Metalprot_learning.train.train import train_model
 import os
 import sys
-import numpy as np
 import datetime
 
 def distribute_tasks(MODELS: list):
@@ -37,38 +36,21 @@ def distribute_tasks(MODELS: list):
     return path2output, tasks
 
 if __name__ == '__main__':
-    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cores-2022-07-10/compiled_features0.pkl'
+    PATH2FEATURES = '/home/gpu/jzhang1198/data/ZN_binding_cores/cnn-cores-2022-07-31/compiled_data.pkl'
     MODELS = [
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
-        'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
-        'seed': np.random.randint(1000),
-        'epochs': 2000,
-        'loss_fn': 'MAE',
-        'c_beta': True,
-        'encodings': True,
-        'noise': True},
-
-        {'l1': 2000,
-        'l2': 1700,
-        'l3': 400,
-        'input_dropout': 0.15578875454945562,
-        'hidden_dropout': 0.30066048849068494,
-        'weight_decay': 0,
-        'batch_size': 50,
-        'lr': 0.003,
-        'seed': np.random.randint(1000),
-        'epochs': 2000,
-        'loss_fn': 'MAE',
-        'c_beta': True,
-        'encodings': True,
-        'noise': False}
-
+        {'seed': 69, 
+        'batch_size': 14, 
+        'lr': 0.00020894227630869483, 
+        'encodings': True, 
+        'epochs': 200, 
+        'block_n1': {'in': 40, 'out': 8, 'padding': 1, 'dropout_n1': 0.18632645255981992}, 
+        'block0': {'out': 64, 'kernel_size': 3, 'padding': 1, 'dropout_0': 0.6173822866461347}, 
+        'block1': {'dilation_residual': 1, 'out': 128, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2, 'dropout_1': 0.3033101227313487}, 
+        'block2': {'dilation_residual': 1, 'out': 256, 'kernel_size': 1, 'padding': 0, 'kernel_size_pool': 2, 'dropout_2': 0.311068933631938}, 
+        'block3': {'dilation_residual': 1, 'dropout_3': 0.30536913307953484}, 
+        'linear1': {'out': 512, 'dropout_l1': 0.3}, 
+        'linear2': {'out': 256, 'dropout_l2': 0.3}, 
+        'linear3': {'out': 48}}
     ]
 
     path2output, tasks = distribute_tasks(MODELS)

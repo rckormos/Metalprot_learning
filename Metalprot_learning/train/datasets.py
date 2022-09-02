@@ -25,16 +25,36 @@ class ImageSet(Dataset):
         label = self.labels[index]
         return observation, label 
 
-def split_data(features_file: str, path2output: str, partitions: tuple, seed: int):
+def split_data(features_file: str, path2output: str, partitions: tuple, seed: int, write_json: bool):
     """
     Splits data into training and test sets. Returns a tuple of train, test, and validation dataframes, in that order.
     """
     data = pd.read_pickle(features_file)
-    barcodes = np.unique(np.array(data['barcodes']))
+    barcodes = np.unique(np.array(data['barcode']))
     np.random.seed(seed)
-    shuffled_barcodes = np.random.shuffe(barcodes)
+    np.random.shuffle(barcodes)
 
-    train_len, test_len = round(len(data) * partitions[0]), round(len(data) * partitions[1])
-    train_barcodes, test_barcodes, val_barcodes = shuffled_barcodes[0: train_len], shuffled_barcodes[train_len: train_len + test_len], shuffled_barcodes[train_len + test_len: len(data)]
-    json.dump({'train': train_barcodes, 'test': test_barcodes, 'val': val_barcodes}, os.path.join(path2output, 'barcodes.json'))
-    return data[data['barcodes'].isin(train_barcodes)], data[data['barcodes'].isin(test_barcodes)], data[data['barcodes'].isin(val_barcodes)]
+    train_len, test_len = round(len(barcodes) * partitions[0]), round(len(barcodes) * partitions[1])
+    train_barcodes, test_barcodes, val_barcodes = barcodes[0: train_len], barcodes[train_len: train_len + test_len], barcodes[train_len + test_len: len(data)]
+
+    if write_json:
+        with open(os.path.join(path2output, 'barcodes.json'), 'w') as f:
+            json.dump({'train': train_barcodes.tolist(), 'test': test_barcodes.tolist(), 'val': val_barcodes.tolist()}, f)
+        
+    return data[data['barcode'].isin(train_barcodes)], data[data['barcode'].isin(test_barcodes)], data[data['barcode'].isin(val_barcodes)]
+
+def split_data_kfolds(features_file: str, k: int, seed: int):
+    """
+    Splits data into k separate folds.
+    """
+    data = pd.read_pickle(features_file)
+    barcodes = np.unique(np.array(data['barcode']))
+    np.random.seed(seed)
+    np.random.shuffle(barcodes)
+
+    x, y = divmod(len(barcodes), k)
+    _folds = list((barcodes[i*x+min(i, y):(i+1)*x+min(i+1, y)] for i in range(k)))
+    folds = {}
+    for number, fold in enumerate(_folds):
+        folds[str(number)] = data[data['barcode'].isin(fold)]
+    return folds

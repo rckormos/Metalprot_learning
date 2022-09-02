@@ -79,16 +79,7 @@ def run_SGE(job_name: str, num_jobs: int, path: str, job_script: str, time: str,
     subprocess.run(qsub_command)
 
 def run_sequential(job_name: str, path: str, job_script: str, keep_job_output_path=True):
-
-    job_output_path = os.path.join(path, "job_outputs")
-    if not keep_job_output_path and os.path.exists(job_output_path): 
-        shutil.rmtree(job_output_path)
-
-    if not os.path.exists(job_output_path):
-        os.mkdir(job_output_path)
-
     command = [job_script, path]
-
     subprocess.run(command)
 
 if __name__ == '__main__':
