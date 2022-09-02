@@ -18,22 +18,6 @@ from pypivoter.degeneracy_cliques import enumerateCliques
 from Metalprot_learning.utils import AlignmentError, EncodingError
 from prody import parsePDB, AtomGroup, matchChains, buildDistMatrix, writePDB
 
-def _get_neighbors(structure: AtomGroup, coordinating_resind: int, no_neighbors: int):
-    """
-    Helper function for getting neighboring residues. If a terminal residue is passed, only
-    one neighrbor will be returned.
-    """
-    chain_id = list(set(structure.select(f'resindex {coordinating_resind}').getChids()))[0]
-    all_resinds = structure.select(f'chain {chain_id}').select('protein').getResindices()
-    terminal = max(all_resinds)
-    start = min(all_resinds)
-
-    extend = np.array(range(-no_neighbors, no_neighbors+1))
-    _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
-    core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment >= start) & (_core_fragment <= terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
-
-    return core_fragment
-
 def remove_degenerate_cores(cores: list):
     """
     Function to remove cores that are the same. For example, if the input 
@@ -81,14 +65,64 @@ def remove_degenerate_cores(cores: list):
 
     return unique_cores
 
-def _impute_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
+def _impute_ca_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
     """
     Helper function for imputing CB coordinates. Returns an imputed set of CB coordinates.
     """
     B = ca - n
     C = c - ca
     A = np.cross(B, C, axis = 1)
-    return (-0.58273431 * A) + (0.56802827 * B) - (0.54067466 * C) + ca
+    return (-0.58273431 * A) + (0.56802827 * B) - (0.54067466 * C)
+
+def _compute_angles(vec1: np.ndarray, vec2: np.ndarray):
+    """Helper function for computing angles between bond vectors in a vectorized fashion.
+
+    Args:
+        vec1 (np.ndarray): An nx3 array containing bond vectors.
+        vec2 (np.ndarray): Another nx3 array containing bond vectors.
+
+    Returns:
+        angles (np.ndarray): The angles between the vectors. 
+    """
+
+    dot = np.sum(vec1 * vec2, axis=1)
+    norm1, norm2 = np.linalg.norm(vec1, axis=1), np.linalg.norm(vec2, axis=1)
+    angles = np.degrees(np.arccos(dot / (norm1 * norm2)))
+    return angles
+
+def _filter_by_angle(edge_list: np.ndarray, structure: AtomGroup, distances: np.ndarray):
+    """Filters pairs of contacts based on relative orientation of Ca-Cb and Ca-Ca bond vectors. 
+
+    Args:
+        edge_list (np.ndarray): nx2 array containing pairs of contacts.
+        structure (AtomGroup): AtomGroup object of input structure.
+        distances (np.ndarray): Array of length n containing distance between each contact.
+
+    Returns:
+        filtered (np.ndarray): nx2 array containing filtered contacts.
+    """
+
+    #get backbone atom coordinates for all residues included in the edge list
+    all_resindices = set(np.concatenate(list(edge_list)))
+    coordinates = dict([(resindex, structure.select('protein').select('name C CA N').select(f'resindex {resindex}').getCoords()) for resindex in all_resindices])
+
+    #for each pair of contacts, get coordinates for atom i and j
+    n_i, n_j = np.vstack([coordinates[resindex][0].flatten() for resindex in edge_list[:,0]]), np.vstack([coordinates[resindex][0].flatten() for resindex in edge_list[:,1]])
+    ca_i, ca_j = np.vstack([coordinates[resindex][1].flatten() for resindex in edge_list[:,0]]), np.vstack([coordinates[resindex][1].flatten() for resindex in edge_list[:,1]])
+    c_i, c_j = np.vstack([coordinates[resindex][2].flatten() for resindex in edge_list[:,0]]), np.vstack([coordinates[resindex][2].flatten() for resindex in edge_list[:,1]])
+
+    #compute ca-cb bond vector for atom i and j
+    ca_cb_i, ca_cb_j = _impute_ca_cb(n_i, ca_i, c_i), _impute_ca_cb(n_j, ca_j, c_j)
+
+    #compute the ca-ca bond vector between atom i and j. also compute the ca-ca/ca-cbi and ca-ca/ca-bj angles.
+    ca_i_ca_j = ca_j - ca_i
+    angles_i, angles_j = _compute_angles(ca_cb_i, ca_i_ca_j), _compute_angles(ca_cb_j, ca_i_ca_j)
+
+    #filter based on angle cutoffs
+    accepted = np.argwhere(distances <= 7)
+    filtered_inds = np.intersect1d(np.intersect1d(np.argwhere(angles_i < 130), np.argwhere(angles_j > 30)), np.argwhere(distances > 7))
+    filtered = edge_list[np.union1d(accepted, filtered_inds)]
+    return filtered
 
 class Core:
     def __init__(self, core: AtomGroup, coordinating_resis: np.ndarray, source: str):
@@ -311,6 +345,23 @@ class Protein:
         self.filepath = pdb_file
         self.structure = parsePDB(pdb_file)
 
+    @staticmethod
+    def _get_neighbors(structure: AtomGroup, coordinating_resind: int, no_neighbors: int):
+        """
+        Helper function for getting neighboring residues. If a terminal residue is passed, only
+        one neighrbor will be returned.
+        """
+        chain_id = list(set(structure.select(f'resindex {coordinating_resind}').getChids()))[0]
+        all_resinds = structure.select(f'chain {chain_id}').select('protein').getResindices()
+        terminal = max(all_resinds)
+        start = min(all_resinds)
+
+        extend = np.array(range(-no_neighbors, no_neighbors+1))
+        _core_fragment = np.full((1,len(extend)), coordinating_resind) + extend
+        core_fragment = [ind for ind in list(_core_fragment[ (_core_fragment >= start) & (_core_fragment <= terminal) ]) if ind in all_resinds] #remove nonexisting neighbor residues
+
+        return core_fragment 
+
     def get_cores(self, no_neighbors=1, coordination_number=(2,4)):
         """
         Extracts metal binding cores from an input protein structure. Returns a list of
@@ -332,7 +383,7 @@ class Protein:
             if len(coordinating_resindices) <= coordination_number[1] and len(coordinating_resindices) >= coordination_number[0]:
                 binding_core_resindices = []
                 for ind in coordinating_resindices:
-                    core_fragment = _get_neighbors(self.structure, ind, no_neighbors)
+                    core_fragment = Protein._get_neighbors(self.structure, ind, no_neighbors)
                     binding_core_resindices += core_fragment
 
                 binding_core_resindices.append(metal_ind)
@@ -358,14 +409,13 @@ class Protein:
                     edge_list.append(np.array([putative_coordinating_resindices[col_ind], putative_coordinating_resindices[row_ind]]))
                     edge_weights = np.append(edge_weights, distance)
             row_indexer += 1
-
+        edge_list = _filter_by_angle(np.vstack(edge_list), self.structure, edge_weights)
         cliques = enumerateCliques(np.array(edge_list), coordination_number[1])[coordination_number[0]:]
         for subclique in cliques:
-            print(subclique.shape)
             for clique in subclique:
                 binding_core_resindices = []
                 for ind in list(clique):
-                    core_fragment = _get_neighbors(self.structure, ind, no_neighbors)
+                    core_fragment = Protein._get_neighbors(self.structure, ind, no_neighbors)
                     binding_core_resindices += core_fragment
                 binding_core = self.structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
                 putative_cores.append(Core(binding_core, clique, self.filepath))
