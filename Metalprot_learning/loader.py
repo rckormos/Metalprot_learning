@@ -96,8 +96,9 @@ class Core:
         self.coordinating_resis = np.array([1 if i in coordinating_resis else 0 for i in core.select('name N').getResindices()])
         self.identifiers = [(i, j) for i,j in zip(core.select('protein').select('name N').getResnums(), core.select('protein').select('name N').getChids())]
         self.source = source
-        self.metal_coords = core.select('hetero').getCoords()[0]
-        self.metal_name = core.select('hetero').getResnames()[0]
+        metal = core.select('hetero')
+        self.metal_coords = None if metal == None else metal.getCoords()[0]
+        self.metal_name = None if metal == None else metal.getResnames()[0]
         self.coordination_number = len(coordinating_resis)
         self.permuted_features = None
         self.permuted_labels = None
@@ -342,10 +343,10 @@ class Protein:
                 continue
         return cores
 
-    def get_putative_cores(self, no_neighbors=1, cutoff=15):
+    def get_putative_cores(self, no_neighbors=1, cutoff=15, coordination_number=(2,4)):
         putative_cores = []
         edge_list = []
-        putative_coordinating_resis = self.structure.select('protein').select('name HIS CYS ASP GLU')
+        putative_coordinating_resis = self.structure.select('protein').select('name CA').select('resname HIS CYS ASP GLU')
         putative_coordinating_resindices = putative_coordinating_resis.getResindices()
         dist_mat = buildDistMatrix(putative_coordinating_resis)
         edge_weights = np.array([])
@@ -358,11 +359,12 @@ class Protein:
                     edge_weights = np.append(edge_weights, distance)
             row_indexer += 1
 
-        cliques = enumerateCliques(np.array(edge_list), 4)[4:]
+        cliques = enumerateCliques(np.array(edge_list), coordination_number[1])[coordination_number[0]:]
         for subclique in cliques:
+            print(subclique.shape)
             for clique in subclique:
                 binding_core_resindices = []
-                for ind in clique:
+                for ind in list(clique):
                     core_fragment = _get_neighbors(self.structure, ind, no_neighbors)
                     binding_core_resindices += core_fragment
                 binding_core = self.structure.select('resindex ' + ' '.join([str(num) for num in binding_core_resindices]))
