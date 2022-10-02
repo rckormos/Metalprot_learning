@@ -55,21 +55,21 @@ if __name__ == '__main__':
         with open(os.path.join(path2output, 'failed.txt'), 'a') as f:
             f.write('\n'.join([line for line in failed]) + '\n')
 
-    #     _features = np.stack([core.compute_channels() for core in cores], axis=0)
-    #     sources += [pdb_file] * len(cores)
-    #     identifiers += [core.identifiers for core in cores]
-    #     features.append(_features)
+        _features = np.stack([core.compute_channels() for core in cores], axis=0)
+        sources += [pdb_file] * len(cores)
+        identifiers += [core.identifiers for core in cores]
+        features.append(_features)
         
-    # features = np.stack(features, axis=0)
-    # identifiers = np.array(identifiers)
-    # sources = np.array(sources)
+    features = np.stack(features, axis=0)
+    identifiers = np.array(identifiers)
+    sources = np.array(sources)
     
-    # classifier, regressor = instantiate_models()
-    # classifications = classifier.forward(torch.from_numpy(features)).cpu().detach().numpy().round()
-    # metal_sites_inds = np.argwhere(classifications == 1).flatten()
+    classifier, regressor = instantiate_models()
+    classifications = classifier.forward(torch.from_numpy(features)).cpu().detach().numpy().round()
+    metal_sites_inds = np.argwhere(classifications == 1).flatten()
 
-    # regressions = regressor.forward(torch.from_numpy(features[metal_site_inds])).cpu().detach().numpy().round()
-    # #triangulate to get coords and confidences
+    regressions = regressor.forward(torch.from_numpy(features[metal_site_inds])).cpu().detach().numpy().round()
+    #triangulate to get coords and confidences
 
 
     
