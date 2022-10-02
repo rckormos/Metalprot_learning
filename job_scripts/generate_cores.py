@@ -10,7 +10,7 @@ Note that this script is meant to be called from within a SGE bash submission sc
 import os
 import sys
 from Metalprot_learning import loader
-from Metalprot_learning.utils import AlignmentError, EncodingError
+from Metalprot_learning.utils import AlignmentError, EncodingError, PermutationError
 
 def distribute_tasks(path2examples: str, no_jobs: int, job_id: int):
     """
@@ -24,47 +24,40 @@ def run(pdb_file: str, permute: bool, coordination_number: tuple):
     """
     Wrapper function for running core loading.
     """
-    try:
+    try: 
         print(pdb_file)
         failed_file_line = None
-        protein = loader.Protein(pdb_file)
-        cores = protein.get_cores(coordination_number=coordination_number)
-        unique_cores = loader.remove_degenerate_cores(cores)
-        for core in unique_cores:
-            core.compute_channels()
-            core.compute_labels()
+        protein = loader.MetalloProtein(pdb_file)
+        fcn_cores, cnn_cores = protein.enumerate_cores(cnn=True, fcn=True, coordination_number=coordination_number)
+        unique_fcn_cores, unique_cnn_cores = loader.remove_degenerate_cores(fcn_cores), loader.remove_degenerate_cores(cnn_cores)
 
+        for fcn_core, cnn_core in zip(unique_fcn_cores, unique_cnn_cores):
             if permute:
-                core.permute()
-
-            if len(core.permuted_channels) > 24:
-                failed_file_line = pdb_file + ' Error permuting fragments'
-
-            else:
-                core.write_pdb_files(path2output)
-                core.write_data_files(path2output)
+                fcn_core.permute(), cnn_core.permute()
+                if not len(fcn_core.permuted_distance_matrices) <= 24 and len(fcn_core.permuted_encodings) <= 24 and len(cnn_core.permuted_channels) <= 24:
+                    raise PermutationError        
+            fcn_core.write_pdb_files(path2output)
+            fcn_core.write_data_files(path2output), cnn_core.write_data_files(path2output)
 
     except AlignmentError as e:
         failed_file_line = pdb_file + ' Error identifying unique cores'
-
     except EncodingError as e:
         failed_file_line = pdb_file + ' Unrecognized amino acid during sequence encoding'
-
+    except PermutationError as e:
+        failed_file_line = pdb_file + ' Error permuting fragments'
     except:
         failed_file_line = pdb_file + ' Unknown error occured'
-
     return failed_file_line
 
 if __name__ == '__main__':
-    path2output = sys.argv[1] #path to store outputs    
+    path2output = sys.argv[1]
     no_jobs = 1
     job_id = 0
-
     if len(sys.argv) > 3:
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
     
-    PATH2EXAMPLES = '/wynton/home/rotation/jzhang1198/data/metalprot_learning/ZN_binding_cores/src'
+    PATH2EXAMPLES = ''
     PERMUTE = True
     COORDINATION_NUMBER = (2,4)
 
