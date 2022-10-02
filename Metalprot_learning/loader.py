@@ -77,10 +77,28 @@ def _impute_ca_cb(n: np.ndarray, ca: np.ndarray, c: np.ndarray):
 class Core:
     def __init__(self, source: str, core: AtomGroup, coordinating_resis: np.ndarray, identifiers: list, sequence: np.ndarray, putative: bool):
         self.structure, self.identifiers, self.source, self.sequence, self.putative, self.coordinating_resis = core, identifiers, source, sequence, putative, coordinating_resis
-        self.label, self.permuted_labels, self.permuted_identifiers, self.permuted_coordination_labels = [None] * 4
+        self.label = self._define_label()
+        self.permuted_labels, self.permuted_identifiers, self.permuted_coordination_labels = [None] * 3
         self.coordination_label = self._define_coordination_label()
         self.metal_coords, self.metal_name = self._define_metal()
         self.filename = self._define_filename()
+
+    def _define_label(self, distogram=False):
+        if self.putative:
+            label = None
+
+        if not distogram:
+            label = np.zeros(12*4)
+            _label = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
+            label[0:len(_label)] = _label
+
+        else:
+            distances = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
+            bins = np.arange(0, 12.5, 0.1)
+            label = np.zeros(len(48), len(bins))
+            for ind, distance in enumerate(distances):
+                label[ind] = np.histogram(distance, bins)[0]
+        return label
 
     def _define_coordination_label(self):
         coordination_label = None if self.putative else np.array([1 if i in self.coordinating_resis else 0 for i in self.structure.select('name N').getResindices()]) 
@@ -100,24 +118,6 @@ class Core:
         suffix = '' if self.putative else '_' + self.metal_name
         filename = prefix + self.structure.getTitle() + '_' + '_'.join([str(tup[0]) + tup[1] for tup in self.identifiers]) + suffix
         return filename
-
-    def compute_labels(self, distogram=False):
-        if self.putative:
-            print('Cannot compute label for putative core.')
-            return
-
-        if not distogram:
-            label = np.zeros(12*4)
-            _label = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
-            label[0:len(_label)] = _label
-
-        else:
-            distances = buildDistMatrix(self.structure.select('protein').select('name N CA C O'), self.structure.select('hetero')).squeeze()
-            bins = np.arange(0, 12.5, 0.1)
-            label = np.zeros(len(48), len(bins))
-            for ind, distance in enumerate(distances):
-                label[ind] = np.histogram(distance, bins)[0]
-        self.label = label
 
     def _identify_fragments(self):
         binding_core_identifiers = self.identifiers
@@ -160,7 +160,7 @@ class FCNCore(Core):
     def __init__(self, source: str, core: AtomGroup, coordinating_resis: np.ndarray, identifiers: list, sequence, distance_matrix: np.ndarray, putative: bool):
         super().__init__(source, core, coordinating_resis, identifiers, sequence, putative)
         self.distance_matrix, self.encoding = distance_matrix, FCNCore._onehotencode(self.sequence)
-        self.permuted_distance_matrices, self.permuted_encodings = None, None
+        self.permuted_distance_matrices, self.permuted_encodings = [None], [None]
 
     @staticmethod
     def _onehotencode(sequence: np.ndarray):
@@ -241,8 +241,9 @@ class FCNCore(Core):
 class CNNCore(Core):
     def __init__(self, source: str, core: AtomGroup, coordinating_resis: np.ndarray, identifiers: list, sequence, channels, putative: bool):
         super().__init__(source, core, coordinating_resis, identifiers, sequence, putative)
-        self.distance_channels, self.channels = channels, None
-        self.permuted_channels = None
+        self.distance_channels = channels
+        self.channels = self._compute_channels()
+        self.permuted_channels = [None]
 
     def _compute_seq_channels(self, sequence: list):
         """
@@ -262,10 +263,7 @@ class CNNCore(Core):
                 seq_channels[j][ind][idx+20] = 1 # vertical columns of 1's in next 20 channels
         return np.stack([seq_channels[:, :, i] for i in range(40)], axis=0)
 
-    def compute_channels(self):
-        """
-        Returns nothing, but assigns computed channels to a new attribute.
-        """
+    def _compute_channels(self):
         channels = np.zeros((44,12,12))
         m, n = self.distance_channels[0].shape
         channels[0:4, 0:m, 0:n] = np.stack(self.distance_channels, axis=0)        
@@ -273,7 +271,7 @@ class CNNCore(Core):
         #compute sequence channels
         seq_channels = self._compute_seq_channels(self.sequence)
         channels[4:, 0:12, 0:12] = seq_channels
-        self.channels = channels
+        return channels
 
     def _permute_channels(self, fragment_index_permutation, sequence):
         permuted_channel =np.zeros(self.channels.shape)
@@ -498,7 +496,7 @@ class MetalloProtein(Protein):
             else:
                 continue
 
-        max_atoms = 12 * 4 if self.cbeta else 12 * 5
+        max_atoms = 12 * 5 if self.cbeta else 12 * 4
         fcn_cores, cnn_cores = self._construct_cores(cliques, max_atoms, no_neighbors, fcn, cnn, metal_resindices)
         return fcn_cores, cnn_cores
 
