@@ -15,3 +15,6 @@ class AlignmentError(Error):
 class EncodingError(Error):
     """Raise when unrecognized amino acid is found during encoding"""
     pass
+
+class PermutationError(Error):
+    """Raise when an issue during permutation occurs"""
