@@ -11,14 +11,13 @@ import torch
 import numpy as np
 import scipy
 from prody import *
+from Metalprot_learning.train.models import FullyConnectedNet
 
 def _load_model(config: dict, WEIGHTS_FILE: str):
 
-    if 'l3' not in config.keys():
-        model = SingleLayerNet(config['input'], config['l1'], config['l2'], config['output'], config['input_dropout'], config['hidden_dropout']) 
-    else:
-        model = DoubleLayerNet(config['input'], config['l1'], config['l2'], config['l3'], config['output'], config['input_dropout'], config['hidden_dropout'])
-
+    model = FullyConnectedNet(
+        config['input'], config['l1'], config['l2'], config['l3'], 
+        config['output'], config['input_dropout'], config['hidden_dropout'])
     model.load_state_dict(torch.load(WEIGHTS_FILE, map_location='cpu'))
     model.eval()
     return model
