@@ -77,7 +77,7 @@ if __name__ == '__main__':
         no_jobs = int(sys.argv[2])
         job_id = int(sys.argv[3]) - 1
 
-    PATH2PDBS = './data/edge_cases/'
+    PATH2PDBS = '/Users/jonathanzhang/Documents/ucsf/degrado/DeGrado-Lab-Notebook/metal-binding/experiments/20221002_edge_case_testing/data/edge_cases'
     COORDINATION_NUMBER = (2,4)
 
     tasks = distribute_tasks(PATH2PDBS, no_jobs, job_id)
