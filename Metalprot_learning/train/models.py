@@ -169,7 +169,7 @@ class MultiClassModel(torch.nn.Module):
 
 class Classifier(nn.Module):
     def __init__(self):
-        super(AlphafoldNet, self).__init__()
+        super(Classifier, self).__init__()
         num_target = 1
 
         self.block_n1 = nn.Sequential(
