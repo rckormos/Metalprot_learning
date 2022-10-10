@@ -14,7 +14,6 @@ from prody import *
 from Metalprot_learning.train.models import FullyConnectedNet
 
 def _load_model(config: dict, WEIGHTS_FILE: str):
-
     model = FullyConnectedNet(
         config['input'], config['l1'], config['l2'], config['l3'], 
         config['output'], config['input_dropout'], config['hidden_dropout'])
