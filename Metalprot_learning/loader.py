@@ -320,46 +320,104 @@ class CNNCore(Core):
 
 class Protein:
     def __init__(self, pdb_file: str, cbeta=False):
-        self.filepath = pdb_file
-        self.structure = parsePDB(pdb_file)
-        self.cbeta = cbeta
-        self.backbone = self.structure.select('protein').select('name N C CA CB O') if self.cbeta else self.structure.select('protein').select('name N C CA O')
-        _N, _CA, _C = self.structure.select('protein').select('name N'), self.structure.select('protein').select('name CA'), self.structure.select('protein').select('name C')
-        self.sequence, self._resindices, self._resnums, self._chids = _N.getResnames(), _N.getResindices(), _N.getResnums(), _N.getChids()
-        self.chain_dict = self._build_chain_dict()
+        self.filepath, self.cbeta = pdb_file, cbeta
+        self.structure, self.protein, self.backbone, self.sequence, self._resindices, self._resnums, self._chids, self._no_resis, self._break_positions = self._clean_pdb()
+        self.distance_matrix = buildDistMatrix(self.backbone.select('name N C CA O CB')) if cbeta else buildDistMatrix(self.backbone.select('name N C CA O'))
+        self.channels = np.stack([buildDistMatrix(self.backbone.select('name N')), buildDistMatrix(self.backbone.select('name CA')), buildDistMatrix(self.backbone.select('name C')), buildDistMatrix(self.backbone.select('name CB'))] , axis=0)
         self.resind2id = dict([(resindex, (resnum, chid)) for resindex, resnum, chid in zip(self._resindices, self._resnums, self._chids)])
+        self._connectivity_matrix = self._build_connectivity_matrix()
 
+    @staticmethod
+    def _create_atom_group(name: str, attributes: tuple):
+        atomgroup = AtomGroup(name)
+        coords, names, resnums, resnames, chids = attributes
+        atomgroup.setCoords(coords), atomgroup.setNames(names), atomgroup.setResnums(resnums), atomgroup.setResnames(resnames), atomgroup.setChids(chids)
+        return atomgroup
+
+    @staticmethod
+    def _count_atoms(protein: AtomGroup, resindex: int, atom_name: str):
+        atom_sele = protein.select(f'resindex {resindex} and name {atom_name}')
+        return len(atom_sele) if atom_sele != None else 0
+
+    @staticmethod
+    def _remove_dirty_residues(protein: AtomGroup):
+        _N, _CA, _C, _O = protein.select('name N'), protein.select('name CA'), protein.select('name C'), protein.select('name O')
+        resindices = set(list(protein.getResindices()))
+        if set([len(atom) for atom in [_N, _CA, _C, _O]]) != set([len(resindices)]):
+            resindices = list(resindices)
+            resindices.sort()
+            N_counts, C_counts, CA_counts, O_counts = np.array([]), np.array([]), np.array([]), np.array([])
+            for ind in resindices:
+                N_counts = np.append(N_counts, Protein._count_atoms(protein, ind, 'N'))
+                C_counts = np.append(C_counts, Protein._count_atoms(protein, ind, 'C'))
+                CA_counts = np.append(CA_counts, Protein._count_atoms(protein, ind, 'CA'))
+                O_counts = np.append(O_counts, Protein._count_atoms(protein, ind, 'O'))
+            dirty_indices = list(set(np.where(N_counts != 1)[0].tolist()).union(set(np.where(C_counts != 1)[0].tolist())).union(set(np.where(CA_counts != 1)[0].tolist())).union(set(np.where(O_counts != 1)[0].tolist())))
+            _protein = protein.select('not resindex ' + ' '.join(list(map(str, dirty_indices))))
+            protein = Protein._create_atom_group('protein', (_protein.getCoords(), _protein.getNames(), _protein.getResnums(), _protein.getResnames(), _protein.getChids()))
+            dirty_indices = [i - 1 for i in dirty_indices]
+        else:
+            dirty_indices = []
+        return protein, dirty_indices
+
+    @staticmethod
+    def _generate_backbone(protein: AtomGroup):
+        _backbone = protein.select('name N CA C O')
+        _N, _CA, _C, _O = _backbone.select('name N'), _backbone.select('name CA'), _backbone.select('name C'), _backbone.select('name O')
         N, CA, C = _N.getCoords(), _CA.getCoords(), _C.getCoords()
         CB = _impute_ca_cb(N, CA, C) + CA
-        self.distance_matrix = buildDistMatrix(self.backbone)
-        channels = [buildDistMatrix(_N), buildDistMatrix(_CA), buildDistMatrix(_C)] + [cdist(CB,CB)]
-        self.channels = np.stack(channels, axis=0)
+        coords = np.vstack([_backbone.getCoords(), CB])
+        names = np.concatenate([_backbone.getNames(), np.array(['CB'] * len(CB))])
+        resnums = np.concatenate([_backbone.getResnums(), _N.getResnums()])
+        resnames = np.concatenate([_backbone.getResnames(), _N.getResnames()])
+        chids = np.concatenate([_backbone.getChids(), _N.getChids()])
+        backbone = Protein._create_atom_group('backbone', (coords, names, resnums, resnames, chids))
+        return backbone, _N.getResnames(), _N.getResindices(), _N.getResnums(), _N.getChids(), len(_N)
 
-    def _build_chain_dict(self):
-        chain_dict = {}
-        for chain in set(self._chids):
-            indices = np.argwhere(self._chids == chain).flatten()
-            chain_resinds = self._resindices[indices]
-            for resind in chain_resinds:
-                chain_dict[resind] = (min(chain_resinds), max(chain_resinds))
-        return chain_dict
+    def _clean_pdb(self):
+        #identify atoms associated with the protein
+        structure = parsePDB(self.filepath)
+        termini = structure.select('pdbter').getResindices()
+        if len(termini) > 0: 
+            protein_resindices = structure.select('protein and not water and not hetero').select('resindex ' + ' '.join(list(map(str, np.arange(0, termini[-1]))))).select('name N').getResindices() 
+        else: 
+            protein_resindices = structure.select('protein and not water and not hetero').select('name N').getResindices()
+        _protein = structure.select('resindex ' + ' '.join(list(map(str, protein_resindices))))
+        protein_dirty = Protein._create_atom_group('protein', (_protein.getCoords(), _protein.getNames(), _protein.getResnums(), _protein.getResnames(), _protein.getChids()))
+        protein_clean, break_positions = Protein._remove_dirty_residues(protein_dirty)
+        backbone, sequence, resindices, resnums, chids, no_resis = Protein._generate_backbone(protein_clean)
+        return structure, protein_clean, backbone, sequence, resindices, resnums, chids, no_resis, break_positions
+
+    def _build_connectivity_matrix(self):
+        connectivity_matrix = np.zeros((self._no_resis, self._no_resis))
+        termini = [max(self.protein.select(f'chid {chid}').getResindices()) for chid in self._chids] + self._break_positions
+        termini.sort()
+        for ind in self._resindices: 
+            if ind in termini:
+                continue
+            else:
+                connectivity_matrix[ind, ind+1], connectivity_matrix[ind+1, ind] = 1, 1
+        return connectivity_matrix
 
     def _get_neighbors(self, coordinating_resind: int, no_neighbors: int):
         """
         Helper function for getting neighboring residues. If a terminal residue is passed, only
         one neighrbor will be returned.
         """
-        start, terminal = self.chain_dict[coordinating_resind]
+        try:
+            fragment = []
+            if coordinating_resind == 0:
+                neighbor2 = self._connectivity_matrix[coordinating_resind, coordinating_resind+1]
+                fragment.append(coordinating_resind)
+                fragment.append(coordinating_resind+1) if neighbor2 == 1 else None
+            else:
+                neighbor1, neighbor2 = self._connectivity_matrix[coordinating_resind, coordinating_resind-1], self._connectivity_matrix[coordinating_resind, coordinating_resind+1]
+                fragment.append(coordinating_resind-1) if neighbor1 == 1 else None
+                fragment.append(coordinating_resind)
+                fragment.append(coordinating_resind+1) if neighbor2 == 1 else None
 
-        # print(terminal, start)
-
-        #get fragment 
-        extend = np.array(range(-no_neighbors, no_neighbors+1))
-        _fragment = np.full((1,len(extend)), coordinating_resind) + extend
-        _fragment = _fragment.flatten()
-
-        #if the input resind is a terminal residue, ensure that the non-existent resindex is removed
-        fragment = [ind for ind in list(_fragment[ (_fragment >= start) & (_fragment <= terminal) ])] 
+        except:
+            fragment = []
         return fragment 
 
     def enumerate_cores(self, fcn: bool, cnn: bool, no_neighbors=1, cutoff=15, coordination_number=(2,4)):
@@ -398,6 +456,7 @@ class Protein:
                 sequence = self.sequence[binding_core]
                 identifiers = [self.resind2id[resind] for resind in binding_core]
                 core = self.structure.select('resindex ' + ' '.join([str(num) for num in binding_core]))
+                # print(core)
 
                 if fcn:
                     combinations = list(itertools.product(*[binding_core, binding_core]))
@@ -471,8 +530,17 @@ class Protein:
 class MetalloProtein(Protein):
     def __init__(self, pdb_file: str, cbeta=False):
         super().__init__(pdb_file, cbeta)
-        _metals = self.structure.select('hetero')
-        self.resind2id = dict([(resindex, (resnum, chid)) for resindex, resnum, chid in zip(np.concatenate((self._resindices, _metals.getResindices())), np.concatenate((self._resnums, _metals.getResnums())), np.concatenate((self._chids, _metals.getChids())))])
+        self.metalloprotein = self._process_metalloprotein(self.structure.select('hetero').select('name ZN'))
+        self.resind2id = dict([(resindex, (resnum, chid)) for resindex, resnum, chid in zip(self.metalloprotein.getResindices(), self.metalloprotein.getResnums(), self.metalloprotein.getChids())])
+
+    def _process_metalloprotein(self, metals: AtomGroup):
+        coords = np.vstack([self.protein.getCoords(), metals.getCoords()])
+        names = np.concatenate([self.protein.getNames(), metals.getNames()])
+        resnums = np.concatenate([self.protein.getResnums(), metals.getResnums()])
+        resnames = np.concatenate([self.protein.getResnames(), metals.getResnames()])
+        chids = np.concatenate([self.protein.getChids(), metals.getChids()])
+        metalloprotein = Protein._create_atom_group('metalloprotein', (coords, names, resnums, resnames, chids))
+        return metalloprotein
 
     def enumerate_cores(self, cnn: bool, fcn: bool, no_neighbors=1, coordination_number=(2,4)):
         """
@@ -480,38 +548,34 @@ class MetalloProtein(Protein):
         core objects.
         """
         cliques = []
-        metals = self.structure.select('hetero').select(f'name NI MN ZN CO CU MG')
-        metal_resindices = metals.getResindices() 
-        metal_names = metals.getNames()
-
-        for metal_ind, name in zip(metal_resindices, metal_names):
-
+        metal_inds = []
+        for metal_ind in self.metalloprotein.select('name ZN').getResindices():
             try: #try/except to account for solvating metal ions included for structure determination
-                coordinating_resindices = list(set(self.structure.select(f'protein and not carbon and not hydrogen and within 2.83 of resindex {metal_ind}').getResindices()))
+                coordinating_resindices = list(set(self.metalloprotein.select(f'protein and not carbon and not hydrogen and within 2.83 of resindex {metal_ind}').getResindices()))
             except:
                 continue
             
             if len(coordinating_resindices) <= coordination_number[1] and len(coordinating_resindices) >= coordination_number[0]:
                 cliques.append(coordinating_resindices)
+                metal_inds.append(metal_ind)
             else:
                 continue
-
         max_atoms = 12 * 5 if self.cbeta else 12 * 4
-        fcn_cores, cnn_cores = self._construct_cores(cliques, max_atoms, no_neighbors, fcn, cnn, metal_resindices)
+        fcn_cores, cnn_cores = self._construct_cores(cliques, max_atoms, no_neighbors, fcn, cnn, metal_inds)
         return fcn_cores, cnn_cores
 
-    def _construct_cores(self, cliques, max_atoms: int, no_neighbors: int, fcn: bool, cnn: bool, metal_resindices):
+    def _construct_cores(self, cliques, max_atoms: int, no_neighbors: int, fcn: bool, cnn: bool, metal_inds: list):
         fcn_cores, cnn_cores = [], []
-        no_resis = len(set(self.backbone.getResindices()))
-        splits = sum([np.vsplit(x, no_resis) for x in np.hsplit(self.distance_matrix, no_resis)], [])
-        combinations = [(j,i) for i in range(0, no_resis) for j in range(0, no_resis)]
+        splits = sum([np.vsplit(x, self._no_resis) for x in np.hsplit(self.distance_matrix, self._no_resis)], [])
+        combinations = [(j,i) for i in range(0, self._no_resis) for j in range(0, self._no_resis)]
         split_mapper = dict([(combination, splits[ind]) for combination, ind in zip(combinations, range(len(combinations)))])
-
-        for clique, metal_ind in zip(cliques, metal_resindices):
+        for clique, metal_ind in zip(cliques, metal_inds):
             binding_core = np.sort(np.array(list(set(sum([self._get_neighbors(resind, no_neighbors) for resind in list(clique)], [])))))
             sequence = self.sequence[binding_core]
             identifiers = [self.resind2id[resind] for resind in binding_core]
-            core = self.structure.select('resindex ' + ' '.join([str(num) for num in np.append(binding_core, metal_ind)]))
+            core = self.metalloprotein.select('resindex ' + ' '.join([str(num) for num in np.append(binding_core, metal_ind)]))
+
+            # print(core.getResnums(), core.getResnames())
 
             if fcn:
                 combinations = list(itertools.product(*[binding_core, binding_core]))
@@ -529,3 +593,4 @@ class MetalloProtein(Protein):
                 distance_matrix_channels = self.channels[:, row_inds, col_inds]
                 cnn_cores.append(CNNCore(self.filepath, core, clique, identifiers, sequence, distance_matrix_channels, putative=False))
         return fcn_cores, cnn_cores
+
