@@ -166,3 +166,64 @@ class FullyConnectedNet(torch.nn.Module):
 class MultiClassModel(torch.nn.Module):
     def __init__(self):
         super(MultiClassModel, self).__init__()
+
+class Classifier(nn.Module):
+    def __init__(self):
+        super(AlphafoldNet, self).__init__()
+        num_target = 1
+
+        self.block_n1 = nn.Sequential(
+            ConvBn2d(40, 8, kernel_size=3, padding=1), 
+            Swish(),
+            nn.Dropout(0.2),
+        )
+        self.block0 = nn.Sequential(
+            ConvBn2d(12, 64, kernel_size=3, padding=1),  
+            Swish(), 
+            nn.Dropout(0.2),
+        )
+        self.block1 = nn.Sequential(
+            Residual(64, dilation=1),
+            Residual(64, dilation=1),
+            ConvBn2d(64, 128, kernel_size=1, padding=0),
+            Swish(), 
+            nn.MaxPool2d(kernel_size=(2,2)),
+            nn.Dropout(0.2),#
+        )
+        self.block2 = nn.Sequential(
+            Residual(128, dilation=1),
+            Residual(128, dilation=1),
+            ConvBn2d(128, 256, kernel_size=1, padding=0),
+            Swish(), 
+            nn.MaxPool2d(kernel_size=(2,2)),
+            nn.Dropout(0.2),#
+        )
+        self.block3 = nn.Sequential(
+            Residual(256, dilation=1),
+            Residual(256, dilation=1),
+            nn.Dropout(0.2),
+        )
+        self.linear1 = nn.Linear(256*3*3,512)
+        self.linear2 = nn.Linear(512,32)
+        self.linear3 = nn.Linear(32,1)
+
+    def forward(self, x):
+        batch_size, dim, length, length = x.shape
+
+        x1 = x[:, :4, :, :]                              
+        x2 = x[:, 4:, :, :]                       
+
+        x2 = self.block_n1(x2)                     
+        x = torch.cat([x1,x2],1)                 
+
+        x = self.block0(x)     
+        x = self.block1(x)     
+        x = self.block2(x)     
+        x = self.block3(x)    
+        x = F.dropout(x,0.5, training=self.training)
+        x = x.view(x.size(0), -1)
+        x = F.relu(self.linear1(x))
+        x = F.relu(self.linear2(x))
+        x = self.linear3(x)
+        x = torch.sigmoid(x)
+        return x
