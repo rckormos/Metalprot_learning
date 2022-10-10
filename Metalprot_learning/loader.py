@@ -15,7 +15,7 @@ import pandas as pd
 import itertools 
 from scipy.spatial.distance import cdist
 from pypivoter.degeneracy_cliques import enumerateCliques
-from Metalprot_learning.utils import AlignmentError, EncodingError
+from Metalprot_learning.utils import AlignmentError, EncodingError, PermutationError
 from prody import parsePDB, AtomGroup, matchChains, buildDistMatrix, writePDB
 
 def remove_degenerate_cores(cores: list):
@@ -196,7 +196,7 @@ class FCNCore(Core):
         permuted_encoding[0:len(_permuted_encoding)] = _permuted_encoding
         return permuted_encoding
 
-    def permute(self, trim=True):
+    def permute(self, trim=False):
         permuted_dist_mats, permuted_encodings, permuted_labels, permuted_identifiers, permuted_coordinating_resis = [], [], [], [], []
         fragment_indices = self._identify_fragments()
         fragment_permutations = itertools.permutations(list(range(0,len(fragment_indices)))) #get permutations of fragment indices
