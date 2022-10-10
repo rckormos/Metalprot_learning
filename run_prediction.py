@@ -24,16 +24,16 @@ def distribute_tasks(path2pdbs: str, no_jobs: int, job_id: int):
 
 def instantiate_models():
     classifier = Classifier()
-    classifier.load_state_dict(torch.load('/Users/jonathanzhang/Documents/ucsf/degrado/code/Metalprot_learning/trained_models/classifier/best_model9.pth', map_location='cpu')['state_dict'])
+    classifier.load_state_dict(torch.load('./trained_models/classifier/best_model9.pth', map_location='cpu')['state_dict'])
     classifier.eval()
     classifier = classifier.double()
 
-    with open('/Users/jonathanzhang/Documents/ucsf/degrado/code/Metalprot_learning/trained_models/regressor/config.json', 'r') as f:
+    with open('./trained_models/regressor/config.json', 'r') as f:
         config = json.load(f)
     regressor = FullyConnectedNet(
         config['input'], config['l1'], config['l2'], config['l3'], 
         config['output'], config['input_dropout'], config['hidden_dropout'])
-    regressor.load_state_dict(torch.load('/Users/jonathanzhang/Documents/ucsf/degrado/code/Metalprot_learning/trained_models/regressor/model.pth', map_location='cpu'))
+    regressor.load_state_dict(torch.load('./trained_models/regressor/model.pth', map_location='cpu'))
     regressor.eval()
     return classifier, regressor
 
